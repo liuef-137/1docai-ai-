@@ -1,0 +1,91 @@
+{
+  "project": {
+    "name": "DocAI 智能合同分析平台",
+    "operation": "create",
+    "deviceType": "desktop",
+    "designRead": "B2B SaaS / SMB non-technical / professional trust / medium-low density / avoid purple neon AI hero",
+    "designDials": { "layoutVariance": 2, "motionIntensity": 1, "visualDensity": 3 },
+    "styleDefinitionBrief": "Legaltech SaaS, deep navy + emerald accent, DM Serif Display + Inter, editorial rhythm, restrained surfaces",
+    "operatingMode": "free-explore",
+    "generationTree": {
+      "root": {
+        "nodeId": "gen-project-shell",
+        "kind": "project-shell",
+        "pageIds": ["page-index", "page-analyze", "page-pricing", "page-about"],
+        "output": "partials/project-shell.html",
+        "sharedRegions": ["header", "footer", "brand-colors", "typography-system"],
+        "privateRegions": [],
+        "status": "planned",
+        "children": [
+          { "nodeId": "gen-page-index", "kind": "page-leaf", "pageIds": ["page-index"], "output": "pages/index.html", "privateRegions": ["hero", "features", "how-it-works", "stats", "cta"], "status": "planned", "children": [] },
+          { "nodeId": "gen-page-analyze", "kind": "page-leaf", "pageIds": ["page-analyze"], "output": "pages/analyze.html", "privateRegions": ["upload-area", "mode-selector", "analysis-result"], "status": "planned", "children": [] },
+          { "nodeId": "gen-page-pricing", "kind": "page-leaf", "pageIds": ["page-pricing"], "output": "pages/pricing.html", "privateRegions": ["pricing-cards", "faq", "plan-comparison"], "status": "planned", "children": [] },
+          { "nodeId": "gen-page-about", "kind": "page-leaf", "pageIds": ["page-about"], "output": "pages/about.html", "privateRegions": ["team", "mission", "contact"], "status": "planned", "children": [] }
+        ]
+      }
+    }
+  },
+  "designSource": {
+    "operatingMode": "free-explore",
+    "brandCSSPath": "colors_and_type.css",
+    "styleConstraints": { "radiusMax": 16, "staticShadowAlphaMax": 0.05 }
+  },
+  "pages": [
+    {
+      "nodeId": "page-index",
+      "title": "\u9996\u9875",
+      "htmlSrc": "pages/index.html",
+      "pageIndex": 1,
+      "pageType": "showcase",
+      "visualNorthStar": "hero 60/40 split, left text right visual metaphor",
+      "compositionPattern": "hero -> features -> how-it-works -> stats -> cta",
+      "soulElement": "contract document icon connected via light beam to structured report visual"
+    },
+    {
+      "nodeId": "page-analyze",
+      "title": "\u5408\u540c\u5206\u6790",
+      "htmlSrc": "pages/analyze.html",
+      "pageIndex": 2,
+      "pageType": "task-driven",
+      "visualNorthStar": "centered upload zone, 3-tab mode selector, risk-coded results",
+      "compositionPattern": "upload-zone -> mode-tabs -> analysis-result",
+      "soulElement": "risk clauses with red/green left border indicators for visual scanning"
+    },
+    {
+      "nodeId": "page-pricing",
+      "title": "\u5b9a\u4ef7\u65b9\u6848",
+      "htmlSrc": "pages/pricing.html",
+      "pageIndex": 3,
+      "pageType": "showcase",
+      "visualNorthStar": "3-col pricing cards, free plan highlighted with emerald",
+      "compositionPattern": "page-header -> pricing-cards -> plan-comparison -> faq",
+      "soulElement": "free plan card with emerald badge distinguishing from future paid tiers"
+    },
+    {
+      "nodeId": "page-about",
+      "title": "\u5173\u4e8e\u6211\u4eec",
+      "htmlSrc": "pages/about.html",
+      "pageIndex": 4,
+      "pageType": "showcase",
+      "visualNorthStar": "3-section narrative, serif mission, tech icons, contact form",
+      "compositionPattern": "mission -> story -> tech-stack -> contact-feedback",
+      "soulElement": "mission section using DM Serif Display for authoritative yet modern feel"
+    }
+  ],
+  "assets": [
+    { "role": "critical-hero", "section": "hero", "filename": "hero-analysis.png", "owningPage": "page-index", "status": "planned" }
+  ],
+  "wiringPlan": [
+    { "source": "page-index", "domId": "cta-analyze", "target": "page-analyze" },
+    { "source": "page-pricing", "domId": "cta-analyze", "target": "page-analyze" }
+  ],
+  "hiddenInteractionPlan": [
+    { "source": "page-index", "domId": "nav-analyze", "target": "page-analyze" },
+    { "source": "page-index", "domId": "nav-pricing", "target": "page-pricing" },
+    { "source": "page-index", "domId": "nav-about", "target": "page-about" },
+    { "source": "page-analyze", "domId": "nav-pricing", "target": "page-pricing" },
+    { "source": "page-analyze", "domId": "nav-about", "target": "page-about" },
+    { "source": "page-pricing", "domId": "nav-about", "target": "page-about" },
+    { "source": "page-about", "domId": "nav-analyze", "target": "page-analyze" }
+  ]
+}

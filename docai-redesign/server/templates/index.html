@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}DocAI - 智能合同分析{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="py-20 lg:py-28" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-4xl px-6 lg:px-8 text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-8" style="background: var(--color-accent-tint-50); color: var(--color-accent-dark);">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            AI 驱动，秒级分析
+        </div>
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all;">
+            让合同审查变得简单、高效、专业
+        </h1>
+        <p class="mt-6 text-lg md:text-xl leading-relaxed mx-auto" style="color: var(--color-text-secondary); max-width: 42rem;">
+            DocAI 运用先进的 AI 技术，为你的合同提供风险分析、摘要总结和通俗解读，保护你的每一份权益。
+        </p>
+        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="/analyze" class="inline-flex items-center justify-center px-8 py-3.5 rounded-lg text-base font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none; transition: background 150ms;" onmouseenter="this.style.background='var(--color-accent-light)'" onmouseleave="this.style.background='var(--color-accent)'">
+                免费开始分析
+                <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+            </a>
+            <a href="/about" class="inline-flex items-center justify-center px-8 py-3.5 rounded-lg text-base font-semibold" style="background: transparent; color: var(--color-primary); text-decoration: none; border: 1px solid var(--color-border); transition: background 150ms;" onmouseenter="this.style.background='var(--color-primary-tint-50)'" onmouseleave="this.style.background='transparent'">
+                了解更多
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Feature Showcase -->
+<section class="py-20 lg:py-28" style="background: var(--color-surface);">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold tracking-tight" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all;">为什么选择 DocAI</h2>
+            <p class="mt-4 text-lg" style="color: var(--color-text-secondary);">三大核心功能，全面守护你的合同安全</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+
+            <!-- Feature 1 -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-accent-tint-50);">
+                    <i data-lucide="shield-check" class="w-6 h-6" style="color: var(--color-accent);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">合同风险分析</h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">AI 深度识别合同中的潜在风险条款，提供评分、风险等级和改进建议。</p>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-primary-tint-50);">
+                    <i data-lucide="file-text" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">概括总结</h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">快速提取合同核心信息，包括各方义务、关键日期和重要条款。</p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: rgba(232, 163, 61, 0.1);">
+                    <i data-lucide="message-circle" class="w-6 h-6" style="color: var(--state-warning);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">通俗理解</h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">将复杂的法律文书翻译成通俗易懂的语言，让非专业人士也能轻松理解。</p>
+            </div>
+
+            <!-- Feature 4 -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: rgba(58, 123, 213, 0.1);">
+                    <i data-lucide="git-compare" class="w-6 h-6" style="color: var(--state-info);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">合同对比</h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">对比两份合同的差异，AI 智能解读变更的法律影响和风险。</p>
+            </div>
+
+            <!-- Feature 5 -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-accent-tint-50);">
+                    <i data-lucide="archive" class="w-6 h-6" style="color: var(--color-accent);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">合同档案</h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">所有分析记录自动归档，支持搜索、筛选，随时回顾历史分析。</p>
+            </div>
+
+            <!-- Feature 6 -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-primary-tint-50);">
+                    <i data-lucide="shield-alert" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">风控偏好</h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">设定你的合同红线，AI 针对性分析，越用越精准。</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Stats Bar -->
+<section style="background: var(--color-primary);">
+    <div class="mx-auto max-w-5xl px-6 lg:px-8 py-12 lg:py-16">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+                <div class="text-3xl md:text-4xl font-bold" style="color: var(--color-accent-light); font-family: var(--font-display);">10K+</div>
+                <div class="mt-2 text-sm" style="color: rgba(255,255,255,0.6);">合同已分析</div>
+            </div>
+            <div>
+                <div class="text-3xl md:text-4xl font-bold" style="color: var(--color-accent-light); font-family: var(--font-display);">98%</div>
+                <div class="mt-2 text-sm" style="color: rgba(255,255,255,0.6);">用户满意度</div>
+            </div>
+            <div>
+                <div class="text-3xl md:text-4xl font-bold" style="color: var(--color-accent-light); font-family: var(--font-display);">3s</div>
+                <div class="mt-2 text-sm" style="color: rgba(255,255,255,0.6);">平均分析时间</div>
+            </div>
+            <div>
+                <div class="text-3xl md:text-4xl font-bold" style="color: var(--color-accent-light); font-family: var(--font-display);">256bit</div>
+                <div class="mt-2 text-sm" style="color: rgba(255,255,255,0.6);">加密保护</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-20 lg:py-28" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-2xl px-6 lg:px-8 text-center">
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all;">
+            现在就开始保护你的合同权益
+        </h2>
+        <p class="mt-4 text-lg" style="color: var(--color-text-secondary);">公测期间完全免费，无需绑定支付方式。</p>
+        <div class="mt-8">
+            <a href="/analyze" class="inline-flex items-center justify-center px-10 py-4 rounded-lg text-base font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none; transition: background 150ms;" onmouseenter="this.style.background='var(--color-accent-light)'" onmouseleave="this.style.background='var(--color-accent)'">
+                立即免费试用
+                <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

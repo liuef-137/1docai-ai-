@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}DocAI - 合同档案{% endblock %}
+
+{% block content %}
+<section class="py-8 lg:py-12" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-5xl px-6 lg:px-8">
+
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <h1 class="text-2xl md:text-3xl font-bold tracking-tight" style="font-family: var(--font-display); color: var(--color-primary);">合同档案</h1>
+            <div class="relative w-full sm:w-72">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-tertiary);"></i>
+                <input type="text" id="search-input" placeholder="搜索文件名或内容..." class="w-full pl-10 pr-4 py-2.5 rounded-lg text-sm outline-none" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border);">
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex items-center gap-1 mb-6 border-b overflow-x-auto" style="border-color: var(--color-border-light);">
+            <button class="filter-tab tab-item px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap" style="border-color: var(--color-accent); color: var(--color-accent); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-filter="" onclick="switchFilter('')">全部</button>
+            <button class="filter-tab tab-item px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-filter="high" onclick="switchFilter('high')">高风险</button>
+            <button class="filter-tab tab-item px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-filter="medium" onclick="switchFilter('medium')">中风险</button>
+            <button class="filter-tab tab-item px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-filter="low" onclick="switchFilter('low')">低风险</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="archive-loading" class="flex items-center justify-center py-20">
+            <span class="spinner" style="width: 32px; height: 32px; border-width: 3px;"></span>
+        </div>
+
+        <!-- Empty State -->
+        <div id="archive-empty" class="hidden text-center py-20">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--color-bg-secondary);">
+                <i data-lucide="archive" class="w-8 h-8" style="color: var(--color-text-tertiary);"></i>
+            </div>
+            <h3 class="text-lg font-semibold" style="color: var(--color-text-primary);">暂无分析记录</h3>
+            <p class="mt-2 text-sm" style="color: var(--color-text-secondary);">开始分析你的第一份合同吧</p>
+            <a href="/analyze" class="inline-flex items-center mt-6 px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none;">开始分析</a>
+        </div>
+
+        <!-- Table -->
+        <div id="archive-table-wrap" class="hidden">
+            <div class="border rounded-xl overflow-hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" style="border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--color-bg-secondary);">
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">文件名</th>
+                                <th class="text-left px-5 py-3 font-semibold hidden sm:table-cell" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">日期</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">评分</th>
+                                <th class="text-center px-5 py-3 font-semibold hidden md:table-cell" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">模式</th>
+                                <th class="text-right px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archive-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="archive-pagination" class="flex items-center justify-between mt-6">
+                <span id="archive-info" class="text-sm" style="color: var(--color-text-tertiary);"></span>
+                <div class="flex items-center gap-2">
+                    <button id="prev-page" onclick="loadPage(currentPage - 1)" class="px-3 py-1.5 rounded-md text-sm" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-secondary); cursor: pointer;">上一页</button>
+                    <span id="page-num" class="text-sm px-3" style="color: var(--color-text-primary);"></span>
+                    <button id="next-page" onclick="loadPage(currentPage + 1)" class="px-3 py-1.5 rounded-md text-sm" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-secondary); cursor: pointer;">下一页</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Detail Modal -->
+<div id="detail-modal" class="modal-overlay">
+    <div class="modal-content w-full max-w-2xl mx-4 p-6 sm:p-8" style="max-height: 85vh; overflow-y: auto;">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-semibold" style="color: var(--color-text-primary);">分析详情</h2>
+            <button onclick="closeDetailModal()" style="background: none; border: none; cursor: pointer; color: var(--color-text-tertiary);">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div id="detail-content"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    let currentPage = 1;
+    let currentFilter = '';
+    let totalPages = 1;
+
+    const searchInput = document.getElementById('search-input');
+    let searchTimer;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => { currentPage = 1; loadArchive(); }, 400);
+    });
+
+    window.switchFilter = function(filter) {
+        currentFilter = filter;
+        currentPage = 1;
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            if (tab.dataset.filter === filter) {
+                tab.style.borderColor = 'var(--color-accent)';
+                tab.style.color = 'var(--color-accent)';
+            } else {
+                tab.style.borderColor = 'transparent';
+                tab.style.color = 'var(--color-text-tertiary)';
+            }
+        });
+        loadArchive();
+    };
+
+    window.loadPage = function(page) {
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        loadArchive();
+    };
+
+    function loadArchive() {
+        const loading = document.getElementById('archive-loading');
+        const empty = document.getElementById('archive-empty');
+        const wrap = document.getElementById('archive-table-wrap');
+        loading.classList.remove('hidden');
+        empty.classList.add('hidden');
+        wrap.classList.add('hidden');
+
+        let url = '/api/analysis/history?page=' + currentPage + '&per_page=10';
+        if (currentFilter) url += '&risk_level=' + currentFilter;
+        const search = searchInput.value.trim();
+        if (search) url += '&search=' + encodeURIComponent(search);
+
+        apiFetch(url).then(resp => {
+            if (resp.status === 401) { window.location.href = '/login'; return; }
+            return resp.json();
+        }).then(data => {
+            loading.classList.add('hidden');
+            if (!data || !data.items || data.items.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            totalPages = data.pages || 1;
+            renderTable(data.items);
+            renderPagination(data);
+            wrap.classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }).catch(err => {
+            loading.classList.add('hidden');
+            showToast('加载失败', 'error');
+        });
+    }
+
+    function renderTable(items) {
+        const tbody = document.getElementById('archive-tbody');
+        tbody.innerHTML = '';
+        const modeLabels = { risk: '风险分析', summary: '概括总结', plain: '通俗理解' };
+        const riskLabels = { high: '高风险', medium: '中风险', low: '低风险' };
+        const riskColors = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
+
+        items.forEach(item => {
+            const date = item.created_at ? new Date(item.created_at).toLocaleDateString('zh-CN') : '-';
+            const scoreColor = (item.score != null)
+                ? (item.score >= 80 ? 'var(--risk-low)' : item.score >= 60 ? 'var(--risk-medium)' : 'var(--risk-high)')
+                : 'var(--color-text-tertiary)';
+            const rl = item.risk_level || 'low';
+            const rlColor = riskColors[rl] || 'var(--color-text-tertiary)';
+
+            const tr = document.createElement('tr');
+            tr.style.borderTop = '1px solid var(--color-border-light)';
+            tr.innerHTML =
+                '<td class="px-5 py-4"><div class="text-sm font-medium" style="color: var(--color-text-primary);">' + escapeHtml(item.filename || '粘贴文本') + '</div>' +
+                '<div class="text-xs sm:hidden mt-1" style="color: var(--color-text-tertiary);">' + date + '</div></td>' +
+                '<td class="px-5 py-4 hidden sm:table-cell text-sm" style="color: var(--color-text-secondary);">' + date + '</td>' +
+                '<td class="px-5 py-4 text-center">' +
+                (item.score != null
+                    ? '<span class="inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold" style="color: ' + scoreColor + '; background: ' + scoreColor + '14; font-variant-numeric: tabular-nums;">' + item.score + '</span>'
+                    : '<span class="text-xs" style="color: var(--color-text-tertiary);">--</span>') +
+                '</td>' +
+                '<td class="px-5 py-4 text-center hidden md:table-cell"><span class="text-xs font-medium px-2.5 py-1 rounded-md" style="color: ' + rlColor + '; background: ' + rlColor + '14;">' + (riskLabels[rl] || rl) + '</span></td>' +
+                '<td class="px-5 py-4 text-right"><div class="flex items-center justify-end gap-2">' +
+                '<button onclick="viewDetail(' + item.id + ')" class="text-xs px-3 py-1.5 rounded-md font-medium" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border: none; cursor: pointer;">查看</button>' +
+                '<button onclick="deleteRecord(' + item.id + ')" class="text-xs px-3 py-1.5 rounded-md font-medium" style="background: none; color: var(--state-error); border: 1px solid var(--state-error); cursor: pointer;">删除</button>' +
+                '</div></td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderPagination(data) {
+        document.getElementById('archive-info').textContent = '共 ' + data.total + ' 条记录';
+        document.getElementById('page-num').textContent = currentPage + ' / ' + totalPages;
+        document.getElementById('prev-page').disabled = currentPage <= 1;
+        document.getElementById('prev-page').style.opacity = currentPage <= 1 ? '0.5' : '1';
+        document.getElementById('next-page').disabled = currentPage >= totalPages;
+        document.getElementById('next-page').style.opacity = currentPage >= totalPages ? '0.5' : '1';
+    }
+
+    window.viewDetail = function(id) {
+        apiFetch('/api/analysis/' + id).then(r => r.json()).then(data => {
+            if (!data.analysis) { showToast('记录不存在', 'error'); return; }
+            const a = data.analysis;
+            const result = a.result ? JSON.parse(a.result) : null;
+            const modeLabels = { risk: '风险分析', summary: '概括总结', plain: '通俗理解' };
+            let html = '<div class="space-y-4">';
+            html += '<div class="flex items-center gap-3 flex-wrap">';
+            if (a.filename) html += '<span class="text-sm" style="color: var(--color-text-secondary);"><strong>文件：</strong>' + escapeHtml(a.filename) + '</span>';
+            html += '<span class="text-sm" style="color: var(--color-text-secondary);"><strong>模式：</strong>' + (modeLabels[a.analysis_mode] || a.analysis_mode) + '</span>';
+            if (a.created_at) html += '<span class="text-sm" style="color: var(--color-text-tertiary);">' + new Date(a.created_at).toLocaleString('zh-CN') + '</span>';
+            html += '</div>';
+
+            if (a.one_line_summary) {
+                html += '<div class="p-4 rounded-lg" style="background: var(--color-bg-secondary);"><h3 class="text-xs font-semibold uppercase mb-2" style="color: var(--color-text-tertiary); letter-spacing: 0.08em;">总结</h3><p class="text-sm leading-relaxed" style="color: var(--color-text-primary);">' + escapeHtml(a.one_line_summary) + '</p></div>';
+            }
+
+            if (a.score != null) {
+                const sc = a.score >= 80 ? 'var(--risk-low)' : a.score >= 60 ? 'var(--risk-medium)' : 'var(--risk-high)';
+                html += '<div class="text-center py-4"><div class="text-5xl font-bold" style="color: ' + sc + '; font-family: var(--font-display); font-variant-numeric: tabular-nums;">' + a.score + '</div><div class="text-sm mt-1" style="color: var(--color-text-tertiary);">综合评分</div></div>';
+            }
+
+            if (a.risk_items) {
+                const items = JSON.parse(a.risk_items);
+                items.forEach(ri => {
+                    const rc = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
+                    const rl = { high: '高风险', medium: '中风险', low: '低风险' };
+                    const c = rc[ri.risk_level] || 'var(--color-text-tertiary)';
+                    html += '<div class="border rounded-lg p-4 border-l-4" style="border-color: var(--color-border-light); border-left-color: ' + c + ';"><div class="flex items-start justify-between gap-3"><div><h4 class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(ri.clause_name) + '</h4><p class="mt-1 text-sm" style="color: var(--color-text-secondary);">' + escapeHtml(ri.description) + '</p>';
+                    if (ri.suggestion) html += '<p class="mt-1 text-sm" style="color: var(--color-accent);">建议：' + escapeHtml(ri.suggestion) + '</p>';
+                    html += '</div><span class="text-xs font-medium px-2 py-1 rounded-md shrink-0" style="color: ' + c + '; background: ' + c + '14;">' + (rl[ri.risk_level] || ri.risk_level) + '</span></div></div>';
+                });
+            }
+
+            if (a.suggestions) {
+                const sugs = JSON.parse(a.suggestions);
+                html += '<div><h3 class="text-sm font-semibold mb-3" style="color: var(--color-text-primary);">改进建议</h3><ul class="space-y-2">';
+                sugs.forEach(s => { html += '<li class="text-sm" style="color: var(--color-text-secondary);">- ' + escapeHtml(s) + '</li>'; });
+                html += '</ul></div>';
+            }
+
+            html += '<div class="pt-4"><a href="/detail/' + a.id + '" class="inline-flex px-4 py-2 rounded-lg text-sm font-medium" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none;">查看完整详情</a></div>';
+            html += '</div>';
+            document.getElementById('detail-content').innerHTML = html;
+            document.getElementById('detail-modal').classList.add('active');
+        }).catch(() => showToast('加载详情失败', 'error'));
+    };
+
+    window.closeDetailModal = function() {
+        document.getElementById('detail-modal').classList.remove('active');
+    };
+
+    document.getElementById('detail-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeDetailModal();
+    });
+
+    window.deleteRecord = function(id) {
+        if (!confirm('确定要删除这条分析记录吗？')) return;
+        apiFetch('/api/analysis/' + id, { method: 'DELETE' }).then(r => r.json()).then(data => {
+            if (r.ok) { showToast('已删除', 'success'); loadArchive(); }
+            else showToast(data.error || '删除失败', 'error');
+        }).catch(() => showToast('网络错误', 'error'));
+    };
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Initial load
+    loadArchive();
+})();
+</script>
+{% endblock %}

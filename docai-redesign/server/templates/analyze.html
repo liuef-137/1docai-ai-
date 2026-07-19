@@ -1,0 +1,646 @@
+{% extends "base.html" %}
+{% block title %}DocAI - 智能分析{% endblock %}
+
+{% block extra_head %}
+<style>
+    .upload-zone.drag-over {
+        border-color: var(--color-accent) !important;
+        background: var(--color-accent-tint-50) !important;
+    }
+    .share-mockup {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    }
+    @keyframes progress-indeterminate {
+        0% { left: -30%; }
+        100% { left: 100%; }
+    }
+    .progress-indeterminate {
+        position: absolute; top: 0; bottom: 0; width: 30%;
+        background: var(--color-accent);
+        border-radius: 9999px;
+        animation: progress-indeterminate 1.2s ease-in-out infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Upload Section -->
+<section class="pb-16 lg:pb-20" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-3xl px-6 lg:px-8">
+
+        <!-- Upload Zone -->
+        <div id="upload-zone" class="border-2 border-dashed rounded-lg p-8 sm:p-12 flex flex-col items-center text-center cursor-pointer" style="border-color: var(--color-border); transition: border-color 150ms, background 150ms;" onclick="document.getElementById('file-input').click()" role="button" tabindex="0" aria-label="上传合同文件">
+            <input type="file" id="file-input" accept=".pdf,.docx,.txt,.csv" class="hidden">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-accent-tint-50);">
+                <i data-lucide="upload-cloud" class="w-6 h-6" style="color: var(--color-accent);"></i>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-semibold tracking-tight" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">上传合同文件</h1>
+            <p class="mt-2 text-sm" style="color: var(--color-text-secondary);">拖拽文件到此处，或点击选择</p>
+            <p class="mt-3 text-xs" style="color: var(--color-text-tertiary);">支持 PDF / DOCX / TXT / CSV，最大 10MB</p>
+        </div>
+
+        <!-- Divider -->
+        <div class="flex items-center gap-4 my-8">
+            <div class="flex-1 h-px" style="background: var(--color-border-light);"></div>
+            <span class="text-sm whitespace-nowrap" style="color: var(--color-text-tertiary);">或</span>
+            <div class="flex-1 h-px" style="background: var(--color-border-light);"></div>
+        </div>
+
+        <!-- Textarea with character counter -->
+        <div class="relative">
+            <textarea id="contract-text" class="w-full h-32 resize-none rounded-lg px-4 py-3 text-sm outline-none pr-28" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" placeholder="直接粘贴合同文本..." maxlength="10000" aria-label="合同文本输入" onfocus="this.style.borderColor='var(--color-accent)'; this.style.boxShadow='0 0 0 3px var(--color-accent-tint-100)'" onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none'"></textarea>
+            <span id="char-counter" class="char-counter absolute top-3 right-3 text-xs pointer-events-none select-none" style="color: var(--color-text-tertiary); font-variant-numeric: tabular-nums;">0 / 10000 字</span>
+        </div>
+        <!-- Warning when over limit -->
+        <div id="char-warning" class="mt-2 text-sm hidden" style="color: var(--state-error);">
+            <i data-lucide="alert-triangle" class="w-4 h-4 inline-block align-text-bottom mr-1"></i>
+            文本超出 10000 字限制，请缩减后重试
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-6 flex items-center justify-center gap-4">
+            <button id="btn-upload" onclick="handleUploadClick()" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-primary); cursor: pointer; transition: background 150ms;" onmouseenter="this.style.background='var(--color-primary-tint-50)'" onmouseleave="this.style.background='var(--color-surface)'">
+                <i data-lucide="upload" class="w-4 h-4 mr-2"></i>上传文件
+            </button>
+            <button id="btn-analyze" onclick="handleAnalyze()" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer; transition: background 150ms;" onmouseenter="if(!this.disabled)this.style.background='var(--color-accent-light)'" onmouseleave="if(!this.disabled)this.style.background='var(--color-accent)'">
+                <i data-lucide="search" class="w-4 h-4 mr-2"></i>开始分析
+            </button>
+        </div>
+
+        <!-- Mode Selector Tabs -->
+        <div class="mt-12 flex items-center justify-center border-b" style="border-color: var(--color-border-light);">
+            <button class="mode-tab tab-item inline-flex items-center gap-2 px-6 py-3 text-sm font-medium whitespace-nowrap border-b-2" style="border-color: var(--color-accent); color: var(--color-accent); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-mode="risk" onclick="switchMode('risk')">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                合同风险分析
+            </button>
+            <button class="mode-tab tab-item inline-flex items-center gap-2 px-6 py-3 text-sm font-medium whitespace-nowrap border-b-2" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-mode="summary" onclick="switchMode('summary')">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                概括总结
+            </button>
+            <button class="mode-tab tab-item inline-flex items-center gap-2 px-6 py-3 text-sm font-medium whitespace-nowrap border-b-2" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-mode="plain" onclick="switchMode('plain')">
+                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                通俗理解
+            </button>
+        </div>
+
+        <!-- Risk preference button (for risk mode) -->
+        <div id="pref-btn-row" class="mt-4 flex justify-end">
+            <button onclick="openPreferencePanel()" class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md" style="background: none; border: 1px solid var(--color-border); color: var(--color-text-secondary); cursor: pointer; transition: border-color 150ms;" onmouseenter="this.style.borderColor='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                风控偏好设置
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Analysis Results (hidden initially) -->
+<section id="results-section" class="py-16 lg:py-20 hidden" style="background: var(--color-surface);">
+    <div class="mx-auto max-w-3xl px-6 lg:px-8">
+
+        <!-- Progress Bar -->
+        <div id="progress-area" class="mb-8 hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span id="progress-label" class="text-xs font-medium" style="color: var(--color-accent);">分析中...</span>
+                <span id="progress-time" class="text-xs" style="color: var(--color-text-tertiary);"></span>
+            </div>
+            <div class="w-full h-1.5 rounded-full overflow-hidden" style="background: var(--color-accent-tint-50);">
+                <div id="progress-bar" class="progress-fill h-full rounded-full" style="background: var(--color-accent); width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- Completed Progress -->
+        <div id="completed-progress" class="mb-8 hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium" style="color: var(--color-accent);">分析完成</span>
+                <span id="completed-time" class="text-xs" style="color: var(--color-text-tertiary);"></span>
+            </div>
+            <div class="w-full h-1.5 rounded-full overflow-hidden" style="background: var(--color-accent-tint-50);">
+                <div class="progress-fill h-full rounded-full" style="background: var(--color-accent); width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- One-line Summary -->
+        <div id="summary-card" class="border rounded-lg p-5 sm:p-6 mb-6 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+            <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <h2 class="text-xs font-semibold uppercase mb-3" style="color: var(--color-text-tertiary); letter-spacing: 0.08em;">一句话总结</h2>
+                    <p id="summary-text" class="text-base leading-relaxed" style="color: var(--color-text-primary);"></p>
+                </div>
+                <button class="copy-btn shrink-0 mt-1" style="color: var(--color-text-tertiary); background: none; border: none;" aria-label="复制总结" title="复制" onclick="copyText(document.getElementById('summary-text').textContent)">
+                    <i data-lucide="clipboard" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Risk Preference Alert -->
+        <div id="pref-alert" class="rounded-lg p-5 sm:p-6 mb-6 hidden" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+            <div class="flex items-start gap-3">
+                <div class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5" style="background: rgba(232, 163, 61, 0.12);">
+                    <i data-lucide="shield-alert" class="w-4 h-4" style="color: var(--state-warning);"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">检测到触碰你的风控红线</p>
+                    <p id="pref-alert-text" class="mt-2 text-sm leading-relaxed" style="color: var(--color-text-secondary);"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score Card + Risk Breakdown (risk mode only) -->
+        <div id="risk-section" class="hidden">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                <!-- Score Card -->
+                <div class="sm:col-span-1 border rounded-lg p-6 sm:p-8 text-center flex flex-col items-center justify-center" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                    <div id="score-number" class="text-5xl sm:text-6xl font-bold" style="color: var(--color-accent); font-variant-numeric: tabular-nums; font-family: var(--font-display);">--</div>
+                    <div class="mt-2 text-base font-semibold" style="color: var(--color-text-primary);">综合评分</div>
+                    <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);">基于 AI 深度分析</div>
+                </div>
+                <!-- Risk Breakdown -->
+                <div class="sm:col-span-2 flex flex-col gap-4">
+                    <h2 class="text-lg font-semibold tracking-tight" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">风险条款分析</h2>
+                    <div id="risk-items-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggestions -->
+        <div id="suggestions-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+            <h2 class="text-lg font-semibold tracking-tight" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">改进建议</h2>
+            <ul id="suggestions-list" class="mt-5 space-y-4" style="list-style: none; padding: 0; margin: 0;"></ul>
+        </div>
+
+        <!-- Key Points (summary mode) -->
+        <div id="keypoints-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+            <h2 class="text-lg font-semibold tracking-tight" style="color: var(--color-text-primary);">核心要点</h2>
+            <ul id="keypoints-list" class="mt-5 space-y-4" style="list-style: none; padding: 0; margin: 0;"></ul>
+        </div>
+
+        <!-- Plain Explanation (plain mode) -->
+        <div id="plain-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+            <h2 class="text-lg font-semibold tracking-tight" style="color: var(--color-text-primary);">通俗解读</h2>
+            <div id="plain-text" class="mt-5 text-sm leading-relaxed" style="color: var(--color-text-secondary); white-space: pre-wrap;"></div>
+        </div>
+
+        <!-- Key Terms (plain mode) -->
+        <div id="keyterms-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+            <h2 class="text-lg font-semibold tracking-tight" style="color: var(--color-text-primary);">专业术语解读</h2>
+            <ul id="keyterms-list" class="mt-5 space-y-4" style="list-style: none; padding: 0; margin: 0;"></ul>
+        </div>
+
+        <!-- Things to Watch (plain mode) -->
+        <div id="watch-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+            <h2 class="text-lg font-semibold tracking-tight" style="color: var(--color-text-primary);">需要注意的事项</h2>
+            <ul id="watch-list" class="mt-5 space-y-4" style="list-style: none; padding: 0; margin: 0;"></ul>
+        </div>
+
+        <!-- Follow-up Questions (risk mode) -->
+        <div id="followup-card" class="flex items-center justify-center gap-4 mb-10 hidden flex-wrap">
+            <button onclick="handleFollowUp('帮我起草补充协议')" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: transparent; color: var(--color-primary); border: 1px solid var(--color-primary); cursor: pointer; transition: background 150ms;" onmouseenter="this.style.background='var(--color-primary-tint-50)'" onmouseleave="this.style.background='transparent'">
+                帮我起草补充协议
+            </button>
+            <button onclick="handleFollowUp('如果我是乙方是否公平')" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: transparent; color: var(--color-primary); border: 1px solid var(--color-primary); cursor: pointer; transition: background 150ms;" onmouseenter="this.style.background='var(--color-primary-tint-50)'" onmouseleave="this.style.background='transparent'">
+                如果我是乙方是否公平
+            </button>
+        </div>
+
+        <!-- Share Card Preview -->
+        <div id="share-card" class="border rounded-lg p-5 sm:p-6 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+            <h2 class="text-lg font-semibold tracking-tight" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">一键生成摘要卡片</h2>
+            <p class="mt-2 text-sm" style="color: var(--color-text-tertiary);">生成可分享的分析摘要图片</p>
+            <div class="share-mockup mt-5 rounded-lg p-6 sm:p-8 text-center">
+                <div class="text-sm font-semibold tracking-tight" style="color: var(--color-text-inverse); font-family: var(--font-display); opacity: 0.9;">DocAI</div>
+                <div id="share-score" class="mt-4 text-4xl sm:text-5xl font-bold" style="color: var(--color-accent-light); font-variant-numeric: tabular-nums; font-family: var(--font-display);">--</div>
+                <div class="mt-1 text-xs" style="color: var(--color-text-inverse); opacity: 0.6;">综合评分</div>
+                <div id="share-badges" class="mt-4 flex items-center justify-center gap-3 flex-wrap"></div>
+                <div id="share-date" class="mt-4 text-xs" style="color: var(--color-text-inverse); opacity: 0.4;"></div>
+            </div>
+            <div class="mt-5 flex items-center justify-center">
+                <a id="share-link" href="#" target="_blank" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none;">
+                    查看摘要卡片
+                </a>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Risk Preference Slide Panel -->
+<div id="pref-panel-overlay" class="slide-panel-overlay" onclick="closePreferencePanel()"></div>
+<div id="pref-panel" class="slide-panel">
+    <div class="p-6 border-b" style="border-color: var(--color-border-light);">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold" style="color: var(--color-text-primary);">风控偏好设置</h2>
+            <button onclick="closePreferencePanel()" style="background: none; border: none; cursor: pointer; color: var(--color-text-tertiary);" aria-label="关闭">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <p class="mt-2 text-sm" style="color: var(--color-text-secondary);">设定你的合同红线，AI 分析时会特别关注这些方面。</p>
+    </div>
+    <div class="p-6">
+        <div class="flex gap-2">
+            <input type="text" id="pref-input" placeholder="例如：赔偿金额必须有上限" class="flex-1 px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border);">
+            <button onclick="addPreference()" class="px-4 py-3 rounded-lg text-sm font-semibold whitespace-nowrap" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;">添加</button>
+        </div>
+        <ul id="pref-list" class="mt-4 space-y-2" style="list-style: none; padding: 0; margin: 0;"></ul>
+        <button onclick="savePreferences()" class="mt-6 w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;">
+            保存设置
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    let currentMode = 'risk';
+    let currentFilename = '';
+    let preferences = [];
+    let lastAnalysisId = null;
+    const MAX_LEN = 10000;
+    const WARN_THRESHOLD = 8000;
+
+    const textarea = document.getElementById('contract-text');
+    const counter = document.getElementById('char-counter');
+    const charWarning = document.getElementById('char-warning');
+    const btnAnalyze = document.getElementById('btn-analyze');
+    const resultsSection = document.getElementById('results-section');
+    const progressArea = document.getElementById('progress-area');
+    const progressBar = document.getElementById('progress-bar');
+    const progressLabel = document.getElementById('progress-label');
+
+    // Character counter
+    textarea.addEventListener('input', function() {
+        const len = textarea.value.length;
+        counter.textContent = len + ' / ' + MAX_LEN + ' 字';
+        counter.classList.remove('warn', 'error');
+        charWarning.classList.add('hidden');
+        if (len >= MAX_LEN) {
+            counter.classList.add('error');
+            charWarning.classList.remove('hidden');
+            btnAnalyze.disabled = true;
+            btnAnalyze.style.opacity = '0.5';
+            btnAnalyze.style.cursor = 'not-allowed';
+        } else if (len >= WARN_THRESHOLD) {
+            counter.classList.add('warn');
+            btnAnalyze.disabled = false;
+            btnAnalyze.style.opacity = '1';
+            btnAnalyze.style.cursor = 'pointer';
+        } else {
+            btnAnalyze.disabled = false;
+            btnAnalyze.style.opacity = '1';
+            btnAnalyze.style.cursor = 'pointer';
+        }
+    });
+
+    // File upload handling
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+
+    ['dragenter', 'dragover'].forEach(evt => {
+        uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+        uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); });
+    });
+    uploadZone.addEventListener('drop', e => { handleFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+    function handleFile(file) {
+        if (!file) return;
+        currentFilename = file.name;
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'pdf' || ext === 'docx') {
+            showToast('PDF/DOCX 解析功能开发中，请粘贴文本', 'warning');
+            return;
+        }
+        if (ext === 'txt' || ext === 'csv') {
+            const reader = new FileReader();
+            reader.onload = e => {
+                textarea.value = e.target.result;
+                textarea.dispatchEvent(new Event('input'));
+                showToast('文件已读取', 'success');
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    // Upload button click
+    window.handleUploadClick = function() {
+        requireAuth(() => {
+            fileInput.click();
+        });
+    };
+
+    // Mode switching
+    window.switchMode = function(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-tab').forEach(tab => {
+            if (tab.dataset.mode === mode) {
+                tab.style.borderColor = 'var(--color-accent)';
+                tab.style.color = 'var(--color-accent)';
+            } else {
+                tab.style.borderColor = 'transparent';
+                tab.style.color = 'var(--color-text-tertiary)';
+            }
+        });
+        // Show/hide preference button
+        document.getElementById('pref-btn-row').style.display = (mode === 'risk') ? 'flex' : 'none';
+    };
+
+    // Main analysis flow
+    window.handleAnalyze = function() {
+        requireAuth(async () => {
+            const text = textarea.value.trim();
+            if (!text) { showToast('请输入或上传合同文本', 'warning'); return; }
+            if (text.length > MAX_LEN) { showToast('文本超出字数限制', 'error'); return; }
+
+            btnAnalyze.disabled = true;
+            btnAnalyze.innerHTML = '<span class="spinner"></span> 分析中...';
+
+            // Show progress
+            resultsSection.classList.remove('hidden');
+            progressArea.classList.remove('hidden');
+            document.getElementById('completed-progress').classList.add('hidden');
+            progressBar.style.width = '0%';
+            progressBar.classList.add('progress-animated');
+            progressLabel.textContent = '分析中...';
+            document.getElementById('progress-time').textContent = '';
+
+            // Hide previous results
+            ['summary-card','pref-alert','risk-section','suggestions-card','keypoints-card','plain-card','keyterms-card','watch-card','followup-card','share-card'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            // Simulate progress
+            let fakeProgress = 0;
+            const progressTimer = setInterval(() => {
+                fakeProgress = Math.min(fakeProgress + Math.random() * 15, 90);
+                progressBar.style.width = fakeProgress + '%';
+            }, 500);
+
+            const startTime = Date.now();
+            try {
+                const resp = await apiFetch('/api/analysis', {
+                    method: 'POST',
+                    body: JSON.stringify({ text, mode: currentMode, filename: currentFilename || null })
+                });
+                clearInterval(progressTimer);
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+
+                const data = await resp.json();
+                if (!resp.ok) {
+                    showToast(data.error || '分析失败', 'error');
+                    progressArea.classList.add('hidden');
+                    resultsSection.classList.add('hidden');
+                    btnAnalyze.disabled = false;
+                    btnAnalyze.innerHTML = '<i data-lucide="search" class="w-4 h-4 mr-2"></i>开始分析';
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    return;
+                }
+
+                // Complete progress
+                progressBar.style.width = '100%';
+                progressBar.classList.remove('progress-animated');
+                progressArea.classList.add('hidden');
+                document.getElementById('completed-progress').classList.remove('hidden');
+                document.getElementById('completed-time').textContent = '用时 ' + elapsed + ' 秒';
+
+                // Render results
+                renderResults(data.analysis, elapsed);
+                lastAnalysisId = data.analysis.id;
+
+            } catch (err) {
+                clearInterval(progressTimer);
+                showToast('网络错误，请重试', 'error');
+                progressArea.classList.add('hidden');
+                resultsSection.classList.add('hidden');
+            } finally {
+                btnAnalyze.disabled = false;
+                btnAnalyze.innerHTML = '<i data-lucide="search" class="w-4 h-4 mr-2"></i>开始分析';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        });
+    };
+
+    function renderResults(analysis, elapsed) {
+        const result = analysis.result ? JSON.parse(analysis.result) : null;
+
+        // One-line summary
+        if (analysis.one_line_summary) {
+            document.getElementById('summary-text').textContent = analysis.one_line_summary;
+            document.getElementById('summary-card').classList.remove('hidden');
+        }
+
+        // Risk preference alert (risk mode)
+        if (currentMode === 'risk' && preferences.length > 0 && analysis.one_line_summary) {
+            document.getElementById('pref-alert-text').innerHTML = preferences.map(p =>
+                '<strong>' + escapeHtml(p) + '</strong>'
+            ).join('、') + ' — 请关注分析结果中是否触碰这些红线。';
+            document.getElementById('pref-alert').classList.remove('hidden');
+        }
+
+        // Risk mode specific
+        if (currentMode === 'risk') {
+            document.getElementById('risk-section').classList.remove('hidden');
+            document.getElementById('followup-card').classList.remove('hidden');
+
+            // Score
+            if (analysis.score != null) {
+                const scoreEl = document.getElementById('score-number');
+                scoreEl.textContent = analysis.score;
+                if (analysis.score >= 80) scoreEl.style.color = 'var(--risk-low)';
+                else if (analysis.score >= 60) scoreEl.style.color = 'var(--risk-medium)';
+                else scoreEl.style.color = 'var(--risk-high)';
+            }
+
+            // Risk items
+            const container = document.getElementById('risk-items-container');
+            container.innerHTML = '';
+            const riskItems = analysis.risk_items ? JSON.parse(analysis.risk_items) : (result && result.risk_items ? result.risk_items : []);
+            if (riskItems.length === 0 && analysis.score != null) {
+                const rl = analysis.risk_level || 'low';
+                container.innerHTML += buildRiskCard('整体评估', rl === 'high' ? '存在高风险' : rl === 'medium' ? '存在一定风险' : '风险较低', rl);
+            }
+            riskItems.forEach(item => {
+                container.innerHTML += buildRiskCard(item.clause_name, item.description, item.risk_level);
+            });
+
+            // Suggestions
+            const suggestions = analysis.suggestions ? JSON.parse(analysis.suggestions) : (result && result.suggestions ? result.suggestions : []);
+            if (suggestions.length > 0) {
+                const list = document.getElementById('suggestions-list');
+                list.innerHTML = '';
+                suggestions.forEach(s => {
+                    list.innerHTML += '<li class="flex items-start justify-between gap-3">' +
+                        '<span class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(s) + '</span>' +
+                        '<button class="copy-btn shrink-0 mt-0.5" style="color: var(--color-text-tertiary); background: none; border: none;" onclick="copyText(\'' + escapeJs(s) + '\')" title="复制">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>' +
+                        '</button></li>';
+                });
+                document.getElementById('suggestions-card').classList.remove('hidden');
+            }
+
+            // Share card
+            if (analysis.score != null) {
+                document.getElementById('share-score').textContent = analysis.score;
+                const riskDist = { high: 0, medium: 0, low: 0 };
+                riskItems.forEach(i => { if (riskDist[i.risk_level] !== undefined) riskDist[i.risk_level]++; });
+                const badges = document.getElementById('share-badges');
+                badges.innerHTML = '';
+                if (riskDist.high > 0) badges.innerHTML += '<span class="inline-flex items-center text-xs font-medium px-2 py-1 rounded" style="color: var(--risk-high); background: rgba(212,80,80,0.2);">高风险 x' + riskDist.high + '</span>';
+                if (riskDist.medium > 0) badges.innerHTML += '<span class="inline-flex items-center text-xs font-medium px-2 py-1 rounded" style="color: var(--risk-medium); background: rgba(232,163,61,0.2);">中风险 x' + riskDist.medium + '</span>';
+                if (riskDist.low > 0) badges.innerHTML += '<span class="inline-flex items-center text-xs font-medium px-2 py-1 rounded" style="color: var(--risk-low); background: rgba(45,157,120,0.2);">低风险 x' + riskDist.low + '</span>';
+                document.getElementById('share-date').textContent = new Date().toISOString().slice(0, 10);
+                if (analysis.id) {
+                    document.getElementById('share-link').href = '/api/card/' + analysis.id;
+                    document.getElementById('share-card').classList.remove('hidden');
+                }
+            }
+        }
+
+        // Summary mode
+        if (currentMode === 'summary' && result) {
+            const kpList = document.getElementById('keypoints-list');
+            kpList.innerHTML = '';
+            (result.key_points || []).forEach(kp => {
+                kpList.innerHTML += '<li class="risk-card border rounded-lg p-4 sm:p-5 border-l-4" style="border-color: var(--color-border-light); border-left-color: var(--color-primary);">' +
+                    '<h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(kp.point) + '</h3>' +
+                    '<p class="mt-1 text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(kp.detail) + '</p></li>';
+            });
+            if (result.key_points && result.key_points.length > 0) {
+                document.getElementById('keypoints-card').classList.remove('hidden');
+            }
+        }
+
+        // Plain language mode
+        if (currentMode === 'plain' && result) {
+            if (result.plain_explanation) {
+                document.getElementById('plain-text').textContent = result.plain_explanation;
+                document.getElementById('plain-card').classList.remove('hidden');
+            }
+            const ktList = document.getElementById('keyterms-list');
+            ktList.innerHTML = '';
+            (result.key_terms || []).forEach(kt => {
+                ktList.innerHTML += '<li class="flex items-start justify-between gap-3">' +
+                    '<div><span class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(kt.term) + '</span>' +
+                    '<span class="text-sm ml-2" style="color: var(--color-text-secondary);">' + escapeHtml(kt.plain_explanation) + '</span></div></li>';
+            });
+            if (result.key_terms && result.key_terms.length > 0) {
+                document.getElementById('keyterms-card').classList.remove('hidden');
+            }
+            const wList = document.getElementById('watch-list');
+            wList.innerHTML = '';
+            (result.things_to_watch || []).forEach(tw => {
+                wList.innerHTML += '<li class="risk-card border rounded-lg p-4 sm:p-5 border-l-4" style="border-color: var(--color-border-light); border-left-color: var(--state-warning);">' +
+                    '<h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(tw.item) + '</h3>' +
+                    '<p class="mt-1 text-sm" style="color: var(--color-text-secondary);"><strong>为什么重要：</strong>' + escapeHtml(tw.why_important) + '</p>' +
+                    '<p class="mt-1 text-sm" style="color: var(--color-text-secondary);"><strong>建议：</strong>' + escapeHtml(tw.suggestion) + '</p></li>';
+            });
+            if (result.things_to_watch && result.things_to_watch.length > 0) {
+                document.getElementById('watch-card').classList.remove('hidden');
+            }
+        }
+
+        // Scroll to results
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function buildRiskCard(name, desc, level) {
+        const colors = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
+        const labels = { high: '高风险', medium: '中风险', low: '低风险' };
+        const c = colors[level] || colors.low;
+        const l = labels[level] || '未知';
+        return '<div class="risk-card border rounded-lg p-4 sm:p-5 border-l-4 mb-4" style="border-color: var(--color-border-light); border-left-color: ' + c + ';">' +
+            '<div class="flex items-start justify-between gap-3">' +
+            '<div class="min-w-0"><h3 class="text-sm font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">' + escapeHtml(name) + '</h3>' +
+            '<p class="mt-1 text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(desc) + '</p></div>' +
+            '<span class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-2.5 py-1 rounded-md shrink-0" style="color: ' + c + '; background: ' + c + '14;">' + l + '</span></div></div>';
+    }
+
+    // Follow-up (append to textarea and re-analyze)
+    window.handleFollowUp = function(question) {
+        textarea.value = textarea.value + '\n\n---\n\n追问：' + question;
+        textarea.dispatchEvent(new Event('input'));
+        handleAnalyze();
+    };
+
+    // Risk Preferences
+    window.openPreferencePanel = function() {
+        requireAuth(async () => {
+            document.getElementById('pref-panel').classList.add('active');
+            document.getElementById('pref-panel-overlay').classList.add('active');
+            try {
+                const resp = await apiFetch('/api/preferences');
+                const data = await resp.json();
+                preferences = data.preferences || [];
+                renderPreferences();
+            } catch (e) { showToast('加载偏好设置失败', 'error'); }
+        });
+    };
+
+    window.closePreferencePanel = function() {
+        document.getElementById('pref-panel').classList.remove('active');
+        document.getElementById('pref-panel-overlay').classList.remove('active');
+    };
+
+    window.addPreference = function() {
+        const input = document.getElementById('pref-input');
+        const val = input.value.trim();
+        if (!val) return;
+        if (preferences.includes(val)) { showToast('该偏好已存在', 'warning'); return; }
+        preferences.push(val);
+        input.value = '';
+        renderPreferences();
+    };
+
+    window.removePreference = function(idx) {
+        preferences.splice(idx, 1);
+        renderPreferences();
+    };
+
+    function renderPreferences() {
+        const list = document.getElementById('pref-list');
+        list.innerHTML = '';
+        preferences.forEach((p, i) => {
+            list.innerHTML += '<li class="flex items-center justify-between p-3 rounded-lg" style="background: var(--color-bg-secondary);">' +
+                '<span class="text-sm" style="color: var(--color-text-primary);">' + escapeHtml(p) + '</span>' +
+                '<button onclick="removePreference(' + i + ')" style="background: none; border: none; cursor: pointer; color: var(--color-text-tertiary); flex-shrink: 0; margin-left: 8px;">' +
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></li>';
+        });
+    }
+
+    window.savePreferences = async function() {
+        try {
+            const resp = await apiFetch('/api/preferences', {
+                method: 'PUT',
+                body: JSON.stringify({ preferences })
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                showToast('偏好设置已保存', 'success');
+                closePreferencePanel();
+            } else {
+                showToast(data.error || '保存失败', 'error');
+            }
+        } catch (e) { showToast('网络错误', 'error'); }
+    };
+
+    // Enter key for pref input
+    document.getElementById('pref-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); addPreference(); }
+    });
+
+    // Helper functions
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    function escapeJs(str) {
+        if (!str) return '';
+        return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+    }
+})();
+</script>
+{% endblock %}

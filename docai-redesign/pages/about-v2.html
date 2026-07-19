@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于 - DocAI</title>
+    <style id="theme-vars">
+/* DocAI Brand Design System - Professional Trust Style */
+/* Primary: Deep Navy + Emerald Accent */
+
+:root {
+  /* === Brand Colors === */
+  --color-primary: #1B365D;
+  --color-primary-light: #2A4A7F;
+  --color-primary-dark: #0F2440;
+  --color-primary-tint-50: #E8EDF4;
+  --color-primary-tint-100: #D1DBED;
+  --color-primary-tint-200: #B3C7E0;
+  --color-primary-tint-300: #8AAED3;
+  --color-primary-tint-400: #618DC6;
+
+  /* Accent: Emerald */
+  --color-accent: #2D9D78;
+  --color-accent-light: #3DBF94;
+  --color-accent-dark: #1F7D5C;
+  --color-accent-tint-50: #E6F5F0;
+  --color-accent-tint-100: #CCF0E0;
+  --color-accent-tint-200: #99E0C1;
+  --color-accent-tint-300: #66D1A2;
+
+  /* Neutrals */
+  --color-bg: #FAFBFC;
+  --color-bg-secondary: #F1F4F8;
+  --color-bg-tertiary: #E8ECF1;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F8F9FB;
+  --color-border: #D8DDE6;
+  --color-border-light: #E8ECF1;
+  --color-text-primary: #1A2332;
+  --color-text-secondary: #5A6677;
+  --color-text-tertiary: #8892A0;
+  --color-text-inverse: #FFFFFF;
+
+  /* State Colors */
+  --state-success: #2D9D78;
+  --state-warning: #E8A33D;
+  --state-error: #D45050;
+  --state-info: #3A7BD5;
+
+  /* Risk Level Colors (DocAI specific) */
+  --risk-high: #D45050;
+  --risk-medium: #E8A33D;
+  --risk-low: #2D9D78;
+
+  /* === Typography === */
+  --font-display: 'DM Serif Display', Georgia, 'Noto Serif SC', serif;
+  --font-body: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.75rem;
+
+  --leading-tight: 1.25;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* === Spacing === */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* === Border Radius === */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 2px rgba(27, 54, 93, 0.04);
+  --shadow-md: 0 2px 8px rgba(27, 54, 93, 0.05);
+  --shadow-lg: 0 4px 16px rgba(27, 54, 93, 0.05);
+  --shadow-float: 0 8px 32px rgba(27, 54, 93, 0.08);
+}
+
+/* Dark Mode Variables */
+.dark {
+  --color-bg: #0F1520;
+  --color-bg-secondary: #151C2A;
+  --color-bg-tertiary: #1E2738;
+  --color-surface: #1A2332;
+  --color-surface-hover: #212D3E;
+  --color-border: #2A3546;
+  --color-border-light: #232E3F;
+  --color-text-primary: #E8ECF1;
+  --color-text-secondary: #A0AAB8;
+  --color-text-tertiary: #6B7585;
+  --color-text-inverse: #1A2332;
+
+  --color-primary-tint-50: #1A2332;
+  --color-primary-tint-100: #1E2738;
+  --color-primary-tint-200: #253248;
+  --color-primary-tint-300: #3A4F70;
+  --color-primary-tint-400: #4A6590;
+
+  --color-accent-tint-50: #132A22;
+  --color-accent-tint-100: #1A3529;
+  --color-accent-tint-200: #264D3E;
+  --color-accent-tint-300: #326653;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-float: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-accent: var(--color-accent);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-surface); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+
+      /* Timeline pulse animation for current phase */
+      @keyframes emerald-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(45, 157, 120, 0.4); }
+        50% { box-shadow: 0 0 0 8px rgba(45, 157, 120, 0); }
+      }
+      .timeline-pulse {
+        animation: emerald-pulse 2s ease-in-out infinite;
+      }
+
+      /* Smooth scroll-reveal */
+      @keyframes fade-up {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .reveal-item {
+        opacity: 0;
+        animation: fade-up 480ms cubic-bezier(.32,.72,0,1) forwards;
+      }
+      .reveal-item:nth-child(1) { animation-delay: 80ms; }
+      .reveal-item:nth-child(2) { animation-delay: 180ms; }
+      .reveal-item:nth-child(3) { animation-delay: 280ms; }
+      .reveal-item:nth-child(4) { animation-delay: 380ms; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .timeline-pulse { animation: none; }
+        .reveal-item { animation: none; opacity: 1; }
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+
+        <!-- Header -->
+        <header class="fixed top-0 left-0 right-0 z-50" style="background: var(--color-primary);">
+            <div class="mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between" style="height: 72px;">
+                <a href="index-v2.html" class="flex items-center gap-2 text-white font-semibold text-lg tracking-tight" style="font-family: var(--font-body);">
+                    <i data-lucide="file-text" class="w-6 h-6" style="color: var(--color-accent-light);"></i>
+                    DocAI
+                </a>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="analyze-v2.html" data-dom-id="nav-analyze" class="text-sm font-medium text-white/80 hover:text-white transition-colors duration-150 whitespace-nowrap">智能分析</a>
+                    <a href="archive.html" data-dom-id="nav-archive" class="text-sm font-medium text-white/80 hover:text-white transition-colors duration-150 whitespace-nowrap">合同档案</a>
+                    <a href="compare.html" data-dom-id="nav-compare" class="text-sm font-medium text-white/80 hover:text-white transition-colors duration-150 whitespace-nowrap">合同对比</a>
+                    <a href="pricing-v2.html" data-dom-id="nav-pricing" class="text-sm font-medium text-white/80 hover:text-white transition-colors duration-150 whitespace-nowrap">定价</a>
+                    <a href="about-v2.html" class="text-sm font-medium text-white transition-colors duration-150 whitespace-nowrap" style="border-bottom: 2px solid var(--color-accent-light); padding-bottom: 2px;">关于</a>
+                </nav>
+                <a href="analyze-v2.html" data-dom-id="cta-analyze" class="hidden sm:inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold text-white whitespace-nowrap transition-transform duration-150 hover:-translate-y-px active:translate-y-0" style="background: var(--color-accent);">
+                    免费试用
+                </a>
+                <button class="md:hidden text-white" aria-label="打开菜单">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Mission Section -->
+        <section class="pt-32 pb-20 md:pt-40 md:pb-28" style="background: var(--color-bg);">
+            <div class="mx-auto max-w-3xl px-6 lg:px-8 text-center">
+                <h1 class="text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all; overflow-wrap: break-word;">
+                    让每个人都能享受专业级合同分析
+                </h1>
+                <p class="mt-6 text-base md:text-lg leading-relaxed" style="color: var(--color-text-secondary); max-width: 42rem; margin-left: auto; margin-right: auto;">
+                    我们相信，AI 技术应该降低法律服务的门槛，让中小企业和个人也能获得专业、可靠的合同风险分析服务。
+                </p>
+            </div>
+        </section>
+
+        <!-- Product Roadmap -->
+        <section class="py-20 md:py-28" style="background: var(--color-surface);">
+            <div class="mx-auto max-w-3xl px-6 lg:px-8">
+                <h2 class="text-2xl md:text-3xl font-semibold leading-snug tracking-tight text-center" style="color: var(--color-primary); text-wrap: balance; word-break: keep-all; overflow-wrap: break-word;">
+                    产品路线图
+                </h2>
+                <div class="mt-16 relative">
+                    <!-- Vertical timeline line -->
+                    <div class="absolute left-6 md:left-8 top-0 bottom-0 w-px" style="background: var(--color-accent);"></div>
+
+                    <!-- Phase 1: Completed -->
+                    <div class="reveal-item relative flex gap-6 md:gap-8 pb-12">
+                        <!-- Node -->
+                        <div class="relative z-10 flex-shrink-0 mt-1">
+                            <div class="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center" style="background: var(--color-accent);">
+                                <i data-lucide="check" class="w-5 h-5 md:w-6 md:h-6" style="color: var(--color-text-inverse);"></i>
+                            </div>
+                        </div>
+                        <!-- Card -->
+                        <div class="flex-1 rounded-xl p-5 md:p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light);">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-xs font-semibold px-2 py-0.5 rounded" style="background: var(--color-accent-tint-50); color: var(--color-accent-dark);">Phase 1</span>
+                                        <h3 class="text-base md:text-lg font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">公测上线</h3>
+                                    </div>
+                                    <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">基础分析、三种模式、历史记录</p>
+                                </div>
+                                <span class="text-sm font-medium whitespace-nowrap flex-shrink-0 mt-1" style="color: var(--color-text-tertiary);">2026 Q2</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phase 2: In Progress (Current) -->
+                    <div class="reveal-item relative flex gap-6 md:gap-8 pb-12">
+                        <!-- Node with pulse -->
+                        <div class="relative z-10 flex-shrink-0 mt-1">
+                            <div class="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center timeline-pulse" style="background: var(--color-accent);">
+                                <div class="w-4 h-4 md:w-5 md:h-5 rounded-full" style="background: var(--color-text-inverse);"></div>
+                            </div>
+                        </div>
+                        <!-- Card -->
+                        <div class="flex-1 rounded-xl p-5 md:p-6" style="background: var(--color-accent-tint-50); border: 1px solid var(--color-accent);">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-xs font-semibold px-2 py-0.5 rounded" style="background: var(--color-accent); color: var(--color-text-inverse);">Phase 2</span>
+                                        <span class="text-xs font-semibold px-2 py-0.5 rounded" style="background: var(--color-accent); color: var(--color-text-inverse);">当前阶段</span>
+                                        <h3 class="text-base md:text-lg font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">智能升级</h3>
+                                    </div>
+                                    <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">风控偏好、摘要卡片、字数预警</p>
+                                </div>
+                                <span class="text-sm font-semibold whitespace-nowrap flex-shrink-0 mt-1" style="color: var(--color-accent-dark);">2026 Q3</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phase 3: Upcoming -->
+                    <div class="reveal-item relative flex gap-6 md:gap-8 pb-12">
+                        <!-- Node -->
+                        <div class="relative z-10 flex-shrink-0 mt-1">
+                            <div class="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center" style="background: var(--color-surface); border: 2px solid var(--color-border);">
+                                <div class="w-3 h-3 md:w-4 md:h-4 rounded-full" style="background: var(--color-text-tertiary);"></div>
+                            </div>
+                        </div>
+                        <!-- Card -->
+                        <div class="flex-1 rounded-xl p-5 md:p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light);">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-xs font-semibold px-2 py-0.5 rounded" style="background: var(--color-bg-secondary); color: var(--color-text-tertiary);">Phase 3</span>
+                                        <h3 class="text-base md:text-lg font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">深度分析</h3>
+                                    </div>
+                                    <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">合同对比、整改追踪、合规清单</p>
+                                </div>
+                                <span class="text-sm font-medium whitespace-nowrap flex-shrink-0 mt-1" style="color: var(--color-text-tertiary);">2026 Q4</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phase 4: Future -->
+                    <div class="reveal-item relative flex gap-6 md:gap-8">
+                        <!-- Node -->
+                        <div class="relative z-10 flex-shrink-0 mt-1">
+                            <div class="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center" style="background: var(--color-surface); border: 2px solid var(--color-border);">
+                                <div class="w-3 h-3 md:w-4 md:h-4 rounded-full" style="background: var(--color-text-tertiary);"></div>
+                            </div>
+                        </div>
+                        <!-- Card -->
+                        <div class="flex-1 rounded-xl p-5 md:p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light);">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-xs font-semibold px-2 py-0.5 rounded" style="background: var(--color-bg-secondary); color: var(--color-text-tertiary);">Phase 4</span>
+                                        <h3 class="text-base md:text-lg font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">生态建设</h3>
+                                    </div>
+                                    <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">人工法务对接、行业雷达、API开放</p>
+                                </div>
+                                <span class="text-sm font-medium whitespace-nowrap flex-shrink-0 mt-1" style="color: var(--color-text-tertiary);">2027 Q1</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Tech Stack Section -->
+        <section class="py-20 md:py-28" style="background: var(--color-bg);">
+            <div class="mx-auto max-w-7xl px-6 lg:px-8">
+                <h2 class="text-2xl md:text-3xl font-semibold leading-snug tracking-tight text-center" style="color: var(--color-primary); text-wrap: balance; word-break: keep-all; overflow-wrap: break-word;">
+                    技术架构
+                </h2>
+                <div class="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+                    <div class="flex flex-col items-center text-center p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border-light);">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style="background: var(--color-primary-tint-50);">
+                            <i data-lucide="globe" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">Next.js 14</h3>
+                        <p class="mt-1 text-sm" style="color: var(--color-text-tertiary);">前端框架</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border-light);">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style="background: var(--color-primary-tint-50);">
+                            <i data-lucide="brain" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">Claude / GPT API</h3>
+                        <p class="mt-1 text-sm" style="color: var(--color-text-tertiary);">AI 引擎</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border-light);">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style="background: var(--color-primary-tint-50);">
+                            <i data-lucide="palette" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">Tailwind CSS</h3>
+                        <p class="mt-1 text-sm" style="color: var(--color-text-tertiary);">界面设计</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border-light);">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style="background: var(--color-primary-tint-50);">
+                            <i data-lucide="cloud" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">Vercel</h3>
+                        <p class="mt-1 text-sm" style="color: var(--color-text-tertiary);">部署平台</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section class="py-20 md:py-28" style="background: var(--color-primary);">
+            <div class="mx-auto max-w-2xl px-6 lg:px-8 text-center">
+                <h2 class="text-2xl md:text-3xl font-semibold leading-snug tracking-tight" style="color: var(--color-text-inverse); text-wrap: balance; word-break: keep-all; overflow-wrap: break-word;">
+                    联系我们
+                </h2>
+                <p class="mt-4 text-base" style="color: var(--color-primary-tint-200);">
+                    有任何问题或建议？我们很乐意听到你的声音。
+                </p>
+                <form class="mt-10 text-left space-y-5" onsubmit="return false;">
+                    <div>
+                        <label for="contact-name-v2" class="block text-sm font-medium mb-1.5" style="color: var(--color-primary-tint-200);">姓名</label>
+                        <input type="text" id="contact-name-v2" name="name" required placeholder="你的姓名" class="w-full px-4 py-3 rounded-lg text-sm outline-none transition-colors duration-150 focus:ring-2" style="background: var(--color-primary-dark); color: var(--color-text-inverse); border: 1px solid var(--color-primary-light); --tw-ring-color: var(--color-accent);">
+                    </div>
+                    <div>
+                        <label for="contact-email-v2" class="block text-sm font-medium mb-1.5" style="color: var(--color-primary-tint-200);">邮箱</label>
+                        <input type="email" id="contact-email-v2" name="email" required placeholder="your@email.com" class="w-full px-4 py-3 rounded-lg text-sm outline-none transition-colors duration-150 focus:ring-2" style="background: var(--color-primary-dark); color: var(--color-text-inverse); border: 1px solid var(--color-primary-light); --tw-ring-color: var(--color-accent);">
+                    </div>
+                    <div>
+                        <label for="contact-message-v2" class="block text-sm font-medium mb-1.5" style="color: var(--color-primary-tint-200);">留言</label>
+                        <textarea id="contact-message-v2" name="message" rows="4" required placeholder="请输入你的反馈或建议..." class="w-full px-4 py-3 rounded-lg text-sm outline-none transition-colors duration-150 resize-y focus:ring-2" style="background: var(--color-primary-dark); color: var(--color-text-inverse); border: 1px solid var(--color-primary-light); --tw-ring-color: var(--color-accent);"></textarea>
+                    </div>
+                    <div class="text-center pt-2">
+                        <button type="submit" class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-semibold text-white whitespace-nowrap transition-transform duration-150 hover:-translate-y-px active:translate-y-0" style="background: var(--color-accent);">
+                            提交反馈
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="py-12 md:py-16" style="background: var(--color-primary-dark);">
+            <div class="mx-auto max-w-7xl px-6 lg:px-8">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-8">
+                    <div class="col-span-2 md:col-span-1">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="file-text" class="w-5 h-5" style="color: var(--color-accent-light);"></i>
+                            <span class="text-white font-semibold">DocAI</span>
+                        </div>
+                        <p class="text-sm leading-relaxed" style="color: var(--color-primary-tint-300);">
+                            智能合同分析平台，让法律服务触手可及。
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-white mb-4">产品</h3>
+                        <ul class="space-y-2.5">
+                            <li><a href="analyze-v2.html" class="text-sm transition-colors duration-150 hover:text-white" style="color: var(--color-primary-tint-300);">智能分析</a></li>
+                            <li><a href="archive.html" class="text-sm transition-colors duration-150 hover:text-white" style="color: var(--color-primary-tint-300);">合同档案</a></li>
+                            <li><a href="compare.html" class="text-sm transition-colors duration-150 hover:text-white" style="color: var(--color-primary-tint-300);">合同对比</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-white mb-4">价格</h3>
+                        <ul class="space-y-2.5">
+                            <li><a href="pricing-v2.html" class="text-sm transition-colors duration-150 hover:text-white" style="color: var(--color-primary-tint-300);">定价方案</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-white mb-4">公司</h3>
+                        <ul class="space-y-2.5">
+                            <li><a href="about-v2.html" class="text-sm transition-colors duration-150 hover:text-white" style="color: var(--color-primary-tint-300);">关于我们</a></li>
+                            <li><a href="#" class="text-sm transition-colors duration-150 hover:text-white" style="color: var(--color-primary-tint-300);">联系我们</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-white mb-4">法律</h3>
+                        <ul class="space-y-2.5">
+                            <li><a href="#" class="text-sm transition-colors duration-150 hover:text-white" style="color: var(--color-primary-tint-300);">隐私政策</a></li>
+                            <li><a href="#" class="text-sm transition-colors duration-150 hover:text-white" style="color: var(--color-primary-tint-300);">服务条款</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-12 pt-8" style="border-top: 1px solid var(--color-primary-light);">
+                    <p class="text-sm text-center" style="color: var(--color-primary-tint-300);">
+                        &copy; 2026 DocAI. 保留所有权利。
+                    </p>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

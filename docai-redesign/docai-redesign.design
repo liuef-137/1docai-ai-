@@ -1,0 +1,402 @@
+{
+  "data": [
+    {
+      "id": "page-index",
+      "title": "首页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/index.html",
+        "interactions": [
+          {
+            "domId": "cta-analyze",
+            "targetPageId": "page-analyze"
+          },
+          {
+            "domId": "nav-analyze",
+            "targetPageId": "page-analyze",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pricing",
+            "targetPageId": "page-pricing",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-about",
+            "targetPageId": "page-about",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-analyze",
+      "title": "合同分析",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/analyze.html",
+        "interactions": [
+          {
+            "domId": "nav-pricing",
+            "targetPageId": "page-pricing",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-about",
+            "targetPageId": "page-about",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-pricing",
+      "title": "定价方案",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 0,
+        "y": 800,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/pricing.html",
+        "interactions": [
+          {
+            "domId": "cta-analyze",
+            "targetPageId": "page-analyze"
+          },
+          {
+            "domId": "nav-about",
+            "targetPageId": "page-about",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-about",
+      "title": "关于我们",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 0,
+        "y": 3816,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/about.html",
+        "interactions": [
+          {
+            "domId": "nav-analyze",
+            "targetPageId": "page-analyze",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-index-v2",
+      "title": "首页（升级版）",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 0,
+        "y": 1480,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/index-v2.html",
+        "interactions": [
+          {
+            "domId": "cta-analyze",
+            "targetPageId": "page-analyze-v2"
+          },
+          {
+            "domId": "nav-analyze",
+            "targetPageId": "page-analyze-v2",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-archive",
+            "targetPageId": "page-archive",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-compare",
+            "targetPageId": "page-compare",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pricing",
+            "targetPageId": "page-pricing-v2",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-about",
+            "targetPageId": "page-about-v2",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-analyze-v2",
+      "title": "智能分析（升级版）",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 620,
+        "y": 1480,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/analyze-v2.html",
+        "interactions": [
+          {
+            "domId": "nav-archive",
+            "targetPageId": "page-archive",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-compare",
+            "targetPageId": "page-compare",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pricing",
+            "targetPageId": "page-pricing-v2",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-about",
+            "targetPageId": "page-about-v2",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-archive",
+      "title": "合同档案库",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 620,
+        "y": 3816,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/archive.html",
+        "interactions": [
+          {
+            "domId": "nav-analyze",
+            "targetPageId": "page-analyze-v2",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-compare",
+            "targetPageId": "page-compare",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pricing",
+            "targetPageId": "page-pricing-v2",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-about",
+            "targetPageId": "page-about-v2",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-compare",
+      "title": "合同对比",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 1240,
+        "y": 3816,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/compare.html",
+        "interactions": [
+          {
+            "domId": "nav-analyze",
+            "targetPageId": "page-analyze-v2",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-archive",
+            "targetPageId": "page-archive",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pricing",
+            "targetPageId": "page-pricing-v2",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-about",
+            "targetPageId": "page-about-v2",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-pricing-v2",
+      "title": "定价方案（升级版）",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 0,
+        "y": 2813,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/pricing-v2.html",
+        "interactions": [
+          {
+            "domId": "cta-analyze",
+            "targetPageId": "page-analyze-v2"
+          },
+          {
+            "domId": "nav-analyze",
+            "targetPageId": "page-analyze-v2",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-archive",
+            "targetPageId": "page-archive",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-compare",
+            "targetPageId": "page-compare",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-about",
+            "targetPageId": "page-about-v2",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-about-v2",
+      "title": "关于我们（升级版）",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 0,
+        "y": 1857,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/about-v2.html",
+        "interactions": [
+          {
+            "domId": "cta-analyze",
+            "targetPageId": "page-analyze-v2"
+          },
+          {
+            "domId": "nav-analyze",
+            "targetPageId": "page-analyze-v2",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-archive",
+            "targetPageId": "page-archive",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-compare",
+            "targetPageId": "page-compare",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pricing",
+            "targetPageId": "page-pricing-v2",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "image-001",
+      "title": "首页主视觉",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 0,
+        "y": 9971
+      },
+      "devMetadata": {
+        "imageSrc": "assets/hero-analysis.png"
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "升级版首页主视觉",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 620,
+        "y": 9971
+      },
+      "devMetadata": {
+        "imageSrc": "assets/hero-v2.png"
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "合同对比主视觉",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752345600000,
+      "canvasData": {
+        "x": 1240,
+        "y": 9971
+      },
+      "devMetadata": {
+        "imageSrc": "assets/hero-compare.png"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "DocAI 智能合同分析平台",
+    "designLibrary": null
+  }
+}

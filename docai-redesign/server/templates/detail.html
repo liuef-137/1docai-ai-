@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}DocAI - 分析详情{% endblock %}
+
+{% block content %}
+<section class="py-8 lg:py-12" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-3xl px-6 lg:px-8">
+
+        <!-- Loading -->
+        <div id="detail-loading" class="flex items-center justify-center py-20">
+            <span class="spinner" style="width: 32px; height: 32px; border-width: 3px;"></span>
+        </div>
+
+        <!-- Error -->
+        <div id="detail-error" class="hidden text-center py-20">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: rgba(212,80,80,0.1);">
+                <i data-lucide="alert-circle" class="w-8 h-8" style="color: var(--state-error);"></i>
+            </div>
+            <h3 class="text-lg font-semibold" style="color: var(--color-text-primary);">记录不存在或无权查看</h3>
+            <a href="/archive" class="inline-flex items-center mt-6 px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none;">返回档案</a>
+        </div>
+
+        <!-- Detail Content -->
+        <div id="detail-content" class="hidden">
+
+            <!-- Back link -->
+            <a href="/archive" class="inline-flex items-center gap-1 text-sm mb-6" style="color: var(--color-text-secondary); text-decoration: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                返回档案
+            </a>
+
+            <!-- Meta -->
+            <div id="detail-meta" class="flex flex-wrap items-center gap-3 mb-8 text-sm" style="color: var(--color-text-secondary);"></div>
+
+            <!-- Progress bar (completed) -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium" style="color: var(--color-accent);">分析完成</span>
+                </div>
+                <div class="w-full h-1.5 rounded-full overflow-hidden" style="background: var(--color-accent-tint-50);">
+                    <div class="progress-fill h-full rounded-full" style="background: var(--color-accent); width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- One-line Summary -->
+            <div id="d-summary" class="border rounded-lg p-5 sm:p-6 mb-6" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <h2 class="text-xs font-semibold uppercase mb-3" style="color: var(--color-text-tertiary); letter-spacing: 0.08em;">一句话总结</h2>
+                        <p id="d-summary-text" class="text-base leading-relaxed" style="color: var(--color-text-primary);"></p>
+                    </div>
+                    <button class="copy-btn shrink-0 mt-1" style="color: var(--color-text-tertiary); background: none; border: none;" onclick="copyText(document.getElementById('d-summary-text').textContent)" title="复制">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Score + Risk Items -->
+            <div id="d-risk-section" class="hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                    <div class="sm:col-span-1 border rounded-lg p-6 sm:p-8 text-center flex flex-col items-center justify-center" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                        <div id="d-score" class="text-5xl sm:text-6xl font-bold" style="color: var(--color-accent); font-variant-numeric: tabular-nums; font-family: var(--font-display);">--</div>
+                        <div class="mt-2 text-base font-semibold" style="color: var(--color-text-primary);">综合评分</div>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">风险条款分析</h2>
+                        <div id="d-risk-items"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestions -->
+            <div id="d-suggestions" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">改进建议</h2>
+                <ul id="d-suggestions-list" class="space-y-3" style="list-style: none; padding: 0; margin: 0;"></ul>
+            </div>
+
+            <!-- Key Points (summary mode) -->
+            <div id="d-keypoints" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">核心要点</h2>
+                <ul id="d-keypoints-list" class="space-y-3" style="list-style: none; padding: 0; margin: 0;"></ul>
+            </div>
+
+            <!-- Plain explanation (plain mode) -->
+            <div id="d-plain" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">通俗解读</h2>
+                <div id="d-plain-text" class="text-sm leading-relaxed whitespace-pre-wrap" style="color: var(--color-text-secondary);"></div>
+            </div>
+
+            <!-- Share Card -->
+            <div id="d-share" class="border rounded-lg p-5 sm:p-6 mb-8" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">摘要卡片</h2>
+                <div class="text-center">
+                    <a id="d-share-link" href="#" target="_blank" class="inline-flex items-center justify-center px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none;">
+                        查看摘要卡片
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    // Extract analysis ID from URL path /detail/<id>
+    const pathParts = window.location.pathname.split('/');
+    const analysisId = pathParts[pathParts.length - 1];
+
+    if (!analysisId || isNaN(analysisId)) {
+        document.getElementById('detail-loading').classList.add('hidden');
+        document.getElementById('detail-error').classList.remove('hidden');
+        return;
+    }
+
+    apiFetch('/api/analysis/' + analysisId).then(resp => {
+        if (resp.status === 401) { window.location.href = '/login'; return; }
+        return resp.json();
+    }).then(data => {
+        document.getElementById('detail-loading').classList.add('hidden');
+        if (!data || !data.analysis) {
+            document.getElementById('detail-error').classList.remove('hidden');
+            return;
+        }
+        renderDetail(data.analysis);
+    }).catch(() => {
+        document.getElementById('detail-loading').classList.add('hidden');
+        document.getElementById('detail-error').classList.remove('hidden');
+    });
+
+    function renderDetail(a) {
+        const result = a.result ? JSON.parse(a.result) : null;
+        const modeLabels = { risk: '风险分析', summary: '概括总结', plain: '通俗理解' };
+
+        document.getElementById('detail-content').classList.remove('hidden');
+
+        // Meta
+        let meta = '';
+        if (a.filename) meta += '<span><strong>文件：</strong>' + escapeHtml(a.filename) + '</span>';
+        meta += '<span><strong>模式：</strong>' + (modeLabels[a.analysis_mode] || a.analysis_mode) + '</span>';
+        if (a.created_at) meta += '<span><strong>时间：</strong>' + new Date(a.created_at).toLocaleString('zh-CN') + '</span>';
+        document.getElementById('detail-meta').innerHTML = meta;
+
+        // Summary
+        if (a.one_line_summary) {
+            document.getElementById('d-summary-text').textContent = a.one_line_summary;
+            document.getElementById('d-summary').classList.remove('hidden');
+        }
+
+        // Risk mode
+        if (a.analysis_mode === 'risk') {
+            if (a.score != null) {
+                const scoreEl = document.getElementById('d-score');
+                scoreEl.textContent = a.score;
+                if (a.score >= 80) scoreEl.style.color = 'var(--risk-low)';
+                else if (a.score >= 60) scoreEl.style.color = 'var(--risk-medium)';
+                else scoreEl.style.color = 'var(--risk-high)';
+            }
+
+            const container = document.getElementById('d-risk-items');
+            container.innerHTML = '';
+            const riskItems = a.risk_items ? JSON.parse(a.risk_items) : [];
+            if (riskItems.length === 0 && a.score != null) {
+                const rl = a.risk_level || 'low';
+                container.innerHTML += buildRiskCard('整体评估', rl === 'high' ? '存在高风险' : rl === 'medium' ? '存在一定风险' : '风险较低', rl);
+            }
+            riskItems.forEach(ri => {
+                container.innerHTML += buildRiskCard(ri.clause_name, ri.description, ri.risk_level);
+            });
+            document.getElementById('d-risk-section').classList.remove('hidden');
+
+            // Suggestions
+            const sugs = a.suggestions ? JSON.parse(a.suggestions) : [];
+            if (sugs.length > 0) {
+                const list = document.getElementById('d-suggestions-list');
+                list.innerHTML = '';
+                sugs.forEach(s => {
+                    list.innerHTML += '<li class="flex items-start justify-between gap-3">' +
+                        '<span class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(s) + '</span>' +
+                        '<button class="copy-btn shrink-0 mt-0.5" style="color: var(--color-text-tertiary); background: none; border: none;" onclick="copyText(\'' + escapeJs(s) + '\')" title="复制"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button></li>';
+                });
+                document.getElementById('d-suggestions').classList.remove('hidden');
+            }
+        }
+
+        // Summary mode
+        if (a.analysis_mode === 'summary' && result) {
+            const kpList = document.getElementById('d-keypoints-list');
+            kpList.innerHTML = '';
+            (result.key_points || []).forEach(kp => {
+                kpList.innerHTML += '<li class="risk-card border rounded-lg p-4 border-l-4" style="border-color: var(--color-border-light); border-left-color: var(--color-primary);">' +
+                    '<h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(kp.point) + '</h3>' +
+                    '<p class="mt-1 text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(kp.detail) + '</p></li>';
+            });
+            if (result.key_points && result.key_points.length > 0) {
+                document.getElementById('d-keypoints').classList.remove('hidden');
+            }
+        }
+
+        // Plain mode
+        if (a.analysis_mode === 'plain' && result) {
+            if (result.plain_explanation) {
+                document.getElementById('d-plain-text').textContent = result.plain_explanation;
+                document.getElementById('d-plain').classList.remove('hidden');
+            }
+        }
+
+        // Share link
+        document.getElementById('d-share-link').href = '/api/card/' + a.id;
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function buildRiskCard(name, desc, level) {
+        const colors = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
+        const labels = { high: '高风险', medium: '中风险', low: '低风险' };
+        const c = colors[level] || colors.low;
+        const l = labels[level] || '未知';
+        return '<div class="risk-card border rounded-lg p-4 sm:p-5 border-l-4 mb-4" style="border-color: var(--color-border-light); border-left-color: ' + c + ';">' +
+            '<div class="flex items-start justify-between gap-3">' +
+            '<div class="min-w-0"><h3 class="text-sm font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">' + escapeHtml(name) + '</h3>' +
+            '<p class="mt-1 text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(desc) + '</p></div>' +
+            '<span class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-2.5 py-1 rounded-md shrink-0" style="color: ' + c + '; background: ' + c + '14;">' + l + '</span></div></div>';
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    function escapeJs(str) {
+        if (!str) return '';
+        return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+    }
+})();
+</script>
+{% endblock %}

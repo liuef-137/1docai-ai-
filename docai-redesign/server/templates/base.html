@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DocAI - 智能合同分析{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='colors_and_type.css') }}">
+    <script>
+    // I18N Engine - Internationalization for DocAI
+    (function() {
+        'use strict';
+        var I18N_DATA = {{ i18n_data | safe }};
+        window.I18N = {
+            data: I18N_DATA,
+            currentLang: 'zh',
+            init: function() {
+                var saved = localStorage.getItem('docai_lang');
+                if (saved && I18N_DATA[saved]) { I18N.currentLang = saved; }
+                I18N.applyAll();
+            },
+            t: function(key) {
+                var lang = I18N.currentLang;
+                if (I18N_DATA[lang] && I18N_DATA[lang][key]) return I18N_DATA[lang][key];
+                if (I18N_DATA['zh'] && I18N_DATA['zh'][key]) return I18N_DATA['zh'][key];
+                return key;
+            },
+            switchLang: function(lang) {
+                if (!I18N_DATA[lang]) return;
+                I18N.currentLang = lang;
+                localStorage.setItem('docai_lang', lang);
+                I18N.applyAll();
+                document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            },
+            applyAll: function() {
+                var lang = I18N.currentLang;
+                document.querySelectorAll('[data-i18n]').forEach(function(el) {
+                    var key = el.getAttribute('data-i18n');
+                    if (I18N_DATA[lang] && I18N_DATA[lang][key]) el.textContent = I18N_DATA[lang][key];
+                });
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+                    var key = el.getAttribute('data-i18n-placeholder');
+                    if (I18N_DATA[lang] && I18N_DATA[lang][key]) el.setAttribute('placeholder', I18N_DATA[lang][key]);
+                });
+                var toggleBtn = document.getElementById('lang-toggle-btn');
+                if (toggleBtn) toggleBtn.textContent = lang === 'zh' ? 'EN' : '中文';
+            }
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { I18N.init(); });
+        } else {
+            // Use requestAnimationFrame to ensure DOM is fully parsed
+            requestAnimationFrame(function() { I18N.init(); });
+        }
+    })();
+    </script>
+    <style>
+        :root {
+            --color-primary: #1B365D;
+            --color-primary-light: #2A4A7F;
+            --color-primary-dark: #0F2440;
+            --color-primary-tint-50: #E8EDF4;
+            --color-primary-tint-100: #D1DBED;
+            --color-primary-tint-200: #B3C7E0;
+            --color-primary-tint-300: #8AAED3;
+            --color-primary-tint-400: #618DC6;
+            --color-accent: #2D9D78;
+            --color-accent-light: #3DBF94;
+            --color-accent-dark: #1F7D5C;
+            --color-accent-tint-50: #E6F5F0;
+            --color-accent-tint-100: #CCF0E0;
+            --color-accent-tint-200: #99E0C1;
+            --color-accent-tint-300: #66D1A2;
+            --color-bg: #FAFBFC;
+            --color-bg-secondary: #F1F4F8;
+            --color-bg-tertiary: #E8ECF1;
+            --color-surface: #FFFFFF;
+            --color-surface-hover: #F8F9FB;
+            --color-border: #D8DDE6;
+            --color-border-light: #E8ECF1;
+            --color-text-primary: #1A2332;
+            --color-text-secondary: #5A6677;
+            --color-text-tertiary: #8892A0;
+            --color-text-inverse: #FFFFFF;
+            --state-success: #2D9D78;
+            --state-warning: #E8A33D;
+            --state-error: #D45050;
+            --state-info: #3A7BD5;
+            --risk-high: #D45050;
+            --risk-medium: #E8A33D;
+            --risk-low: #2D9D78;
+            --font-display: 'DM Serif Display', Georgia, 'Noto Serif SC', serif;
+            --font-body: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --shadow-sm: 0 1px 2px rgba(27, 54, 93, 0.04);
+            --shadow-md: 0 2px 8px rgba(27, 54, 93, 0.05);
+            --shadow-lg: 0 4px 16px rgba(27, 54, 93, 0.05);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            margin: 0;
+            min-height: 100vh;
+        }
+        td, th { break-words; word-break: break-all; word-break: auto-phrase; }
+        th { white-space: nowrap; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Toast notification */
+        .toast-container {
+            position: fixed; top: 80px; right: 24px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto;
+            padding: 12px 20px; border-radius: 8px; font-size: 14px;
+            color: var(--color-text-inverse); background: var(--color-primary);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transform: translateX(120%); opacity: 0;
+            transition: transform 300ms cubic-bezier(.3,0,0,1), opacity 300ms ease;
+        }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.success { background: var(--color-accent); }
+        .toast.error { background: var(--state-error); }
+        .toast.warning { background: var(--state-warning); }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(15, 36, 64, 0.5); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 200ms ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-overlay .modal-content {
+            background: var(--color-surface); border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12); max-height: 90vh; overflow-y: auto;
+            transform: translateY(12px); transition: transform 200ms cubic-bezier(.3,0,0,1);
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+
+        /* Slide-out panel */
+        .slide-panel {
+            position: fixed; top: 0; right: -480px; z-index: 1001;
+            width: 460px; max-width: 95vw; height: 100vh;
+            background: var(--color-surface); box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+            transition: right 300ms cubic-bezier(.3,0,0,1);
+            overflow-y: auto;
+        }
+        .slide-panel.active { right: 0; }
+        .slide-panel-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(15, 36, 64, 0.4); display: none;
+        }
+        .slide-panel-overlay.active { display: block; }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            display: inline-block; width: 18px; height: 18px;
+            border: 2px solid var(--color-border); border-top-color: var(--color-accent);
+            border-radius: 50%; animation: spin 600ms linear infinite;
+        }
+
+        /* Progress bar animation */
+        @keyframes progress-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .progress-animated {
+            animation: progress-pulse 1.5s ease-in-out infinite;
+        }
+        .progress-fill {
+            transition: width 320ms cubic-bezier(.3,0,0,1);
+        }
+
+        /* Character counter */
+        .char-counter { transition: color 120ms cubic-bezier(.2,.8,.2,1); }
+        .char-counter.warn { color: var(--state-warning); }
+        .char-counter.error { color: var(--state-error); }
+
+        /* Copy button */
+        .copy-btn { transition: opacity 120ms ease, color 120ms ease; cursor: pointer; }
+        .copy-btn:hover { opacity: 0.7; }
+
+        /* Tab transition */
+        .tab-item { transition: color 120ms ease, border-color 120ms ease; }
+
+        /* Risk card hover */
+        .risk-card { transition: transform 160ms ease, box-shadow 160ms ease; }
+        .risk-card:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(27, 54, 93, 0.05); }
+
+        /* FAQ toggle */
+        .faq-answer {
+            max-height: 0; overflow: hidden; opacity: 0;
+            transition: max-height 320ms ease, opacity 240ms ease, padding 320ms ease;
+            padding: 0 24px;
+        }
+        .faq-item.open .faq-answer { max-height: 200px; opacity: 1; padding: 0 24px 18px; }
+        .faq-item.open .faq-chevron { transform: rotate(180deg); }
+        .faq-chevron { transition: transform 240ms ease; }
+
+        /* Mobile menu */
+        .mobile-menu { display: none; }
+        .mobile-menu.open { display: flex; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .toast, .modal-overlay .modal-content, .slide-panel, .progress-fill,
+            .copy-btn, .tab-item, .risk-card, .faq-answer, .faq-chevron {
+                transition-duration: 0.01ms !important;
+            }
+            .progress-animated { animation: none; }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="antialiased">
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ===== Header / Navigation ===== -->
+    <header class="fixed top-0 left-0 right-0 z-50" style="background: var(--color-primary);">
+        <nav class="mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between h-16 lg:h-[72px]">
+            <!-- Logo -->
+            <a href="/" class="text-xl font-semibold tracking-tight" style="color: var(--color-text-inverse); font-family: var(--font-display); text-decoration: none;">
+                DocAI
+            </a>
+            <!-- Desktop Nav -->
+            <div class="hidden md:flex items-center gap-8">
+                <a href="/analyze" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">智能分析</a>
+                <a href="/archive" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">合同档案</a>
+                <a href="/compare" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">合同对比</a>
+                <a href="/pricing" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">定价</a>
+                <a href="/about" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">关于</a>
+            </div>
+            <!-- Right Side -->
+            <div class="flex items-center gap-3">
+                <!-- Language toggle -->
+                <button id="lang-toggle-btn" onclick="toggleLang()" class="text-xs px-2.5 py-1.5 rounded-md font-semibold" style="color: var(--color-text-inverse); background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); cursor: pointer;">EN</button>
+                {% if current_user %}
+                    <span class="hidden sm:inline text-sm" style="color: var(--color-text-inverse); opacity: 0.9;">{{ current_user.username }}</span>
+                    {% if current_user.role == 'admin' %}
+                        <a href="/admin" class="text-sm px-3 py-1.5 rounded-md" style="color: var(--color-text-inverse); text-decoration: none; background: var(--color-primary-light);">后台</a>
+                    {% endif %}
+                    <button onclick="handleLogout()" class="text-sm px-3 py-1.5 rounded-md" style="color: var(--color-text-inverse); opacity: 0.8; background: none; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">退出</button>
+                {% else %}
+                    <a href="/login" class="hidden sm:inline-flex text-sm px-4 py-2 rounded-lg font-medium" style="color: var(--color-text-inverse); text-decoration: none; border: 1px solid rgba(255,255,255,0.3);">登录</a>
+                    <a href="/login?tab=register" class="inline-flex text-sm px-4 py-2 rounded-lg font-semibold" style="color: var(--color-text-inverse); text-decoration: none; background: var(--color-accent);">注册</a>
+                {% endif %}
+                <!-- Mobile hamburger -->
+                <button class="md:hidden" style="color: var(--color-text-inverse); background: none; border: none; cursor: pointer;" onclick="toggleMobileMenu()" aria-label="菜单">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="mobile-menu flex-col md:hidden px-6 pb-4" style="background: var(--color-primary);">
+            <a href="/analyze" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">智能分析</a>
+            <a href="/archive" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">合同档案</a>
+            <a href="/compare" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">合同对比</a>
+            <a href="/pricing" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">定价</a>
+            <a href="/about" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">关于</a>
+        </div>
+    </header>
+
+    <!-- ===== Main Content ===== -->
+    <main class="pt-16 lg:pt-[72px]">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ===== Footer ===== -->
+    <footer style="background: var(--color-primary-dark);">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8 py-12 lg:py-16">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-10">
+                <div class="col-span-2 md:col-span-1">
+                    <span class="text-lg font-semibold tracking-tight" style="color: var(--color-text-inverse); font-family: var(--font-display);">DocAI</span>
+                    <p class="mt-3 text-xs leading-relaxed" style="color: var(--color-text-inverse); opacity: 0.5;">AI 驱动的合同智能分析平台</p>
+                </div>
+                <div>
+                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;">产品</h4>
+                    <ul class="mt-4 space-y-3" style="list-style: none; padding: 0; margin: 0;">
+                        <li><a href="/analyze" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">智能分析</a></li>
+                        <li><a href="/archive" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">合同档案</a></li>
+                        <li><a href="/compare" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">合同对比</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;">资源</h4>
+                    <ul class="mt-4 space-y-3" style="list-style: none; padding: 0; margin: 0;">
+                        <li><a href="/pricing" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">定价方案</a></li>
+                        <li><a href="/about" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">关于我们</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;">公司</h4>
+                    <ul class="mt-4 space-y-3" style="list-style: none; padding: 0; margin: 0;">
+                        <li><a href="/about" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">联系我们</a></li>
+                        <li><a href="/about" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">加入团队</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;">法律</h4>
+                    <ul class="mt-4 space-y-3" style="list-style: none; padding: 0; margin: 0;">
+                        <li><a href="#" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">隐私政策</a></li>
+                        <li><a href="#" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">服务条款</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 pt-8" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                <p class="text-xs text-center" style="color: var(--color-text-inverse); opacity: 0.5;">&copy; 2026 DocAI. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== Login/Register Modal ===== -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-content w-full max-w-md mx-4 p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold" style="color: var(--color-text-primary);">账号</h2>
+                <button onclick="closeAuthModal()" style="background: none; border: none; cursor: pointer; color: var(--color-text-tertiary);" aria-label="关闭">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- Tabs -->
+            <div class="flex border-b mb-6" style="border-color: var(--color-border-light);">
+                <button id="auth-login-tab" class="flex-1 py-3 text-sm font-medium text-center border-b-2" style="border-color: var(--color-accent); color: var(--color-accent); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" onclick="switchAuthTab('login')">登录</button>
+                <button id="auth-register-tab" class="flex-1 py-3 text-sm font-medium text-center border-b-2" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" onclick="switchAuthTab('register')">注册</button>
+            </div>
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">用户名</label>
+                    <input type="text" name="username" required placeholder="输入用户名" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">密码</label>
+                    <input type="password" name="password" required placeholder="输入密码" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                </div>
+                <div id="login-error" class="text-sm hidden" style="color: var(--state-error);"></div>
+                <button type="submit" id="login-submit" class="w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;">登录</button>
+            </form>
+            <!-- Register Form -->
+            <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">用户名</label>
+                    <input type="text" name="username" required placeholder="2-80个字符" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">邮箱</label>
+                    <input type="email" name="email" required placeholder="your@email.com" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">密码</label>
+                    <input type="password" name="password" required placeholder="至少6个字符" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">确认密码</label>
+                    <input type="password" name="confirm_password" required placeholder="再次输入密码" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                </div>
+                <div id="register-error" class="text-sm hidden" style="color: var(--state-error);"></div>
+                <button type="submit" id="register-submit" class="w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;">注册</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== Feedback Slide Panel ===== -->
+    <div id="feedback-panel" class="slide-panel" style="padding: 24px; width: 380px;">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold" style="color: var(--color-text-primary); font-family: var(--font-display);" data-i18n="feedback.title">快速反馈</h3>
+            <button onclick="document.getElementById('feedback-panel').classList.remove('active'); document.getElementById('feedback-overlay').classList.remove('active');" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div class="flex gap-2 flex-wrap">
+                <button type="button" onclick="setGlobalFbType(this,'bug')" class="global-fb-type text-xs px-3 py-1.5 rounded-lg" style="background:var(--color-bg-secondary);color:var(--color-text-secondary);border:1px solid var(--color-border);cursor:pointer;" data-i18n="feedback.bug">Bug</button>
+                <button type="button" onclick="setGlobalFbType(this,'feature')" class="global-fb-type text-xs px-3 py-1.5 rounded-lg" style="background:var(--color-bg-secondary);color:var(--color-text-secondary);border:1px solid var(--color-border);cursor:pointer;" data-i18n="feedback.feature">功能建议</button>
+                <button type="button" onclick="setGlobalFbType(this,'improvement')" class="global-fb-type text-xs px-3 py-1.5 rounded-lg" style="background:var(--color-bg-secondary);color:var(--color-text-secondary);border:1px solid var(--color-border);cursor:pointer;" data-i18n="feedback.improvement">优化</button>
+                <button type="button" onclick="setGlobalFbType(this,'praise')" class="global-fb-type text-xs px-3 py-1.5 rounded-lg" style="background:var(--color-bg-secondary);color:var(--color-text-secondary);border:1px solid var(--color-border);cursor:pointer;" data-i18n="feedback.praise">好评</button>
+            </div>
+            <select id="global-fb-category" class="text-sm px-3 py-2 rounded-lg outline-none w-full" style="background:var(--color-bg-secondary);color:var(--color-text-primary);border:1px solid var(--color-border);">
+                <option value="">-- Module --</option>
+                <option value="analysis">Smart Analysis</option>
+                <option value="archive">Contract Archive</option>
+                <option value="compare">Compare</option>
+                <option value="pricing">Pricing</option>
+                <option value="about">About</option>
+                <option value="auth">Auth / Login</option>
+                <option value="ui">UI / Design</option>
+                <option value="performance">Performance</option>
+                <option value="other">Other</option>
+            </select>
+            <input type="text" id="global-fb-title" required placeholder="标题（简述问题或建议）" class="w-full px-3 py-2 rounded-lg text-sm outline-none" style="background:var(--color-bg-secondary);color:var(--color-text-primary);border:1px solid var(--color-border);" data-i18n-placeholder="feedback.title_placeholder">
+            <textarea id="global-fb-content" required rows="3" placeholder="详细描述..." class="w-full px-3 py-2 rounded-lg text-sm outline-none resize-y" style="background:var(--color-bg-secondary);color:var(--color-text-primary);border:1px solid var(--color-border);" data-i18n-placeholder="feedback.content_placeholder"></textarea>
+            <div class="flex items-center gap-2">
+                <span class="text-xs" style="color: var(--color-text-tertiary);" data-i18n="feedback.rating">评分:</span>
+                <div id="global-fb-stars" class="flex gap-1">
+                    <button type="button" onclick="setGlobalFbRating(1)" class="text-lg" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);">★</button>
+                    <button type="button" onclick="setGlobalFbRating(2)" class="text-lg" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);">★</button>
+                    <button type="button" onclick="setGlobalFbRating(3)" class="text-lg" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);">★</button>
+                    <button type="button" onclick="setGlobalFbRating(4)" class="text-lg" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);">★</button>
+                    <button type="button" onclick="setGlobalFbRating(5)" class="text-lg" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);">★</button>
+                </div>
+            </div>
+            <button onclick="submitGlobalFeedback()" id="global-fb-submit" class="w-full py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;" data-i18n="feedback.submit">提交反馈</button>
+        </div>
+    </div>
+    <div id="feedback-overlay" class="slide-panel-overlay" onclick="document.getElementById('feedback-panel').classList.remove('active'); this.classList.remove('active');"></div>
+
+    <!-- Feedback floating button -->
+    <button onclick="document.getElementById('feedback-panel').classList.add('active'); document.getElementById('feedback-overlay').classList.add('active');" class="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium shadow-lg" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer; transition: transform 150ms ease, box-shadow 150ms ease;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='translateY(0)'" data-i18n="feedback.submit" aria-label="Feedback">
+        <i data-lucide="message-circle" class="w-4 h-4"></i>
+        <span data-i18n="feedback.submit">提交反馈</span>
+    </button>
+
+    <!-- ===== Common JavaScript ===== -->
+    <script>
+        // App state from server
+        window.appState = {{ app_state | tojson | safe }};
+
+        function getToken() {
+            // Try localStorage first (set by login/register pages)
+            const ls = localStorage.getItem('token');
+            if (ls) return ls;
+            // Fallback to cookie
+            const match = document.cookie.match(/(?:^|; )token=([^;]*)/);
+            return match ? decodeURIComponent(match[1]) : null;
+        }
+
+        function setToken(token) {
+            localStorage.setItem('token', token);
+            document.cookie = 'token=' + encodeURIComponent(token) + '; path=/; max-age=' + (7 * 24 * 3600) + '; SameSite=Lax';
+        }
+
+        function clearToken() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            document.cookie = 'token=; path=/; max-age=0';
+        }
+
+        async function apiFetch(url, options = {}) {
+            const token = getToken();
+            const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            const resp = await fetch(url, { ...options, headers });
+            if (resp.status === 401) {
+                clearToken();
+                window.appState = { user: null };
+                updateNavAuth();
+            }
+            return resp;
+        }
+
+        function showToast(message, type = '') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => { toast.classList.add('show'); });
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function copyText(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => showToast('已复制', 'success'));
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast('已复制', 'success');
+            }
+        }
+
+        function requireAuth(callback) {
+            if (window.appState && window.appState.user) {
+                callback();
+            } else {
+                openAuthModal();
+            }
+        }
+
+        // Auth modal
+        function openAuthModal(tab) {
+            const modal = document.getElementById('auth-modal');
+            modal.classList.add('active');
+            switchAuthTab(tab || 'login');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.remove('active');
+        }
+
+        function switchAuthTab(tab) {
+            const loginTab = document.getElementById('auth-login-tab');
+            const registerTab = document.getElementById('auth-register-tab');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            if (tab === 'login') {
+                loginTab.style.borderColor = 'var(--color-accent)';
+                loginTab.style.color = 'var(--color-accent)';
+                registerTab.style.borderColor = 'transparent';
+                registerTab.style.color = 'var(--color-text-tertiary)';
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+            } else {
+                registerTab.style.borderColor = 'var(--color-accent)';
+                registerTab.style.color = 'var(--color-accent)';
+                loginTab.style.borderColor = 'transparent';
+                loginTab.style.color = 'var(--color-text-tertiary)';
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const form = e.target;
+            const errorEl = document.getElementById('login-error');
+            const submitBtn = document.getElementById('login-submit');
+            errorEl.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span>';
+            try {
+                const data = Object.fromEntries(new FormData(form));
+                const resp = await fetch('/api/auth/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await resp.json();
+                if (!resp.ok) {
+                    errorEl.textContent = result.error || '登录失败';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                setToken(result.token);
+                window.appState = { user: result.user };
+                closeAuthModal();
+                showToast('登录成功', 'success');
+                localStorage.setItem('token', result.token);
+                localStorage.setItem('user', JSON.stringify(result.user));
+                updateNavAuth();
+                if (typeof onAuthSuccess === 'function') onAuthSuccess();
+            } catch (err) {
+                errorEl.textContent = '网络错误，请重试';
+                errorEl.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '登录';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const form = e.target;
+            const errorEl = document.getElementById('register-error');
+            const submitBtn = document.getElementById('register-submit');
+            const data = Object.fromEntries(new FormData(form));
+            errorEl.classList.add('hidden');
+
+            if (data.password !== data.confirm_password) {
+                errorEl.textContent = '两次输入的密码不一致';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            delete data.confirm_password;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span>';
+            try {
+                const resp = await fetch('/api/auth/register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await resp.json();
+                if (!resp.ok) {
+                    errorEl.textContent = result.error || '注册失败';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                setToken(result.token);
+                window.appState = { user: result.user };
+                closeAuthModal();
+                updateNavAuth();
+                showToast('注册成功', 'success');
+                if (typeof onAuthSuccess === 'function') onAuthSuccess();
+            } catch (err) {
+                errorEl.textContent = '网络错误，请重试';
+                errorEl.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '注册';
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+            } catch (e) {}
+            clearToken();
+            window.appState = { user: null };
+            updateNavAuth();
+            showToast('已退出登录', 'success');
+        }
+
+        function updateNavAuth() {
+            // Reload page for simplicity - nav is server-rendered
+            window.location.reload();
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('open');
+        }
+
+        function toggleLang() {
+            var newLang = (window.I18N && window.I18N.currentLang === 'zh') ? 'en' : 'zh';
+            if (window.I18N) {
+                window.I18N.switchLang(newLang);
+            }
+        }
+
+        // Feedback functions
+        var globalFbType = 'bug';
+        var globalFbRating = 0;
+
+        function setGlobalFbType(btn, type) {
+            globalFbType = type;
+            document.querySelectorAll('.global-fb-type').forEach(function(b) {
+                b.style.background = 'var(--color-bg-secondary)';
+                b.style.color = 'var(--color-text-secondary)';
+                b.style.borderColor = 'var(--color-border)';
+            });
+            btn.style.background = 'var(--color-primary-tint-50)';
+            btn.style.color = 'var(--color-primary)';
+            btn.style.borderColor = 'var(--color-primary-tint-200)';
+        }
+
+        function setGlobalFbRating(n) {
+            globalFbRating = n;
+            var stars = document.querySelectorAll('#global-fb-stars button');
+            stars.forEach(function(s, i) {
+                s.style.color = i < n ? 'var(--state-warning)' : 'var(--color-text-tertiary)';
+            });
+        }
+
+        async function submitGlobalFeedback() {
+            var title = document.getElementById('global-fb-title').value.trim();
+            var content = document.getElementById('global-fb-content').value.trim();
+            if (!title || !content) { showToast('标题和内容不能为空', 'error'); return; }
+            var submitBtn = document.getElementById('global-fb-submit');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            try {
+                var resp = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        feedback_type: globalFbType,
+                        category: (document.getElementById('global-fb-category') || {}).value || '',
+                        rating: globalFbRating || null
+                    })
+                });
+                var result = await resp.json();
+                if (!resp.ok) { showToast(result.error || '提交失败', 'error'); return; }
+                showToast('反馈提交成功，感谢你的建议！', 'success');
+                document.getElementById('global-fb-title').value = '';
+                document.getElementById('global-fb-content').value = '';
+                setGlobalFbRating(0);
+                document.getElementById('feedback-panel').classList.remove('active');
+                document.getElementById('feedback-overlay').classList.remove('active');
+            } catch (err) {
+                showToast('网络错误，请重试', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '提交反馈';
+                if (typeof I18N !== 'undefined') submitBtn.textContent = I18N.t('feedback.submit');
+            }
+        }
+
+        // Close modal on overlay click
+        document.getElementById('auth-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeAuthModal();
+        });
+
+        // Init Lucide icons
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            // Re-apply i18n (head script may have run before DOM was ready)
+            if (typeof I18N !== 'undefined') I18N.applyAll();
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

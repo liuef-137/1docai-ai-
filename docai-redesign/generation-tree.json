@@ -1,0 +1,53 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": ["page-index", "page-analyze", "page-pricing", "page-about"],
+    "output": "partials/project-shell.html",
+    "sharedRegions": ["header", "footer", "brand-colors", "typography-system"],
+    "privateRegions": [],
+    "status": "planned",
+    "children": [
+      {
+        "nodeId": "gen-page-index",
+        "kind": "page-leaf",
+        "pageIds": ["page-index"],
+        "output": "pages/index.html",
+        "sharedRegions": ["header", "footer"],
+        "privateRegions": ["hero", "features", "how-it-works", "stats", "cta"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-analyze",
+        "kind": "page-leaf",
+        "pageIds": ["page-analyze"],
+        "output": "pages/analyze.html",
+        "sharedRegions": ["header", "footer"],
+        "privateRegions": ["upload-area", "mode-selector", "analysis-result"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-pricing",
+        "kind": "page-leaf",
+        "pageIds": ["page-pricing"],
+        "output": "pages/pricing.html",
+        "sharedRegions": ["header", "footer"],
+        "privateRegions": ["pricing-cards", "faq", "plan-comparison"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-about",
+        "kind": "page-leaf",
+        "pageIds": ["page-about"],
+        "output": "pages/about.html",
+        "sharedRegions": ["header", "footer"],
+        "privateRegions": ["team", "mission", "contact"],
+        "status": "planned",
+        "children": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocAI - 定价方案</title>
+    <style id="theme-vars">
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  
+  @theme inline {
+    --color-primary: #1B365D;
+    --color-primary-light: #2A4A7F;
+    --color-primary-dark: #0F2440;
+    --color-accent: #2D9D78;
+    --color-accent-light: #3DBF94;
+    --color-accent-dark: #1F7D5C;
+  }
+
+  @layer base {
+    body { background: #ffffff; color: #0f172a; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+
+      /* Brand tokens */
+      :root {
+        --color-primary: #1B365D;
+        --color-primary-light: #2A4A7F;
+        --color-primary-dark: #0F2440;
+        --color-primary-tint-50: #E8EDF4;
+        --color-accent: #2D9D78;
+        --color-accent-light: #3DBF94;
+        --color-accent-dark: #1F7D5C;
+        --color-accent-tint-50: #E6F5F0;
+        --color-bg: #FAFBFC;
+        --color-bg-secondary: #F1F4F8;
+        --color-surface: #FFFFFF;
+        --color-border: #D8DDE6;
+        --color-text-primary: #1A2332;
+        --color-text-secondary: #5A6677;
+        --color-text-tertiary: #8892A0;
+        --color-text-inverse: #FFFFFF;
+        --font-display: 'DM Serif Display', Georgia, 'Noto Serif SC', serif;
+        --font-body: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      body {
+        font-family: var(--font-body);
+        background: var(--color-bg);
+        color: var(--color-text-primary);
+      }
+
+      /* Pricing card hover */
+      .pricing-card {
+        transition: transform 240ms cubic-bezier(.3,0,0,1), box-shadow 240ms cubic-bezier(.3,0,0,1);
+      }
+      .pricing-card:hover {
+        transform: translateY(-2px);
+      }
+
+      /* FAQ toggle */
+      .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 320ms cubic-bezier(.3,0,0,1), opacity 240ms ease;
+        opacity: 0;
+      }
+      .faq-item.open .faq-answer {
+        max-height: 200px;
+        opacity: 1;
+      }
+      .faq-item.open .faq-chevron {
+        transform: rotate(180deg);
+      }
+      .faq-chevron {
+        transition: transform 240ms cubic-bezier(.3,0,0,1);
+      }
+
+      /* Button states */
+      .btn-primary {
+        background: var(--color-accent);
+        color: var(--color-text-inverse);
+        transition: background 160ms cubic-bezier(.2,.8,.2,1), transform 160ms cubic-bezier(.2,.8,.2,1);
+      }
+      .btn-primary:hover {
+        background: var(--color-accent-light);
+        transform: translateY(-1px);
+      }
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+
+      .btn-outline {
+        background: transparent;
+        color: var(--color-primary);
+        border: 1px solid var(--color-border);
+        transition: border-color 160ms cubic-bezier(.2,.8,.2,1), background 160ms cubic-bezier(.2,.8,.2,1);
+      }
+      .btn-outline:hover {
+        border-color: var(--color-primary);
+        background: var(--color-primary-tint-50);
+      }
+      .btn-outline:active {
+        background: var(--color-primary-tint-50);
+      }
+
+      /* Focus visible */
+      button:focus-visible, a:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+      }
+
+      /* Reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        .pricing-card, .faq-answer, .faq-chevron, .btn-primary, .btn-outline {
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      /* Comparison table */
+      .compare-table th,
+      .compare-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--color-border);
+      }
+      .compare-table thead th {
+        background: var(--color-bg-secondary);
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+      }
+      .compare-table tbody td {
+        font-size: 14px;
+        color: var(--color-text-secondary);
+      }
+      .compare-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .compare-table .feature-label {
+        color: var(--color-text-primary);
+        font-weight: 500;
+      }
+
+      /* Badge */
+      .badge-recommend {
+        background: var(--color-accent);
+        color: var(--color-text-inverse);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        line-height: 1.4;
+      }
+
+      /* Coming soon tag */
+      .tag-coming {
+        display: inline-flex;
+        align-items: center;
+        font-size: 12px;
+        color: var(--color-text-tertiary);
+        background: var(--color-bg-secondary);
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+
+      /* Nav active */
+      .nav-link {
+        color: var(--color-text-secondary);
+        transition: color 160ms cubic-bezier(.2,.8,.2,1);
+        font-size: 14px;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 6px;
+      }
+      .nav-link:hover {
+        color: var(--color-text-primary);
+        background: rgba(255,255,255,0.06);
+      }
+      .nav-link.active {
+        color: var(--color-text-inverse);
+      }
+
+      /* Feature check */
+      .feature-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 14px;
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+      }
+      .feature-check svg {
+        flex-shrink: 0;
+        color: var(--color-accent);
+        margin-top: 2px;
+      }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen antialiased">
+
+    <!-- ==================== HEADER / NAV ==================== -->
+    <header style="background: var(--color-primary-dark);">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 64px;">
+            <!-- Logo -->
+            <a href="#" style="font-family: var(--font-display); font-size: 22px; color: var(--color-text-inverse); text-decoration: none; letter-spacing: -0.02em;">DocAI</a>
+
+            <!-- Nav -->
+            <nav style="display: flex; align-items: center; gap: 4px;">
+                <a href="#" class="nav-link" data-dom-id="nav-analyze">智能分析</a>
+                <a href="#" class="nav-link" data-dom-id="nav-archive">合同档案</a>
+                <a href="#" class="nav-link" data-dom-id="nav-compare">合同对比</a>
+                <a href="#" class="nav-link active" style="pointer-events: none; cursor: default;">定价方案</a>
+                <a href="#" class="nav-link" data-dom-id="nav-about">关于</a>
+            </nav>
+
+            <!-- CTA -->
+            <a href="#" data-dom-id="cta-analyze" class="btn-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none;">
+                开始使用
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- ==================== PAGE HEADER ==================== -->
+        <section style="padding: 80px 32px 48px; text-align: center; background: var(--color-bg);">
+            <div style="max-width: 640px; margin: 0 auto;">
+                <h1 style="font-family: var(--font-display); font-size: clamp(28px, 3.5vw, 40px); color: var(--color-text-primary); line-height: 1.2; margin: 0 0 16px; text-wrap: balance; word-break: keep-all;">简单透明的定价</h1>
+                <p style="font-size: 18px; color: var(--color-text-secondary); line-height: 1.6; margin: 0;">公测期间完全免费</p>
+            </div>
+        </section>
+
+        <!-- ==================== PRICING CARDS ==================== -->
+        <section style="padding: 0 32px 80px; background: var(--color-bg);">
+            <div style="max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: stretch;">
+
+                <!-- FREE PLAN -->
+                <div class="pricing-card" style="background: var(--color-surface); border: 2px solid var(--color-accent); border-radius: 16px; padding: 32px; position: relative; box-shadow: 0 1px 2px rgba(27,54,93,0.04);">
+                    <!-- Badge -->
+                    <span class="badge-recommend" style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%);">推荐</span>
+
+                    <h3 style="font-family: var(--font-display); font-size: 22px; color: var(--color-text-primary); margin: 0 0 8px; text-align: center;">免费版</h3>
+                    <p style="font-size: 14px; color: var(--color-text-tertiary); text-align: center; margin: 0 0 24px;">公测期间</p>
+
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <span style="font-size: 40px; font-weight: 700; color: var(--color-text-primary);">¥0</span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 32px;">
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>无限次分析</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>三种分析模式</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>基础风险报告</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>中英文支持</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>本地档案存储</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>一键复制话术</span>
+                        </div>
+                    </div>
+
+                    <a href="#" data-dom-id="cta-analyze" class="btn-primary" style="display: block; text-align: center; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; width: 100%;">立即开始</a>
+                </div>
+
+                <!-- PRO PLAN -->
+                <div class="pricing-card" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 16px; padding: 32px; box-shadow: 0 1px 2px rgba(27,54,93,0.04);">
+                    <h3 style="font-family: var(--font-display); font-size: 22px; color: var(--color-text-primary); margin: 0 0 8px; text-align: center;">专业版</h3>
+                    <p style="font-size: 14px; color: var(--color-text-tertiary); text-align: center; margin: 0 0 24px;">即将推出</p>
+
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <span style="font-size: 40px; font-weight: 700; color: var(--color-text-primary);">¥99</span>
+                        <span style="font-size: 16px; color: var(--color-text-tertiary);">/月</span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 32px;">
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>免费版全部功能</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>PDF/Word报告下载</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>合同对比分析</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>企业风控偏好</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>摘要卡片生成</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>优先AI分析</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>邮件支持</span>
+                        </div>
+                    </div>
+
+                    <a href="#" class="btn-outline" style="display: block; text-align: center; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; width: 100%;">敬请期待</a>
+                </div>
+
+                <!-- ENTERPRISE PLAN -->
+                <div class="pricing-card" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 16px; padding: 32px; box-shadow: 0 1px 2px rgba(27,54,93,0.04);">
+                    <h3 style="font-family: var(--font-display); font-size: 22px; color: var(--color-text-primary); margin: 0 0 8px; text-align: center;">企业版</h3>
+                    <p style="font-size: 14px; color: var(--color-text-tertiary); text-align: center; margin: 0 0 24px;">联系我们</p>
+
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <span style="font-size: 40px; font-weight: 700; color: var(--color-text-primary);">定制</span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 32px;">
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>专业版全部功能</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>API接入</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>团队协作</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>专属客服</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>定制分析规则</span>
+                        </div>
+                        <div class="feature-check">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>私有化部署</span>
+                        </div>
+                    </div>
+
+                    <a href="#" class="btn-outline" style="display: block; text-align: center; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; width: 100%;">联系我们</a>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==================== FEATURE COMPARISON TABLE ==================== -->
+        <section style="padding: 80px 32px; background: var(--color-bg-secondary);">
+            <div style="max-width: 1120px; margin: 0 auto;">
+                <h2 style="font-family: var(--font-display); font-size: clamp(22px, 2.4vw, 30px); color: var(--color-text-primary); text-align: center; margin: 0 0 48px; text-wrap: balance; word-break: keep-all;">功能对比</h2>
+
+                <div style="background: var(--color-surface); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(27,54,93,0.04); border: 1px solid var(--color-border);">
+                    <table class="compare-table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%; text-align: left; padding-left: 24px;">功能</th>
+                                <th style="width: 20%; text-align: center;">免费版</th>
+                                <th style="width: 20%; text-align: center;">专业版</th>
+                                <th style="width: 20%; text-align: center;">企业版</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">无限次分析</td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">三种分析模式</td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">基础风险报告</td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">中英文支持</td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">本地档案存储</td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">一键复制话术</td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">PDF/Word报告下载</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">合同对比分析</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">风控偏好配置</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">摘要卡片生成</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">优先AI分析</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">邮件支持</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">API接入</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">团队协作</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">专属客服</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">定制分析规则</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-label" style="padding-left: 24px;">私有化部署</td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-text-tertiary);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </td>
+                                <td style="text-align: center; color: var(--color-accent);">
+                                    <svg style="display: inline-block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== FAQ ==================== -->
+        <section style="padding: 80px 32px; background: var(--color-bg);">
+            <div style="max-width: 760px; margin: 0 auto;">
+                <h2 style="font-family: var(--font-display); font-size: clamp(22px, 2.4vw, 30px); color: var(--color-text-primary); text-align: center; margin: 0 0 48px; text-wrap: balance; word-break: keep-all;">常见问题</h2>
+
+                <div style="display: flex; flex-direction: column; gap: 0; border: 1px solid var(--color-border); border-radius: 16px; overflow: hidden; background: var(--color-surface); box-shadow: 0 1px 2px rgba(27,54,93,0.04);">
+
+                    <!-- FAQ 1 -->
+                    <div class="faq-item open" style="border-bottom: 1px solid var(--color-border);">
+                        <button onclick="this.parentElement.classList.toggle('open')" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 18px 24px; background: none; border: none; cursor: pointer; text-align: left; font-size: 15px; font-weight: 500; color: var(--color-text-primary); font-family: var(--font-body); line-height: 1.5;">
+                            公测结束后免费版还能用吗？
+                            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="faq-answer" style="padding: 0 24px 18px;">
+                            <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary); line-height: 1.6;">免费版保留基础功能，付费版提供高级功能。</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 2 -->
+                    <div class="faq-item" style="border-bottom: 1px solid var(--color-border);">
+                        <button onclick="this.parentElement.classList.toggle('open')" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 18px 24px; background: none; border: none; cursor: pointer; text-align: left; font-size: 15px; font-weight: 500; color: var(--color-text-primary); font-family: var(--font-body); line-height: 1.5;">
+                            企业风控偏好是什么？
+                            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="faq-answer" style="padding: 0 24px 18px;">
+                            <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary); line-height: 1.6;">设定你的合同红线，AI针对性分析，越用越精准。</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 3 -->
+                    <div class="faq-item" style="border-bottom: 1px solid var(--color-border);">
+                        <button onclick="this.parentElement.classList.toggle('open')" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 18px 24px; background: none; border: none; cursor: pointer; text-align: left; font-size: 15px; font-weight: 500; color: var(--color-text-primary); font-family: var(--font-body); line-height: 1.5;">
+                            合同对比分析支持哪些格式？
+                            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="faq-answer" style="padding: 0 24px 18px;">
+                            <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary); line-height: 1.6;">支持 PDF、Word、TXT 格式合同的逐条对比。</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 4 -->
+                    <div class="faq-item" style="border-bottom: 1px solid var(--color-border);">
+                        <button onclick="this.parentElement.classList.toggle('open')" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 18px 24px; background: none; border: none; cursor: pointer; text-align: left; font-size: 15px; font-weight: 500; color: var(--color-text-primary); font-family: var(--font-body); line-height: 1.5;">
+                            数据安全有保障吗？
+                            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="faq-answer" style="padding: 0 24px 18px;">
+                            <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary); line-height: 1.6;">加密存储，分析后自动删除，不用于其他用途。</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 5 -->
+                    <div class="faq-item">
+                        <button onclick="this.parentElement.classList.toggle('open')" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 18px 24px; background: none; border: none; cursor: pointer; text-align: left; font-size: 15px; font-weight: 500; color: var(--color-text-primary); font-family: var(--font-body); line-height: 1.5;">
+                            可以按年付费吗？
+                            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="faq-answer" style="padding: 0 24px 18px;">
+                            <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary); line-height: 1.6;">公测结束后将推出年付方案，享受 8 折优惠。</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer style="background: var(--color-primary-dark); color: var(--color-text-inverse); padding: 48px 32px;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px;">
+
+                <!-- Brand column -->
+                <div>
+                    <h4 style="font-family: var(--font-display); font-size: 20px; margin: 0 0 12px;">DocAI</h4>
+                    <p style="font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.6; margin: 0;">智能合同分析平台，让法律审查更高效。</p>
+                </div>
+
+                <!-- Product -->
+                <div>
+                    <h5 style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); margin: 0 0 16px;">产品</h5>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+                        <li><a href="#" data-dom-id="nav-analyze" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">智能分析</a></li>
+                        <li><a href="#" data-dom-id="nav-archive" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">合同档案</a></li>
+                        <li><a href="#" data-dom-id="nav-compare" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">合同对比</a></li>
+                    </ul>
+                </div>
+
+                <!-- Pricing -->
+                <div>
+                    <h5 style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); margin: 0 0 16px;">定价</h5>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+                        <li><a href="#" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">免费版</a></li>
+                        <li><a href="#" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">专业版</a></li>
+                        <li><a href="#" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">企业版</a></li>
+                    </ul>
+                </div>
+
+                <!-- Company -->
+                <div>
+                    <h5 style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); margin: 0 0 16px;">公司</h5>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+                        <li><a href="#" data-dom-id="nav-about" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">关于我们</a></li>
+                        <li><a href="#" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">联系方式</a></li>
+                    </ul>
+                </div>
+
+                <!-- Legal -->
+                <div>
+                    <h5 style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); margin: 0 0 16px;">法律</h5>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+                        <li><a href="#" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">隐私政策</a></li>
+                        <li><a href="#" style="font-size: 14px; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 160ms;">服务条款</a></li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <!-- Copyright -->
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px;">
+                <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,0.4);">&copy; 2025 DocAI. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

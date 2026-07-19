@@ -1,0 +1,619 @@
+{% extends "base.html" %}
+{% block title %}DocAI - Admin{% endblock %}
+
+{% block content %}
+<section class="py-8 lg:py-12" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+
+        <div class="flex items-center justify-between mb-8">
+            <h1 class="text-2xl md:text-3xl font-bold tracking-tight" style="font-family: var(--font-display); color: var(--color-primary);" data-i18n="admin.title">管理后台</h1>
+            <button onclick="loadAllData()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style="background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); cursor: pointer;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                <span data-i18n="admin.refresh">刷新数据</span>
+            </button>
+        </div>
+
+        <!-- Stats Cards Row 1 -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-primary-tint-50);"><i data-lucide="users" class="w-5 h-5" style="color: var(--color-primary);"></i></div>
+                    <span class="text-sm font-medium" style="color: var(--color-text-tertiary);" data-i18n="admin.total_users">总用户数</span>
+                </div>
+                <div id="stat-users" class="text-3xl font-bold" style="color: var(--color-primary); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-accent-tint-50);"><i data-lucide="file-search" class="w-5 h-5" style="color: var(--color-accent);"></i></div>
+                    <span class="text-sm font-medium" style="color: var(--color-text-tertiary);" data-i18n="admin.total_analyses">总分析数</span>
+                </div>
+                <div id="stat-analyses" class="text-3xl font-bold" style="color: var(--color-accent); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(58,123,213,0.1);"><i data-lucide="message-square" class="w-5 h-5" style="color: var(--state-info);"></i></div>
+                    <span class="text-sm font-medium" style="color: var(--color-text-tertiary);" data-i18n="admin.total_feedback">总反馈数</span>
+                </div>
+                <div id="stat-feedback" class="text-3xl font-bold" style="color: var(--state-info); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(232,163,61,0.1);"><i data-lucide="star" class="w-5 h-5" style="color: var(--state-warning);"></i></div>
+                    <span class="text-sm font-medium" style="color: var(--color-text-tertiary);" data-i18n="admin.avg_rating">平均评分</span>
+                </div>
+                <div class="flex items-baseline gap-1">
+                    <span id="stat-rating" class="text-3xl font-bold" style="color: var(--state-warning); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</span>
+                    <span class="text-sm" style="color: var(--color-text-tertiary);">/ 5</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards Row 2: NPS + Today + Risk + Satisfaction -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-10">
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(45,157,120,0.1);"><i data-lucide="trending-up" class="w-5 h-5" style="color: var(--color-accent);"></i></div>
+                    <span class="text-sm font-medium" style="color: var(--color-text-tertiary);" data-i18n="admin.nps">NPS 净推荐值</span>
+                </div>
+                <div id="stat-nps" class="text-3xl font-bold" style="color: var(--color-accent); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(58,123,213,0.1);"><i data-lucide="activity" class="w-5 h-5" style="color: var(--state-info);"></i></div>
+                    <span class="text-sm font-medium" style="color: var(--color-text-tertiary);" data-i18n="admin.today_analyses">今日分析</span>
+                </div>
+                <div id="stat-today" class="text-3xl font-bold" style="color: var(--state-info); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(232,163,61,0.1);"><i data-lucide="pie-chart" class="w-5 h-5" style="color: var(--state-warning);"></i></div>
+                    <span class="text-sm font-medium" style="color: var(--color-text-tertiary);" data-i18n="admin.risk_dist">风险分布</span>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span id="risk-high" class="text-sm font-bold" style="color: var(--risk-high);">--</span>
+                    <span class="text-xs" style="color: var(--color-text-tertiary);" data-i18n="admin.risk_high">高</span>
+                    <span id="risk-medium" class="text-sm font-bold ml-2" style="color: var(--risk-medium);">--</span>
+                    <span class="text-xs" style="color: var(--color-text-tertiary);" data-i18n="admin.risk_medium">中</span>
+                    <span id="risk-low" class="text-sm font-bold ml-2" style="color: var(--risk-low);">--</span>
+                    <span class="text-xs" style="color: var(--color-text-tertiary);" data-i18n="admin.risk_low">低</span>
+                </div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(45,157,120,0.1);"><i data-lucide="check-circle" class="w-5 h-5" style="color: var(--color-accent);"></i></div>
+                    <span class="text-sm font-medium" style="color: var(--color-text-tertiary);" data-i18n="admin.resolved">已解决</span>
+                </div>
+                <div id="stat-resolved" class="text-3xl font-bold" style="color: var(--color-accent); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h3 class="text-sm font-semibold mb-4" style="color: var(--color-text-secondary);" data-i18n="admin.chart_feedback_trend">7日反馈趋势</h3>
+                <canvas id="chart-feedback-trend" height="200" style="width:100%;max-height:220px;"></canvas>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h3 class="text-sm font-semibold mb-4" style="color: var(--color-text-secondary);" data-i18n="admin.chart_analysis_trend">7日分析趋势</h3>
+                <canvas id="chart-analysis-trend" height="200" style="width:100%;max-height:220px;"></canvas>
+            </div>
+        </div>
+
+        <!-- Charts Row 2: Distributions -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h3 class="text-sm font-semibold mb-4" style="color: var(--color-text-secondary);" data-i18n="admin.chart_type_dist">反馈类型分布</h3>
+                <div id="dist-feedback-type" class="space-y-3"></div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h3 class="text-sm font-semibold mb-4" style="color: var(--color-text-secondary);" data-i18n="admin.chart_rating_dist">评分分布</h3>
+                <div id="dist-rating" class="space-y-2"></div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h3 class="text-sm font-semibold mb-4" style="color: var(--color-text-secondary);" data-i18n="admin.chart_status_dist">状态分布</h3>
+                <div id="dist-status" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex border-b mb-6" style="border-color: var(--color-border);">
+            <button onclick="switchTab('users')" id="tab-btn-users" class="admin-tab-btn px-5 py-3 text-sm font-medium" style="border: none; background: none; cursor: pointer; color: var(--color-primary); border-bottom: 2px solid var(--color-primary);" data-i18n="admin.tab_users">用户管理</button>
+            <button onclick="switchTab('analyses')" id="tab-btn-analyses" class="admin-tab-btn px-5 py-3 text-sm font-medium" style="border: none; background: none; cursor: pointer; color: var(--color-text-tertiary); border-bottom: 2px solid transparent;" data-i18n="admin.tab_analyses">分析记录</button>
+            <button onclick="switchTab('feedback')" id="tab-btn-feedback" class="admin-tab-btn px-5 py-3 text-sm font-medium" style="border: none; background: none; cursor: pointer; color: var(--color-text-tertiary); border-bottom: 2px solid transparent;" data-i18n="admin.tab_feedback">反馈管理</button>
+        </div>
+
+        <!-- Tab: Users -->
+        <div id="tab-users" class="admin-tab-panel">
+            <div class="border rounded-xl overflow-hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" style="border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--color-bg-secondary);">
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_username">用户名</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_email">邮箱</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_role">角色</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_analyses">分析次数</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_date">注册时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody">
+                            <tr><td colspan="5" class="text-center py-8" style="color: var(--color-text-tertiary);">...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Analyses -->
+        <div id="tab-analyses" class="admin-tab-panel" style="display:none;">
+            <div class="border rounded-xl overflow-hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" style="border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--color-bg-secondary);">
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.col_user">用户</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.col_filename">文件名</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.col_mode">模式</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.col_score">评分</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.col_risk">风险</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.col_time">时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analyses-tbody">
+                            <tr><td colspan="6" class="text-center py-8" style="color: var(--color-text-tertiary);">...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Feedback -->
+        <div id="tab-feedback" class="admin-tab-panel" style="display:none;">
+            <!-- Filter bar -->
+            <div class="flex items-center gap-3 mb-4 flex-wrap">
+                <select id="fb-filter-type" onchange="loadFeedbackList()" class="px-3 py-2 rounded-lg text-sm" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary);">
+                    <option value="" data-i18n="admin.filter_all_types">所有类型</option>
+                    <option value="bug" data-i18n="admin.type_bug">Bug</option>
+                    <option value="feature" data-i18n="admin.type_feature">功能建议</option>
+                    <option value="improvement" data-i18n="admin.type_improvement">改进建议</option>
+                    <option value="praise" data-i18n="admin.type_praise">表扬</option>
+                </select>
+                <select id="fb-filter-status" onchange="loadFeedbackList()" class="px-3 py-2 rounded-lg text-sm" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary);">
+                    <option value="" data-i18n="admin.filter_all_status">所有状态</option>
+                    <option value="pending" data-i18n="admin.status_pending">待处理</option>
+                    <option value="reviewing" data-i18n="admin.status_reviewing">处理中</option>
+                    <option value="resolved" data-i18n="admin.status_resolved">已解决</option>
+                    <option value="dismissed" data-i18n="admin.status_dismissed">已忽略</option>
+                </select>
+            </div>
+            <div class="border rounded-xl overflow-hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" style="border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--color-bg-secondary);">
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;">ID</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.fb_col_user">用户</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.fb_col_title">标题</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.fb_col_type">类型</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.fb_col_rating">评分</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.fb_col_status">状态</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.fb_col_time">时间</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.fb_col_actions">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedback-tbody">
+                            <tr><td colspan="8" class="text-center py-8" style="color: var(--color-text-tertiary);">...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Feedback Detail Modal -->
+<div id="fb-detail-modal" class="modal-overlay">
+    <div class="modal-content" style="width: 560px; max-width: 95vw; padding: 32px;">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold" style="color: var(--color-primary);" data-i18n="admin.fb_detail_title">反馈详情</h3>
+            <button onclick="document.getElementById('fb-detail-modal').classList.remove('active')" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);font-size:20px;">&times;</button>
+        </div>
+        <div id="fb-detail-body"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    // ---- Tabs ----
+    window.switchTab = function(tabName) {
+        document.querySelectorAll('.admin-tab-panel').forEach(p => p.style.display = 'none');
+        document.querySelectorAll('.admin-tab-btn').forEach(b => {
+            b.style.color = 'var(--color-text-tertiary)';
+            b.style.borderBottom = '2px solid transparent';
+        });
+        var panel = document.getElementById('tab-' + tabName);
+        var btn = document.getElementById('tab-btn-' + tabName);
+        if (panel) panel.style.display = 'block';
+        if (btn) { btn.style.color = 'var(--color-primary)'; btn.style.borderBottom = '2px solid var(--color-primary)'; }
+
+        if (tabName === 'feedback') loadFeedbackList();
+    };
+
+    // ---- Load All ----
+    window.loadAllData = function() {
+        loadStats();
+        loadUsers();
+        loadAnalyses();
+    };
+
+    // ---- Stats ----
+    var statsData = null;
+    function loadStats() {
+        apiFetch('/api/admin/stats').then(function(r) {
+            if (!r.ok) return r.json().then(function(d) { showToast(d.error || 'Load stats failed', 'error'); });
+            return r.json();
+        }).then(function(data) {
+            if (!data) return;
+            statsData = data;
+            document.getElementById('stat-users').textContent = data.total_users || 0;
+            document.getElementById('stat-analyses').textContent = data.total_analyses || 0;
+            document.getElementById('stat-feedback').textContent = data.total_feedback || 0;
+            document.getElementById('stat-rating').textContent = data.avg_rating || '0.0';
+            document.getElementById('stat-nps').textContent = data.nps || 0;
+            document.getElementById('stat-today').textContent = data.today_analyses || 0;
+            var rd = data.risk_distribution || {};
+            document.getElementById('risk-high').textContent = rd.high || 0;
+            document.getElementById('risk-medium').textContent = rd.medium || 0;
+            document.getElementById('risk-low').textContent = rd.low || 0;
+            var sd = data.feedback_status_dist || {};
+            document.getElementById('stat-resolved').textContent = sd.resolved || 0;
+
+            renderFeedbackTrendChart(data.daily_feedback_trend || []);
+            renderAnalysisTrendChart(data.daily_analysis_trend || []);
+            renderDistributionBars('dist-feedback-type', data.feedback_type_dist || {}, {
+                bug: { label: 'Bug', color: 'var(--state-error)' },
+                feature: { label: 'Feature', color: 'var(--state-info)' },
+                improvement: { label: 'Improve', color: 'var(--state-warning)' },
+                praise: { label: 'Praise', color: 'var(--state-success)' }
+            });
+            renderRatingDist(data.feedback_rating_dist || {});
+            renderStatusDist(data.feedback_status_dist || {});
+        }).catch(function() { showToast('Failed to load stats', 'error'); });
+    }
+
+    // ---- Canvas Bar Chart ----
+    function drawBarChart(canvasId, labels, values, color) {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        var rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, rect.width, rect.height);
+
+        var padding = { top: 10, right: 20, bottom: 30, left: 40 };
+        var chartW = rect.width - padding.left - padding.right;
+        var chartH = rect.height - padding.top - padding.bottom;
+        var maxVal = Math.max.apply(null, values.concat([1]));
+        var barW = Math.min(chartW / labels.length * 0.6, 40);
+        var gap = chartW / labels.length;
+
+        // Y axis
+        ctx.strokeStyle = '#E8ECF1';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#8892A0';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        for (var i = 0; i <= 4; i++) {
+            var y = padding.top + chartH - (chartH / 4) * i;
+            var val = Math.round(maxVal / 4 * i);
+            ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(rect.width - padding.right, y); ctx.stroke();
+            ctx.fillText(val, padding.left - 8, y + 4);
+        }
+
+        // Bars
+        ctx.textAlign = 'center';
+        var computedColor = color || '#2D9D78';
+        for (var j = 0; j < labels.length; j++) {
+            var barH = (values[j] / maxVal) * chartH;
+            var x = padding.left + gap * j + gap / 2 - barW / 2;
+            var y = padding.top + chartH - barH;
+
+            // Bar gradient
+            var grad = ctx.createLinearGradient(x, y, x, y + barH);
+            grad.addColorStop(0, computedColor);
+            grad.addColorStop(1, computedColor + '66');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            roundRect(ctx, x, y, barW, barH, 4);
+            ctx.fill();
+
+            // Value on top
+            if (values[j] > 0) {
+                ctx.fillStyle = '#1A2332';
+                ctx.font = 'bold 11px Inter, sans-serif';
+                ctx.fillText(values[j], x + barW / 2, y - 4);
+            }
+
+            // Label
+            ctx.fillStyle = '#8892A0';
+            ctx.font = '11px Inter, sans-serif';
+            var lbl = labels[j];
+            ctx.fillText(lbl.length > 5 ? lbl.slice(5) : lbl, x + barW / 2, rect.height - 8);
+        }
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+        r = Math.min(r, Math.abs(w)/2, Math.abs(h)/2);
+        if (h < 1) h = 1;
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h);
+        ctx.lineTo(x, y + h);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+    }
+
+    function renderFeedbackTrendChart(trend) {
+        var labels = trend.map(function(d) { return d.date; });
+        var values = trend.map(function(d) { return d.count; });
+        drawBarChart('chart-feedback-trend', labels, values, '#3A7BD5');
+    }
+
+    function renderAnalysisTrendChart(trend) {
+        var labels = trend.map(function(d) { return d.date; });
+        var values = trend.map(function(d) { return d.count; });
+        drawBarChart('chart-analysis-trend', labels, values, '#2D9D78');
+    }
+
+    // ---- Distribution bars ----
+    function renderDistributionBars(containerId, dist, mapping) {
+        var el = document.getElementById(containerId);
+        if (!el) return;
+        el.innerHTML = '';
+        var total = 0;
+        for (var k in dist) total += dist[k];
+        if (total === 0) { el.innerHTML = '<div class="text-center py-4" style="color:var(--color-text-tertiary);font-size:13px;">No data</div>'; return; }
+        for (var key in dist) {
+            var m = mapping[key] || { label: key, color: 'var(--color-text-tertiary)' };
+            var pct = Math.round(dist[key] / total * 100);
+            var row = document.createElement('div');
+            row.innerHTML =
+                '<div class="flex items-center justify-between mb-1">' +
+                    '<span class="text-xs font-medium" style="color:var(--color-text-primary);">' + m.label + '</span>' +
+                    '<span class="text-xs" style="color:var(--color-text-tertiary);">' + dist[key] + ' (' + pct + '%)</span>' +
+                '</div>' +
+                '<div style="height:8px;background:var(--color-bg-tertiary);border-radius:4px;overflow:hidden;">' +
+                    '<div style="height:100%;width:' + pct + '%;background:' + m.color + ';border-radius:4px;transition:width 500ms ease;"></div>' +
+                '</div>';
+            el.appendChild(row);
+        }
+    }
+
+    function renderRatingDist(dist) {
+        var el = document.getElementById('dist-rating');
+        if (!el) return;
+        el.innerHTML = '';
+        var total = 0;
+        for (var k in dist) total += dist[k];
+        if (total === 0) { el.innerHTML = '<div class="text-center py-4" style="color:var(--color-text-tertiary);font-size:13px;">No data</div>'; return; }
+        var colors = { '1': '#D45050', '2': '#E8A33D', '3': '#E8A33D', '4': '#2D9D78', '5': '#2D9D78' };
+        for (var i = 5; i >= 1; i--) {
+            var c = dist[String(i)] || 0;
+            var pct = Math.round(c / total * 100);
+            var color = colors[String(i)] || 'var(--color-text-tertiary)';
+            var row = document.createElement('div');
+            row.innerHTML =
+                '<div class="flex items-center justify-between mb-1">' +
+                    '<span class="text-xs font-medium" style="color:var(--color-text-primary);">' + i + ' ★</span>' +
+                    '<span class="text-xs" style="color:var(--color-text-tertiary);">' + c + '</span>' +
+                '</div>' +
+                '<div style="height:8px;background:var(--color-bg-tertiary);border-radius:4px;overflow:hidden;">' +
+                    '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:4px;transition:width 500ms ease;"></div>' +
+                '</div>';
+            el.appendChild(row);
+        }
+    }
+
+    function renderStatusDist(dist) {
+        var el = document.getElementById('dist-status');
+        if (!el) return;
+        el.innerHTML = '';
+        var mapping = {
+            pending: { label: 'Pending', color: 'var(--state-warning)' },
+            reviewing: { label: 'Reviewing', color: 'var(--state-info)' },
+            resolved: { label: 'Resolved', color: 'var(--state-success)' },
+            dismissed: { label: 'Dismissed', color: 'var(--color-text-tertiary)' }
+        };
+        renderDistributionBars('dist-status', dist, mapping);
+    }
+
+    // ---- Users Table ----
+    function loadUsers() {
+        apiFetch('/api/admin/users?per_page=50').then(function(r) {
+            if (!r.ok) return;
+            return r.json();
+        }).then(function(data) {
+            var tbody = document.getElementById('users-tbody');
+            tbody.innerHTML = '';
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8" style="color:var(--color-text-tertiary);">No users</td></tr>';
+                return;
+            }
+            data.items.forEach(function(u) {
+                var tr = document.createElement('tr');
+                tr.style.borderTop = '1px solid var(--color-border-light)';
+                var roleColor = u.role === 'admin' ? 'var(--color-accent)' : 'var(--color-text-tertiary)';
+                tr.innerHTML =
+                    '<td class="px-5 py-4 font-medium" style="color:var(--color-text-primary);">' + escapeHtml(u.username) + '</td>' +
+                    '<td class="px-5 py-4" style="color:var(--color-text-secondary);">' + escapeHtml(u.email) + '</td>' +
+                    '<td class="px-5 py-4 text-center"><span class="text-xs font-medium px-2 py-1 rounded-md" style="color:' + roleColor + ';background:' + roleColor + '14;">' + (u.role === 'admin' ? 'Admin' : 'User') + '</span></td>' +
+                    '<td class="px-5 py-4 text-center" style="color:var(--color-text-primary);font-variant-numeric:tabular-nums;">' + (u.analysis_count || 0) + '</td>' +
+                    '<td class="px-5 py-4" style="color:var(--color-text-tertiary);">' + (u.created_at ? new Date(u.created_at).toLocaleDateString() : '-') + '</td>';
+                tbody.appendChild(tr);
+            });
+        }).catch(function() {});
+    }
+
+    // ---- Analyses Table ----
+    function loadAnalyses() {
+        apiFetch('/api/admin/analyses?per_page=20').then(function(r) {
+            if (!r.ok) return;
+            return r.json();
+        }).then(function(data) {
+            var tbody = document.getElementById('analyses-tbody');
+            tbody.innerHTML = '';
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8" style="color:var(--color-text-tertiary);">No analyses</td></tr>';
+                return;
+            }
+            data.items.forEach(function(a) {
+                var tr = document.createElement('tr');
+                tr.style.borderTop = '1px solid var(--color-border-light)';
+                var scoreColor = a.score != null ? (a.score >= 80 ? 'var(--risk-low)' : a.score >= 60 ? 'var(--risk-medium)' : 'var(--risk-high)') : 'var(--color-text-tertiary)';
+                var rl = a.risk_level || 'low';
+                var riskColors = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
+                var rc = riskColors[rl] || 'var(--color-text-tertiary)';
+                var modeLabels = { risk: 'Risk', summary: 'Summary', plain: 'Plain' };
+                tr.innerHTML =
+                    '<td class="px-5 py-4" style="color:var(--color-text-primary);">' + (a.user_id || '-') + '</td>' +
+                    '<td class="px-5 py-4" style="color:var(--color-text-primary);">' + escapeHtml(a.filename || 'Pasted') + '</td>' +
+                    '<td class="px-5 py-4 text-center text-xs" style="color:var(--color-text-secondary);">' + (modeLabels[a.analysis_mode] || a.analysis_mode) + '</td>' +
+                    '<td class="px-5 py-4 text-center" style="color:' + scoreColor + ';font-variant-numeric:tabular-nums;font-weight:600;">' + (a.score != null ? a.score : '--') + '</td>' +
+                    '<td class="px-5 py-4 text-center"><span class="text-xs font-medium px-2 py-1 rounded-md" style="color:' + rc + ';background:' + rc + '14;">' + rl + '</span></td>' +
+                    '<td class="px-5 py-4" style="color:var(--color-text-tertiary);">' + (a.created_at ? new Date(a.created_at).toLocaleString() : '-') + '</td>';
+                tbody.appendChild(tr);
+            });
+        }).catch(function() {});
+    }
+
+    // ---- Feedback Table ----
+    window.loadFeedbackList = function() {
+        var typeVal = document.getElementById('fb-filter-type').value;
+        var statusVal = document.getElementById('fb-filter-status').value;
+        var url = '/api/admin/feedback?per_page=50';
+        if (typeVal) url += '&type=' + encodeURIComponent(typeVal);
+        if (statusVal) url += '&status=' + encodeURIComponent(statusVal);
+
+        apiFetch(url).then(function(r) {
+            if (!r.ok) return r.json().then(function(d) { showToast(d.error || 'Failed', 'error'); });
+            return r.json();
+        }).then(function(data) {
+            if (!data) return;
+            var tbody = document.getElementById('feedback-tbody');
+            tbody.innerHTML = '';
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8" style="color:var(--color-text-tertiary);">No feedback</td></tr>';
+                return;
+            }
+            var typeLabels = { bug: 'Bug', feature: 'Feature', improvement: 'Improve', praise: 'Praise' };
+            var typeColors = { bug: 'var(--state-error)', feature: 'var(--state-info)', improvement: 'var(--state-warning)', praise: 'var(--state-success)' };
+            var statusLabels = { pending: 'Pending', reviewing: 'Reviewing', resolved: 'Resolved', dismissed: 'Dismissed' };
+            var statusColors = { pending: 'var(--state-warning)', reviewing: 'var(--state-info)', resolved: 'var(--state-success)', dismissed: 'var(--color-text-tertiary)' };
+
+            data.items.forEach(function(f) {
+                var tr = document.createElement('tr');
+                tr.style.borderTop = '1px solid var(--color-border-light)';
+                var tc = typeColors[f.feedback_type] || 'var(--color-text-tertiary)';
+                var sc = statusColors[f.status] || 'var(--color-text-tertiary)';
+                var stars = f.rating ? '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating) : '-';
+                tr.innerHTML =
+                    '<td class="px-5 py-4" style="color:var(--color-text-tertiary);font-variant-numeric:tabular-nums;">' + f.id + '</td>' +
+                    '<td class="px-5 py-4 font-medium" style="color:var(--color-text-primary);">' + escapeHtml(f.username || '-') + '</td>' +
+                    '<td class="px-5 py-4" style="color:var(--color-text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHtml(f.title) + '">' + escapeHtml(f.title) + '</td>' +
+                    '<td class="px-5 py-4 text-center"><span class="text-xs font-medium px-2 py-1 rounded-md" style="color:' + tc + ';background:' + tc + '14;">' + (typeLabels[f.feedback_type] || f.feedback_type) + '</span></td>' +
+                    '<td class="px-5 py-4 text-center" style="color:var(--state-warning);font-size:12px;">' + stars + '</td>' +
+                    '<td class="px-5 py-4 text-center"><span class="text-xs font-medium px-2 py-1 rounded-md" style="color:' + sc + ';background:' + sc + '14;">' + (statusLabels[f.status] || f.status) + '</span></td>' +
+                    '<td class="px-5 py-4" style="color:var(--color-text-tertiary);font-size:12px;">' + (f.created_at ? new Date(f.created_at).toLocaleString() : '-') + '</td>' +
+                    '<td class="px-5 py-4 text-center">' +
+                        '<button onclick="viewFeedbackDetail(' + f.id + ')" class="text-xs px-2 py-1 rounded" style="color:var(--state-info);background:var(--state-info)10;border:none;cursor:pointer;">View</button> ' +
+                        '<button onclick="deleteFeedback(' + f.id + ')" class="text-xs px-2 py-1 rounded" style="color:var(--state-error);background:var(--state-error)10;border:none;cursor:pointer;">Del</button>' +
+                    '</td>';
+                tbody.appendChild(tr);
+            });
+        }).catch(function() {});
+    };
+
+    // ---- Feedback Detail ----
+    window.viewFeedbackDetail = function(fbId) {
+        apiFetch('/api/feedback/' + fbId).then(function(r) {
+            if (!r.ok) return;
+            return r.json();
+        }).then(function(f) {
+            if (!f) return;
+            var body = document.getElementById('fb-detail-body');
+            var typeLabels = { bug: 'Bug', feature: 'Feature', improvement: 'Improvement', praise: 'Praise' };
+            var statusLabels = { pending: 'Pending', reviewing: 'Reviewing', resolved: 'Resolved', dismissed: 'Dismissed' };
+            var stars = f.rating ? '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating) : 'N/A';
+            body.innerHTML =
+                '<div class="space-y-4">' +
+                    '<div><span class="text-xs font-medium" style="color:var(--color-text-tertiary);">Type:</span> <span class="text-sm font-medium">' + (typeLabels[f.feedback_type] || f.feedback_type) + '</span> &nbsp; <span class="text-xs font-medium" style="color:var(--color-text-tertiary);">Status:</span> <span class="text-sm font-medium">' + (statusLabels[f.status] || f.status) + '</span> &nbsp; <span class="text-xs" style="color:var(--state-warning);">' + stars + '</span></div>' +
+                    '<div><span class="text-xs font-medium" style="color:var(--color-text-tertiary);">Module:</span> <span class="text-sm">' + escapeHtml(f.category || 'N/A') + '</span></div>' +
+                    '<div><span class="text-xs font-medium" style="color:var(--color-text-tertiary);">Title:</span></div><div class="text-sm font-semibold" style="color:var(--color-text-primary);">' + escapeHtml(f.title) + '</div>' +
+                    '<div><span class="text-xs font-medium" style="color:var(--color-text-tertiary);">Content:</span></div><div class="text-sm" style="color:var(--color-text-secondary);white-space:pre-wrap;">' + escapeHtml(f.content) + '</div>' +
+                    (f.admin_reply ? '<div><span class="text-xs font-medium" style="color:var(--color-text-tertiary);">Admin Reply:</span></div><div class="text-sm p-3 rounded-lg" style="background:var(--color-bg-secondary);color:var(--color-text-secondary);white-space:pre-wrap;">' + escapeHtml(f.admin_reply) + '</div>' : '') +
+                    '<div class="mt-4">' +
+                        '<label class="text-xs font-medium" style="color:var(--color-text-tertiary);">Reply:</label>' +
+                        '<textarea id="fb-reply-text" rows="3" class="w-full mt-1 px-3 py-2 rounded-lg text-sm" style="background:var(--color-bg-secondary);border:1px solid var(--color-border);color:var(--color-text-primary);resize:vertical;">' + escapeHtml(f.admin_reply || '') + '</textarea>' +
+                        '<div class="flex gap-2 mt-2">' +
+                            '<select id="fb-status-select" class="px-3 py-2 rounded-lg text-sm" style="background:var(--color-surface);border:1px solid var(--color-border);color:var(--color-text-primary);">' +
+                                '<option value="pending"' + (f.status === 'pending' ? ' selected' : '') + '>Pending</option>' +
+                                '<option value="reviewing"' + (f.status === 'reviewing' ? ' selected' : '') + '>Reviewing</option>' +
+                                '<option value="resolved"' + (f.status === 'resolved' ? ' selected' : '') + '>Resolved</option>' +
+                                '<option value="dismissed"' + (f.status === 'dismissed' ? ' selected' : '') + '>Dismissed</option>' +
+                            '</select>' +
+                            '<button onclick="updateFeedback(' + f.id + ')" class="px-4 py-2 rounded-lg text-sm font-medium" style="background:var(--color-accent);color:var(--color-text-inverse);border:none;cursor:pointer;">Save</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            document.getElementById('fb-detail-modal').classList.add('active');
+        });
+    };
+
+    window.updateFeedback = function(fbId) {
+        var reply = document.getElementById('fb-reply-text').value;
+        var status = document.getElementById('fb-status-select').value;
+        apiFetch('/api/feedback/' + fbId, {
+            method: 'PUT',
+            body: JSON.stringify({ admin_reply: reply, status: status })
+        }).then(function(r) {
+            if (!r.ok) return r.json().then(function(d) { showToast(d.error || 'Update failed', 'error'); });
+            return r.json();
+        }).then(function() {
+            showToast('Updated', 'success');
+            document.getElementById('fb-detail-modal').classList.remove('active');
+            loadFeedbackList();
+            loadStats();
+        });
+    };
+
+    window.deleteFeedback = function(fbId) {
+        if (!confirm('Delete this feedback?')) return;
+        apiFetch('/api/feedback/' + fbId, { method: 'DELETE' }).then(function(r) {
+            if (!r.ok) return r.json().then(function(d) { showToast(d.error || 'Delete failed', 'error'); });
+            return r.json();
+        }).then(function() {
+            showToast('Deleted', 'success');
+            loadFeedbackList();
+            loadStats();
+        });
+    };
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Init
+    loadAllData();
+})();
+</script>
+{% endblock %}
