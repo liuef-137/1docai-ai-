@@ -71,7 +71,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 0,
-        "y": 377,
+        "y": 800,
         "group": 0
       },
       "devMetadata": {
@@ -97,7 +97,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 0,
-        "y": 1885,
+        "y": 3817,
         "group": 0
       },
       "devMetadata": {
@@ -119,7 +119,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 0,
-        "y": 754,
+        "y": 1480,
         "group": 1
       },
       "devMetadata": {
@@ -165,7 +165,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 620,
-        "y": 754,
+        "y": 1480,
         "group": 1
       },
       "devMetadata": {
@@ -202,7 +202,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 620,
-        "y": 1885,
+        "y": 3817,
         "group": 1
       },
       "devMetadata": {
@@ -239,7 +239,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 1240,
-        "y": 1885,
+        "y": 3817,
         "group": 1
       },
       "devMetadata": {
@@ -276,7 +276,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 0,
-        "y": 1508,
+        "y": 2813,
         "group": 1
       },
       "devMetadata": {
@@ -317,7 +317,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 0,
-        "y": 1131,
+        "y": 1857,
         "group": 1
       },
       "devMetadata": {
@@ -358,7 +358,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 0,
-        "y": 2262
+        "y": 9972
       },
       "devMetadata": {
         "imageSrc": "assets/hero-analysis.png"
@@ -372,7 +372,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 620,
-        "y": 2262
+        "y": 9972
       },
       "devMetadata": {
         "imageSrc": "assets/hero-v2.png"
@@ -386,7 +386,7 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 1240,
-        "y": 2262
+        "y": 9972
       },
       "devMetadata": {
         "imageSrc": "assets/hero-compare.png"
