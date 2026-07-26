@@ -1,6 +1,8 @@
+import json
+
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, date
 
 db = SQLAlchemy()
 
@@ -43,6 +45,8 @@ class Analysis(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     filename = db.Column(db.String(256))
     contract_text = db.Column(db.Text, nullable=False)
+    text_hash = db.Column(db.String(16))
+    contract_type = db.Column(db.String(20))
     analysis_mode = db.Column(db.String(50), nullable=False)  # 'risk', 'summary', 'plain'
     result = db.Column(db.Text)  # JSON string of full analysis result
     score = db.Column(db.Integer)
@@ -59,6 +63,8 @@ class Analysis(db.Model):
             'user_id': self.user_id,
             'filename': self.filename,
             'contract_text': self.contract_text,
+            'text_hash': self.text_hash,
+            'contract_type': self.contract_type,
             'analysis_mode': self.analysis_mode,
             'result': self.result,
             'score': self.score,
@@ -100,6 +106,73 @@ class RiskPreference(db.Model):
             'preferences': self.get_preferences_list(),
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class UserQuota(db.Model):
+    """Daily analysis quota tracking."""
+    __tablename__ = 'user_quota'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=date.today)
+    analysis_count = db.Column(db.Integer, default=0)
+    compare_count = db.Column(db.Integer, default=0)
+    followup_count = db.Column(db.Integer, default=0)
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'date', name='uq_user_date'),)
+
+    @classmethod
+    def get_today_quota(cls, user_id):
+        """Get or create today's quota record for a user."""
+        today = date.today()
+        quota = cls.query.filter_by(user_id=user_id, date=today).first()
+        if not quota:
+            quota = cls(user_id=user_id, date=today)
+            db.session.add(quota)
+            db.session.commit()
+        return quota
+
+    @classmethod
+    def check_and_increment(cls, user_id, action='analysis'):
+        """Check quota limit and increment if allowed. Returns (allowed, remaining, daily_limit)."""
+        quota = cls.get_today_quota(user_id)
+
+        # Daily limits by role (would need User lookup, but quota has user_id)
+        # For now, use hardcoded limits: free=5, registered=20, admin=100
+        daily_limit = 20  # default for registered users
+
+        if action == 'analysis':
+            current = quota.analysis_count
+        elif action == 'compare':
+            current = quota.compare_count
+        elif action == 'followup':
+            current = quota.followup_count
+            daily_limit = 50  # followups are cheaper
+        else:
+            return False, 0, 0
+
+        if current >= daily_limit:
+            return False, 0, daily_limit
+
+        # Increment
+        if action == 'analysis':
+            quota.analysis_count += 1
+        elif action == 'compare':
+            quota.compare_count += 1
+        elif action == 'followup':
+            quota.followup_count += 1
+
+        db.session.commit()
+        remaining = daily_limit - current - 1
+        return True, remaining, daily_limit
+
+    def to_dict(self):
+        return {
+            'date': self.date.isoformat(),
+            'analysis_count': self.analysis_count,
+            'compare_count': self.compare_count,
+            'followup_count': self.followup_count,
         }
 
 
@@ -160,4 +233,44 @@ class Feedback(db.Model):
             'contact_email': self.contact_email,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class Conversation(db.Model):
+    """AI followup conversation history."""
+    __tablename__ = 'conversation'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    analysis_id = db.Column(db.Integer, db.ForeignKey('analysis.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Store as JSON array of messages: [{"role": "user"|"assistant", "content": "...", "timestamp": "..."}]
+    messages = db.Column(db.Text, default='[]')
+
+    analysis = db.relationship('Analysis', backref='conversation', uselist=False)
+
+    def get_messages(self):
+        if not self.messages:
+            return []
+        try:
+            return json.loads(self.messages)
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def add_message(self, role, content):
+        msgs = self.get_messages()
+        msgs.append({
+            'role': role,
+            'content': content,
+            'timestamp': datetime.utcnow().isoformat(),
+        })
+        self.messages = json.dumps(msgs, ensure_ascii=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'analysis_id': self.analysis_id,
+            'messages': self.get_messages(),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
         }

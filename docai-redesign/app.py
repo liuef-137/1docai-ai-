@@ -8,6 +8,44 @@ import os, json
 
 
 def create_app():
+    return _create_app()
+
+
+def _auto_migrate(db):
+    """Add new columns to existing tables (SQLite safe)."""
+    import sqlite3
+    db_uri = db.engine.url.database if db.engine.url.drivername == 'sqlite' else None
+    if not db_uri:
+        return
+    conn = sqlite3.connect(db_uri)
+    cursor = conn.cursor()
+    
+    # Get existing columns for 'analysis' table
+    existing = set()
+    try:
+        cursor.execute("PRAGMA table_info(analysis)")
+        existing = {row[1] for row in cursor.fetchall()}
+    except Exception:
+        pass
+    
+    # Add missing columns
+    migrations = [
+        ("analysis", "text_hash", "VARCHAR(16)"),
+        ("analysis", "contract_type", "VARCHAR(20)"),
+    ]
+    for table, col, col_type in migrations:
+        if col not in existing:
+            try:
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}")
+                print(f'[DocAI Migration] Added {table}.{col}')
+            except Exception as e:
+                print(f'[DocAI Migration] Error adding {table}.{col}: {e}')
+    
+    conn.commit()
+    conn.close()
+
+
+def _create_app():
     app = Flask(
         __name__,
         static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '..')),
@@ -81,6 +119,8 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        # Auto-migrate: add new columns if they don't exist (SQLite compatible)
+        _auto_migrate(db)
         # Create default admin if not exists
         admin = User.query.filter_by(username='admin').first()
         if not admin:
@@ -101,3 +141,6 @@ if __name__ == '__main__':
     app = create_app()
     port = int(os.environ.get('PORT', 7777))
     app.run(host='0.0.0.0', port=port, debug=True)
+
+# Gunicorn entry point: gunicorn will use "app:app"
+app = create_app()

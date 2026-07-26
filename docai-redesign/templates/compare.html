@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block title %}DocAI - 合同对比{% endblock %}
+
+{% block content %}
+<section class="py-8 lg:py-12" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-6xl px-6 lg:px-8">
+
+        <div class="text-center mb-10">
+            <h1 class="text-2xl md:text-3xl font-bold tracking-tight" data-i18n="compare.title" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all;">合同对比分析</h1>
+            <p class="mt-3 text-base" style="color: var(--color-text-secondary);"><span data-i18n="compare.subtitle">对比两份合同的差异，AI 智能解读变更的法律影响</span></p>
+        </div>
+
+        <!-- Two Textareas -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Original -->
+            <div>
+                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);" data-i18n="compare.original_label">原始合同</label>
+                <textarea id="original-text" rows="12" class="w-full resize-y rounded-lg px-4 py-3 text-sm outline-none" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" data-i18n-placeholder="compare.original_placeholder" placeholder="粘贴原始合同文本..." onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'"></textarea>
+            </div>
+            <!-- Modified -->
+            <div>
+                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);" data-i18n="compare.modified_label">修改后合同</label>
+                <textarea id="modified-text" rows="12" class="w-full resize-y rounded-lg px-4 py-3 text-sm outline-none" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" data-i18n-placeholder="compare.modified_placeholder" placeholder="粘贴修改后的合同文本..." onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'"></textarea>
+            </div>
+        </div>
+
+        <!-- Compare Button -->
+        <div class="text-center mb-2">
+            <button id="btn-compare" onclick="handleCompare()" class="inline-flex items-center justify-center px-8 py-3 rounded-lg text-base font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer; transition: background 150ms;" onmouseenter="if(!this.disabled)this.style.background='var(--color-accent-light)'" onmouseleave="if(!this.disabled)this.style.background='var(--color-accent)'">
+                <i data-lucide="git-compare" class="w-5 h-5 mr-2"></i><span data-i18n="compare.btn_start">开始对比</span>
+            </button>
+        </div>
+
+        <!-- Sample Button -->
+        <div class="text-center mt-3">
+            <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style="background: transparent; color: var(--color-text-tertiary); border: 1px solid var(--color-border); cursor: pointer; transition: all 150ms;" onclick="loadCompareSample()" onmouseenter="this.style.borderColor='var(--color-accent)'; this.style.color='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'; this.style.color='var(--color-text-tertiary)'">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span data-i18n="compare.load_sample">试试示例对比</span>
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div id="compare-loading" class="hidden py-16">
+            <div class="flex items-center justify-center mb-6">
+                <span class="spinner" style="width: 28px; height: 28px; border-width: 3px;"></span>
+                <span class="ml-3 text-sm" style="color: var(--color-text-secondary);"><span data-i18n="compare.loading">AI 正在分析差异...</span></span>
+            </div>
+            <div class="analysis-steps">
+                <div class="analysis-step active" id="cmp-step1"><div class="step-dot"></div><span data-i18n="compare.step1">文本比对</span></div>
+                <div class="step-separator"></div>
+                <div class="analysis-step" id="cmp-step2"><div class="step-dot"></div><span data-i18n="compare.step2">风险评估</span></div>
+                <div class="step-separator"></div>
+                <div class="analysis-step" id="cmp-step3"><div class="step-dot"></div><span data-i18n="compare.step3">生成报告</span></div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="compare-results" class="hidden">
+
+            <!-- Summary Stats Bar -->
+            <div id="compare-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
+
+            <!-- Risk Gauge -->
+            <div id="compare-risk-gauge" class="rounded-xl p-6 mb-8 flex items-center gap-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="score-gauge flex-shrink-0">
+                    <svg width="100" height="100" viewBox="0 0 100 100">
+                        <circle class="score-track" cx="50" cy="50" r="42"/>
+                        <circle class="score-fill" id="cmp-gauge-fill" cx="50" cy="50" r="42" stroke="var(--color-accent)" stroke-dasharray="264" stroke-dashoffset="264"/>
+                    </svg>
+                    <div class="score-text">
+                        <div class="text-2xl font-bold" style="color: var(--color-primary);" id="cmp-gauge-num">--</div>
+                        <div class="text-xs" style="color: var(--color-text-tertiary);" data-i18n="compare.risk_index">风险指数</div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold mb-1" style="color: var(--color-text-primary);">整体评估</h3>
+                    <p id="cmp-assessment-summary" class="text-sm" style="color: var(--color-text-secondary);"></p>
+                </div>
+            </div>
+
+            <!-- Side-by-side comparison -->
+            <div id="compare-changes" class="space-y-4 mb-8"></div>
+
+            <!-- AI Interpretation -->
+            <div id="compare-interpretation" class="border rounded-xl p-6 sm:p-8" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--color-accent-tint-50);">
+                        <i data-lucide="brain" class="w-4 h-4" style="color: var(--color-accent);"></i>
+                    </div>
+                    <h2 class="text-lg font-semibold" style="color: var(--color-text-primary);" data-i18n="compare.ai_assessment">AI 整体评估</h2>
+                </div>
+                <p id="interpretation-text" class="text-sm leading-relaxed" style="color: var(--color-text-secondary);"></p>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function highlightDiff(original, modified) {
+        // Simple word-level diff
+        const origWords = original.split(/(\s+)/);
+        const modWords = modified.split(/(\s+)/);
+        const origSet = new Set(origWords.filter(function(w) { return w.trim(); }));
+        const modSet = new Set(modWords.filter(function(w) { return w.trim(); }));
+
+        let origHtml = '';
+        origWords.forEach(function(w) {
+            if (w.trim() && !modSet.has(w.trim())) {
+                origHtml += '<span style="background: rgba(231,76,60,0.15); color: var(--risk-high); text-decoration: line-through; border-radius: 2px; padding: 0 2px;">' + escapeHtml(w) + '</span>';
+            } else {
+                origHtml += escapeHtml(w);
+            }
+        });
+
+        let modHtml = '';
+        modWords.forEach(function(w) {
+            if (w.trim() && !origSet.has(w.trim())) {
+                modHtml += '<span style="background: rgba(46,204,113,0.15); color: var(--risk-low); border-radius: 2px; padding: 0 2px;">' + escapeHtml(w) + '</span>';
+            } else {
+                modHtml += escapeHtml(w);
+            }
+        });
+
+        return { origHtml: origHtml, modHtml: modHtml };
+    }
+
+    function computeRiskScore(changes) {
+        if (!changes || changes.length === 0) return 0;
+        var riskMap = { high: 100, medium: 50, low: 10, none: 0 };
+        var total = 0;
+        changes.forEach(function(c) {
+            total += riskMap[c.risk_level] || 0;
+        });
+        return Math.round(total / changes.length);
+    }
+
+    function animateGauge(score) {
+        var fill = document.getElementById('cmp-gauge-fill');
+        var num = document.getElementById('cmp-gauge-num');
+        if (!fill || !num) return;
+
+        var circumference = 264;
+        var offset = circumference - (circumference * score / 100);
+        fill.style.transition = 'stroke-dashoffset 1s ease-out';
+        fill.style.strokeDashoffset = offset;
+
+        // Animate number
+        var current = 0;
+        var step = Math.max(1, Math.ceil(score / 30));
+        var timer = setInterval(function() {
+            current += step;
+            if (current >= score) {
+                current = score;
+                clearInterval(timer);
+            }
+            num.textContent = current;
+        }, 30);
+
+        // Color based on score
+        if (score >= 70) {
+            fill.style.stroke = 'var(--risk-high)';
+        } else if (score >= 40) {
+            fill.style.stroke = 'var(--risk-medium)';
+        } else {
+            fill.style.stroke = 'var(--color-accent)';
+        }
+    }
+
+    window.handleCompare = function() {
+        requireAuth(async function() {
+            var original = document.getElementById('original-text').value.trim();
+            var modified = document.getElementById('modified-text').value.trim();
+            if (!original || !modified) { showToast(I18N.t('js.compare_empty'), 'warning'); return; }
+
+            var btn = document.getElementById('btn-compare');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> ' + I18N.t('js.compare_analyzing');
+            document.getElementById('compare-loading').classList.remove('hidden');
+            document.getElementById('compare-results').classList.add('hidden');
+
+            // Reset steps
+            var steps = ['cmp-step1', 'cmp-step2', 'cmp-step3'];
+            steps.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) { el.classList.remove('active', 'done'); }
+            });
+            var s1 = document.getElementById('cmp-step1');
+            if (s1) s1.classList.add('active');
+
+            // Animate steps
+            setTimeout(function() {
+                var s1 = document.getElementById('cmp-step1');
+                var s2 = document.getElementById('cmp-step2');
+                if (s1) { s1.classList.remove('active'); s1.classList.add('done'); }
+                if (s2) { s2.classList.add('active'); }
+            }, 2000);
+            setTimeout(function() {
+                var s2 = document.getElementById('cmp-step2');
+                var s3 = document.getElementById('cmp-step3');
+                if (s2) { s2.classList.remove('active'); s2.classList.add('done'); }
+                if (s3) { s3.classList.add('active'); }
+            }, 5000);
+
+            try {
+                var resp = await apiFetch('/api/compare', {
+                    method: 'POST',
+                    body: JSON.stringify({ original_text: original, modified_text: modified })
+                });
+                var data = await resp.json();
+                if (!resp.ok) { showToast(data.error || I18N.t('js.toast_analysis_failed'), 'error'); return; }
+
+                // Mark all steps done
+                steps.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) { el.classList.remove('active'); el.classList.add('done'); }
+                });
+
+                renderCompareResults(data.compare);
+            } catch (err) {
+                showToast(I18N.t('js.toast_network_error'), 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="git-compare" class="w-5 h-5 mr-2"></i>' + I18N.t('compare.btn_start');
+                document.getElementById('compare-loading').classList.add('hidden');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        });
+    };
+
+    function renderCompareResults(compare) {
+        var result = compare.diff_result ? JSON.parse(compare.diff_result) : null;
+        var changes = result ? result.changes : [];
+
+        document.getElementById('compare-results').classList.remove('hidden');
+
+        // Stats
+        var added = changes.filter(function(c) { return c.type === 'added'; }).length;
+        var modified = changes.filter(function(c) { return c.type === 'modified'; }).length;
+        var deleted = changes.filter(function(c) { return c.type === 'deleted'; }).length;
+        var highRisk = changes.filter(function(c) { return c.risk_level === 'high'; }).length;
+
+        var statsHtml =
+            '<div class="rounded-xl p-5 text-center" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">' +
+            '<div class="text-2xl font-bold" style="color: var(--color-accent); font-family: var(--font-display);">' + changes.length + '</div>' +
+            '<div class="mt-1 text-xs" style="color: var(--color-text-tertiary);">' + I18N.t('compare.stat_total') + '</div></div>' +
+            '<div class="rounded-xl p-5 text-center" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">' +
+            '<div class="text-2xl font-bold" style="color: var(--state-info); font-family: var(--font-display);">+' + added + '</div>' +
+            '<div class="mt-1 text-xs" style="color: var(--color-text-tertiary);">' + I18N.t('compare.stat_added') + '</div></div>' +
+            '<div class="rounded-xl p-5 text-center" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">' +
+            '<div class="text-2xl font-bold" style="color: var(--state-warning); font-family: var(--font-display);">' + modified + '</div>' +
+            '<div class="mt-1 text-xs" style="color: var(--color-text-tertiary);">' + I18N.t('compare.stat_modified') + '</div></div>' +
+            '<div class="rounded-xl p-5 text-center" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">' +
+            '<div class="text-2xl font-bold" style="color: var(--risk-high); font-family: var(--font-display);">' + highRisk + '</div>' +
+            '<div class="mt-1 text-xs" style="color: var(--color-text-tertiary);">' + I18N.t('compare.stat_high_risk') + '</div></div>';
+        document.getElementById('compare-stats').innerHTML = statsHtml;
+
+        // Risk Gauge
+        var riskScore = computeRiskScore(changes);
+        animateGauge(riskScore);
+        var assessmentSummary = document.getElementById('cmp-assessment-summary');
+        if (assessmentSummary) {
+            var summaryText = compare.ai_interpretation || (result && (result.risk_summary || result.overall_assessment)) || '';
+            if (summaryText && summaryText.length > 100) {
+                summaryText = summaryText.substring(0, 100) + '...';
+            }
+            assessmentSummary.textContent = summaryText;
+        }
+
+        // Changes list
+        var container = document.getElementById('compare-changes');
+        container.innerHTML = '';
+        if (changes.length === 0) {
+            container.innerHTML = '<div class="text-center py-8"><p class="text-sm" style="color: var(--color-text-secondary);">' + I18N.t('js.compare.no_changes') + '</p></div>';
+        } else {
+            changes.forEach(function(ch, i) {
+                var typeLabels = { added: I18N.t('js.compare.type_added'), modified: I18N.t('js.compare.type_modified'), deleted: I18N.t('js.compare.type_deleted') };
+                var typeColors = { added: 'var(--state-info)', modified: 'var(--state-warning)', deleted: 'var(--risk-high)' };
+                var riskColors = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)', none: 'var(--color-text-tertiary)' };
+                var riskLabels = { high: I18N.t('js.risk_high'), medium: I18N.t('js.risk_medium'), low: I18N.t('js.risk_low'), none: I18N.t('compare.risk_none') };
+                var tc = typeColors[ch.type] || 'var(--color-text-tertiary)';
+                var rc = riskColors[ch.risk_level] || 'var(--color-text-tertiary)';
+
+                var card = '<div class="border rounded-xl overflow-hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">' +
+                    '<div class="flex items-center justify-between px-5 py-3" style="background: var(--color-bg-secondary);">' +
+                    '<div class="flex items-center gap-2"><span class="text-xs font-semibold px-2 py-0.5 rounded" style="color: ' + tc + '; background: ' + tc + '14;">' + (typeLabels[ch.type] || ch.type) + '</span>' +
+                    '<span class="text-sm font-medium" style="color: var(--color-text-primary);">' + escapeHtml(ch.location) + '</span></div>' +
+                    '<span class="text-xs font-medium px-2 py-1 rounded-md" style="color: ' + rc + '; background: ' + rc + '14;">' + (riskLabels[ch.risk_level] || ch.risk_level) + '</span></div>';
+
+                if (ch.type === 'modified') {
+                    var diff = highlightDiff(ch.original, ch.modified);
+                    card += '<div class="grid grid-cols-1 md:grid-cols-2 divide-x" style="border-color: var(--color-border-light);">' +
+                        '<div class="text-xs font-semibold mb-2" style="color: var(--risk-high);">' + I18N.t('compare.label_original') + '</div><p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + diff.origHtml + '</p></div>' +
+                        '<div class="p-4"><div class="text-xs font-semibold mb-2" style="color: var(--state-info);">' + I18N.t('compare.label_modified') + '</div><p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + diff.modHtml + '</p></div></div>';
+                } else if (ch.type === 'deleted') {
+                    card += '<div class="p-4"><div class="text-xs font-semibold mb-2" style="color: var(--risk-high);">' + I18N.t('compare.label_deleted') + '</div><p class="text-sm leading-relaxed" style="color: var(--color-text-secondary); text-decoration: line-through; opacity: 0.7;">' + escapeHtml(ch.original) + '</p></div>';
+                } else {
+                    card += '<div class="p-4"><div class="text-xs font-semibold mb-2" style="color: var(--state-info);">' + I18N.t('compare.label_added') + '</div><p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(ch.modified) + '</p></div>';
+                }
+
+                if (ch.impact) {
+                    card += '<div class="px-5 py-3" style="border-top: 1px solid var(--color-border-light);"><p class="text-sm" style="color: var(--color-text-secondary);"><strong style="color: var(--color-text-primary);">' + I18N.t('compare.impact') + '</strong>' + escapeHtml(ch.impact) + '</p></div>';
+                }
+                if (ch.suggestion) {
+                    card += '<div class="px-5 py-3" style="border-top: 1px solid var(--color-border-light);"><p class="text-sm" style="color: var(--color-accent);"><strong>' + I18N.t('compare.suggestion') + '</strong>' + escapeHtml(ch.suggestion) + '</p></div>';
+                }
+                card += '</div>';
+                container.innerHTML += card;
+            });
+        }
+
+        // Interpretation
+        document.getElementById('interpretation-text').textContent = compare.ai_interpretation || (result && (result.risk_summary || result.overall_assessment)) || I18N.t('js.toast_analysis_failed');
+
+        document.getElementById('compare-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Highlight legal terms
+        setTimeout(function() {
+            if (typeof LegalTerms !== 'undefined') {
+                LegalTerms.highlight(document.getElementById('compare-interpretation'));
+                LegalTerms.highlight(document.getElementById('compare-changes'));
+            }
+        }, 200);
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // Sample contracts loader
+    window.loadCompareSample = function() {
+        if (typeof SampleContracts !== 'undefined') {
+            var labor = SampleContracts.get('labor');
+            var service = SampleContracts.get('service');
+            if (labor && service) {
+                document.getElementById('original-text').value = labor.text;
+                document.getElementById('modified-text').value = service.text;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        }
+    };
+})();
+</script>
+{% endblock %}

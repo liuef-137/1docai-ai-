@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% block title %}DocAI - 智能合同分析{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Hero preview card */
+    .hero-preview-card {
+        position: relative;
+        border-radius: 16px;
+        background: var(--color-surface);
+        box-shadow: 0 4px 24px rgba(27, 54, 93, 0.08), 0 1px 4px rgba(27, 54, 93, 0.04);
+        overflow: hidden;
+    }
+    .hero-preview-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 16px;
+        padding: 1.5px;
+        background: linear-gradient(135deg, var(--color-accent), var(--color-primary-light), var(--color-accent-light));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+    }
+    .hero-preview-inner {
+        padding: 24px;
+        position: relative;
+    }
+    @media (min-width: 768px) {
+        .hero-preview-inner {
+            padding: 32px 40px;
+        }
+    }
+    /* Gauge */
+    .score-gauge-track { fill: none; stroke: var(--color-bg-secondary); stroke-width: 8; }
+    .score-gauge-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 600ms ease; }
+    /* Risk bar */
+    .risk-bar { height: 8px; border-radius: 4px; overflow: hidden; background: var(--color-bg-secondary); }
+    .risk-bar-segment { height: 100%; transition: width 400ms ease; }
+    /* CTA glow animation */
+    @keyframes cta-glow {
+        0%, 100% { box-shadow: 0 0 12px rgba(45, 157, 120, 0.3); }
+        50% { box-shadow: 0 0 24px rgba(45, 157, 120, 0.5), 0 0 48px rgba(45, 157, 120, 0.15); }
+    }
+    .cta-glow-btn { animation: cta-glow 2.5s ease-in-out infinite; }
+    /* Trust section subtle bg */
+    .trust-section-bg {
+        background: linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg) 100%);
+    }
+    /* Trust badge card */
+    .trust-badge-card {
+        transition: transform 200ms ease, box-shadow 200ms ease;
+    }
+    .trust-badge-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    /* Trial badge */
+    .trial-badge-item {
+        transition: transform 150ms ease;
+    }
+    .trial-badge-item:hover {
+        transform: translateY(-1px);
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .cta-glow-btn { animation: none; box-shadow: 0 0 12px rgba(45, 157, 120, 0.3); }
+        .trust-badge-card, .trial-badge-item { transition-duration: 0.01ms !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="py-20 lg:py-28" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-4xl px-6 lg:px-8 text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-8" style="background: var(--color-accent-tint-50); color: var(--color-accent-dark);">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span data-i18n="home.hero_badge">AI 驱动，秒级分析</span>
+        </div>
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all;">
+            <span data-i18n="home.hero_title">让合同审查变得简单、高效、专业</span>
+        </h1>
+        <p class="mt-6 text-lg md:text-xl leading-relaxed mx-auto" style="color: var(--color-text-secondary); max-width: 42rem;">
+            <span data-i18n="home.hero_subtitle">DocAI 运用先进的 AI 技术，为你的合同提供风险分析、摘要总结和通俗解读，保护你的每一份权益。</span>
+        </p>
+
+        <!-- Mini Analysis Preview -->
+        <div class="mt-12 mx-auto" style="max-width: 640px;">
+            <div class="hero-preview-card">
+                <div class="hero-preview-inner">
+                    <!-- Preview header -->
+                    <div class="flex items-center justify-between mb-5">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full" style="background: var(--color-accent);"></div>
+                            <span class="text-xs font-medium" style="color: var(--color-text-tertiary);" data-i18n="home.preview_badge">DocAI 分析预览</span>
+                        </div>
+                        <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium" style="background: var(--color-primary-tint-50); color: var(--color-primary);">
+                            <i data-lucide="zap" class="w-3 h-3"></i>
+                            AI
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+                        <!-- Score Gauge SVG -->
+                        <div class="flex-shrink-0 flex flex-col items-center">
+                            <div style="width: 96px; height: 96px;">
+                                <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="60" cy="60" r="50" class="score-gauge-track" />
+                                    <circle cx="60" cy="60" r="50"
+                                        class="score-gauge-fill"
+                                        stroke="var(--color-accent)"
+                                        stroke-dasharray="235.62"
+                                        stroke-dashoffset="35.34"
+                                        transform="rotate(-90 60 60)" />
+                                    <text x="60" y="56" text-anchor="middle" dominant-baseline="middle"
+                                        style="font-size: 28px; font-weight: 700; fill: var(--color-primary); font-family: var(--font-display);">
+                                        85
+                                    </text>
+                                    <text x="60" y="76" text-anchor="middle"
+                                        style="font-size: 10px; fill: var(--color-text-tertiary); font-family: var(--font-body);">
+                                        <tspan data-i18n="analyze.score_label">综合评分</tspan>
+                                    </text>
+                                </svg>
+                            </div>
+                            <span class="mt-1 text-xs font-medium px-2 py-0.5 rounded-full" style="background: var(--color-accent-tint-50); color: var(--color-accent);" data-i18n="analyze.score_good">较安全</span>
+                        </div>
+
+                        <!-- Right side: risk bar + mock items -->
+                        <div class="flex-1 w-full">
+                            <!-- Risk distribution bar -->
+                            <div class="mb-3">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <span class="text-xs font-medium" style="color: var(--color-text-secondary);" data-i18n="analyze.risk_analysis">风险条款分析</span>
+                                    <span class="text-xs" style="color: var(--color-text-tertiary);">5 <span data-i18n="analyze.risk_found">个风险条款</span></span>
+                                </div>
+                                <div class="risk-bar flex">
+                                    <div class="risk-bar-segment" style="width: 20%; background: var(--risk-low);"></div>
+                                    <div class="risk-bar-segment" style="width: 60%; background: var(--state-success);"></div>
+                                    <div class="risk-bar-segment" style="width: 15%; background: var(--risk-medium);"></div>
+                                    <div class="risk-bar-segment" style="width: 5%; background: var(--risk-high);"></div>
+                                </div>
+                            </div>
+
+                            <!-- Mock risk items -->
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background: var(--color-bg-secondary);">
+                                    <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: var(--risk-medium);"></div>
+                                    <span class="text-xs" style="color: var(--color-text-secondary);">赔偿金额无上限条款</span>
+                                </div>
+                                <div class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background: var(--color-bg-secondary);">
+                                    <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: var(--risk-low);"></div>
+                                    <span class="text-xs" style="color: var(--color-text-secondary);">管辖法院约定模糊</span>
+                                </div>
+                                <div class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background: var(--color-bg-secondary);">
+                                    <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: var(--risk-high);"></div>
+                                    <span class="text-xs" style="color: var(--color-text-secondary);">单方面解除合同权</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Powered by label -->
+                    <div class="mt-4 pt-4 flex items-center justify-center gap-1.5" style="border-top: 1px solid var(--color-border-light);">
+                        <i data-lucide="sparkles" class="w-3 h-3" style="color: var(--color-text-tertiary);"></i>
+                        <span class="text-xs" style="color: var(--color-text-tertiary);">Powered by DocAI</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Buttons -->
+        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="/analyze" class="inline-flex items-center justify-center px-8 py-3.5 rounded-lg text-base font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none; transition: background 150ms;" onmouseenter="this.style.background='var(--color-accent-light)'" onmouseleave="this.style.background='var(--color-accent)'">
+                <span data-i18n="home.hero_cta">免费开始分析</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+            </a>
+            <a href="/about" class="inline-flex items-center justify-center px-8 py-3.5 rounded-lg text-base font-semibold" style="background: transparent; color: var(--color-primary); text-decoration: none; border: 1px solid var(--color-border); transition: background 150ms;" onmouseenter="this.style.background='var(--color-primary-tint-50)'" onmouseleave="this.style.background='transparent'">
+                <span data-i18n="home.hero_cta2">了解更多</span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Feature Showcase -->
+<section class="py-20 lg:py-28" style="background: var(--color-surface);">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold tracking-tight" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all;">
+                <span data-i18n="home.section_why">为什么选择 DocAI</span>
+            </h2>
+            <p class="mt-4 text-lg" style="color: var(--color-text-secondary);">
+                <span data-i18n="home.section_why_sub">三大核心功能，全面守护你的合同安全</span>
+            </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+
+            <!-- Feature 1: Smart Summary (moved to first) -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-primary-tint-50);">
+                    <i data-lucide="file-text" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">
+                    <span data-i18n="home.feat_summary_title">概括总结</span>
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+                    <span data-i18n="home.feat_summary_desc">快速提取合同核心信息，包括各方义务、关键日期和重要条款。</span>
+                </p>
+            </div>
+
+            <!-- Feature 2: Risk Analysis -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-accent-tint-50);">
+                    <i data-lucide="shield-check" class="w-6 h-6" style="color: var(--color-accent);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">
+                    <span data-i18n="home.feat_risk_title">合同风险分析</span>
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+                    <span data-i18n="home.feat_risk_desc">AI 深度识别合同中的潜在风险条款，提供评分、风险等级和改进建议。</span>
+                </p>
+            </div>
+
+            <!-- Feature 3: Plain Language -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: rgba(232, 163, 61, 0.1);">
+                    <i data-lucide="message-circle" class="w-6 h-6" style="color: var(--state-warning);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">
+                    <span data-i18n="home.feat_plain_title">通俗理解</span>
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+                    <span data-i18n="home.feat_plain_desc">将复杂的法律文书翻译成通俗易懂的语言，让非专业人士也能轻松理解。</span>
+                </p>
+            </div>
+
+            <!-- Feature 4: Contract Compare -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: rgba(58, 123, 213, 0.1);">
+                    <i data-lucide="git-compare" class="w-6 h-6" style="color: var(--state-info);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">
+                    <span data-i18n="home.feat_compare_title">合同对比</span>
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+                    <span data-i18n="home.feat_compare_desc">对比两份合同的差异，AI 智能解读变更的法律影响和风险。</span>
+                </p>
+            </div>
+
+            <!-- Feature 5: Contract Archive -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-accent-tint-50);">
+                    <i data-lucide="archive" class="w-6 h-6" style="color: var(--color-accent);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">
+                    <span data-i18n="home.feat_archive_title">合同档案</span>
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+                    <span data-i18n="home.feat_archive_desc">所有分析记录自动归档，支持搜索、筛选，随时回顾历史分析。</span>
+                </p>
+            </div>
+
+            <!-- Feature 6: Risk Preferences -->
+            <div class="rounded-xl p-6 lg:p-8" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); transition: transform 200ms ease, box-shadow 200ms ease;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-primary-tint-50);">
+                    <i data-lucide="shield-alert" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">
+                    <span data-i18n="home.feat_pref_title">风控偏好</span>
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+                    <span data-i18n="home.feat_pref_desc">设定你的合同红线，AI 针对性分析，越用越精准。</span>
+                </p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Trust & Security Section -->
+<section class="py-20 lg:py-28 trust-section-bg">
+    <div class="mx-auto max-w-5xl px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold tracking-tight" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all;">
+                <span data-i18n="trust.title">安全与信任</span>
+            </h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            <!-- Trust Badge 1: Encryption -->
+            <div class="trust-badge-card rounded-xl p-6 lg:p-8 text-center" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4" style="background: var(--color-accent-tint-50);">
+                    <i data-lucide="lock" class="w-6 h-6" style="color: var(--color-accent);"></i>
+                </div>
+                <h3 class="text-base font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">
+                    <span data-i18n="trust.encryption">端到端加密</span>
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+                    <span data-i18n="trust.encryption_desc">所有合同文本使用 256 位加密传输和存储</span>
+                </p>
+            </div>
+
+            <!-- Trust Badge 2: No Training -->
+            <div class="trust-badge-card rounded-xl p-6 lg:p-8 text-center" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4" style="background: var(--color-primary-tint-50);">
+                    <i data-lucide="eye-off" class="w-6 h-6" style="color: var(--color-primary);"></i>
+                </div>
+                <h3 class="text-base font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">
+                    <span data-i18n="trust.no_train">数据不用于训练</span>
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+                    <span data-i18n="trust.no_train_desc">您的合同数据绝不会用于训练 AI 模型</span>
+                </p>
+            </div>
+
+            <!-- Trust Badge 3: Compliance -->
+            <div class="trust-badge-card rounded-xl p-6 lg:p-8 text-center" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4" style="background: rgba(58, 123, 213, 0.1);">
+                    <i data-lucide="badge-check" class="w-6 h-6" style="color: var(--state-info);"></i>
+                </div>
+                <h3 class="text-base font-semibold mb-2" style="color: var(--color-text-primary); word-break: keep-all;">
+                    <span data-i18n="trust.compliance">合规声明</span>
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+                    <span data-i18n="trust.compliance_desc">AI 生成内容标注，符合生成式 AI 管理要求</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-20 lg:py-28" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-2xl px-6 lg:px-8 text-center">
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all;">
+            <span data-i18n="home.cta_title">现在就开始保护你的合同权益</span>
+        </h2>
+        <p class="mt-4 text-lg" style="color: var(--color-text-secondary);">
+            <span data-i18n="home.cta_subtitle">公测期间完全免费，无需绑定支付方式。</span>
+        </p>
+        <!-- Secondary text with counter -->
+        <div class="mt-3 flex items-center justify-center gap-1.5">
+            <span class="text-2xl font-bold" style="color: var(--color-accent); font-family: var(--font-display);" id="contracts-counter">12,847</span>
+            <span class="text-sm" style="color: var(--color-text-tertiary);" data-i18n="home.contracts_analyzed">份合同已通过 DocAI 智能分析</span>
+        </div>
+        <div class="mt-8">
+            <a href="/analyze" class="cta-glow-btn inline-flex items-center justify-center px-10 py-4 rounded-lg text-base font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none; transition: background 150ms;" onmouseenter="this.style.background='var(--color-accent-light)'" onmouseleave="this.style.background='var(--color-accent)'">
+                <span data-i18n="home.cta_button">立即免费试用</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+            </a>
+        </div>
+
+        <!-- Trust badges row -->
+        <div class="mt-10 flex flex-wrap items-center justify-center gap-6 lg:gap-8">
+            <div class="trial-badge-item flex items-center gap-2">
+                <i data-lucide="gift" class="w-4 h-4" style="color: var(--color-accent);"></i>
+                <span class="text-sm" style="color: var(--color-text-secondary);" data-i18n="home.trial_badges_free">免费试用</span>
+            </div>
+            <div class="trial-badge-item flex items-center gap-2">
+                <i data-lucide="user-plus" class="w-4 h-4" style="color: var(--color-accent);"></i>
+                <span class="text-sm" style="color: var(--color-text-secondary);" data-i18n="home.trial_badges_no_register">无需注册即可体验</span>
+            </div>
+            <div class="trial-badge-item flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4" style="color: var(--color-accent);"></i>
+                <span class="text-sm" style="color: var(--color-text-secondary);" data-i18n="home.trial_badges_secure">数据安全保障</span>
+            </div>
+            <div class="trial-badge-item flex items-center gap-2">
+                <i data-lucide="brain" class="w-4 h-4" style="color: var(--color-accent);"></i>
+                <span class="text-sm" style="color: var(--color-text-secondary);" data-i18n="home.trial_badges_ai">AI 智能驱动</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+// Animate contract counter
+(function() {
+    var target = 12847;
+    var counterEl = document.getElementById('contracts-counter');
+    if (!counterEl) return;
+    var duration = 1800;
+    var startTime = null;
+
+    function formatNum(n) {
+        return n.toLocaleString();
+    }
+
+    function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        var progress = Math.min((timestamp - startTime) / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        var current = Math.floor(eased * target);
+        counterEl.textContent = formatNum(current);
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            counterEl.textContent = formatNum(target);
+        }
+    }
+
+    // Use IntersectionObserver to start animation when CTA section is visible
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                requestAnimationFrame(animate);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.3 });
+    observer.observe(counterEl.closest('section'));
+})();
+</script>
+{% endblock %}

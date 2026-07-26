@@ -104,7 +104,7 @@
 <body>
 <div class="card">
   <div class="card-header">
-    <div class="brand">DocAI - 智能合同分析</div>
+    <div class="brand" data-i18n="card.brand">DocAI - 智能合同分析</div>
     <div class="mode">{{ mode_label }}</div>
     <div class="date">{{ analysis.created_at.strftime('%Y-%m-%d %H:%M') if analysis.created_at else '' }}</div>
   </div>
@@ -115,7 +115,7 @@
         {{ analysis.score if analysis.score is not none else '--' }}
       </div>
       <div class="risk-info">
-        <h3>风险评分</h3>
+        <h3 data-i18n="card.risk_score">风险评分</h3>
         <span class="risk-label {{ rl }}">{{ risk_level_label }}</span>
       </div>
     </div>
@@ -126,7 +126,7 @@
     <div style="font-size:13px;color:#888;">文件: {{ analysis.filename }}</div>
     {% endif %}
   </div>
-  <div class="card-footer">
+  <div class="card-footer" data-i18n="card.powered">
     Powered by DocAI &middot; 仅供参考，不构成法律意见
   </div>
 </div>

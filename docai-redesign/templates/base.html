@@ -6,10 +6,12 @@
     <title>{% block title %}DocAI - 智能合同分析{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="/sample_contracts.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='colors_and_type.css') }}">
+    <script src="/legal_terms.js"></script>
     <script>
     // I18N Engine - Internationalization for DocAI
     (function() {
@@ -219,6 +221,61 @@
             }
             .progress-animated { animation: none; }
         }
+
+        /* Legal Terms Highlighting */
+        .legal-term {
+            background: var(--color-accent-tint-50);
+            color: var(--color-accent);
+            padding: 1px 3px;
+            border-radius: 3px;
+            cursor: help;
+            text-decoration: underline dotted var(--color-accent);
+            text-underline-offset: 3px;
+            transition: background 150ms;
+            font-weight: 500;
+        }
+        .legal-term:hover {
+            background: var(--color-accent-tint-100);
+        }
+        .legal-term-tooltip {
+            position: absolute;
+            z-index: 9999;
+            width: 300px;
+            max-width: calc(100vw - 32px);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            padding: 16px;
+            animation: ltt-fade-in 0.2s ease-out;
+        }
+        @keyframes ltt-fade-in {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ltt-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 4px;
+        }
+        .ltt-category {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--color-accent);
+            background: var(--color-accent-tint-50);
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            letter-spacing: 0.05em;
+        }
+        .ltt-body {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--color-text-secondary);
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -236,6 +293,7 @@
             </a>
             <!-- Desktop Nav -->
             <div class="hidden md:flex items-center gap-8">
+                <a href="/dashboard" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">工作台</a>
                 <a href="/analyze" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">智能分析</a>
                 <a href="/archive" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">合同档案</a>
                 <a href="/compare" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">合同对比</a>
@@ -264,6 +322,7 @@
         </nav>
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="mobile-menu flex-col md:hidden px-6 pb-4" style="background: var(--color-primary);">
+            <a href="/dashboard" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">工作台</a>
             <a href="/analyze" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">智能分析</a>
             <a href="/archive" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">合同档案</a>
             <a href="/compare" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">合同对比</a>
@@ -473,14 +532,14 @@
 
         function copyText(text) {
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => showToast('已复制', 'success'));
+                navigator.clipboard.writeText(text).then(() => showToast(I18N.t('js.toast_copied'), 'success'));
             } else {
                 const ta = document.createElement('textarea');
                 ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
                 document.body.appendChild(ta); ta.select();
                 document.execCommand('copy');
                 document.body.removeChild(ta);
-                showToast('已复制', 'success');
+                showToast(I18N.t('js.toast_copied'), 'success');
             }
         }
 
@@ -541,24 +600,24 @@
                 });
                 const result = await resp.json();
                 if (!resp.ok) {
-                    errorEl.textContent = result.error || '登录失败';
+                    errorEl.textContent = result.error || I18N.t('js.toast_login_failed');
                     errorEl.classList.remove('hidden');
                     return;
                 }
                 setToken(result.token);
                 window.appState = { user: result.user };
                 closeAuthModal();
-                showToast('登录成功', 'success');
+                showToast(I18N.t('js.toast_login_success'), 'success');
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
                 updateNavAuth();
                 if (typeof onAuthSuccess === 'function') onAuthSuccess();
             } catch (err) {
-                errorEl.textContent = '网络错误，请重试';
+                errorEl.textContent = I18N.t('js.toast_network_error');
                 errorEl.classList.remove('hidden');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '登录';
+                submitBtn.textContent = I18N.t('nav.login');
             }
         }
 
@@ -571,7 +630,7 @@
             errorEl.classList.add('hidden');
 
             if (data.password !== data.confirm_password) {
-                errorEl.textContent = '两次输入的密码不一致';
+                errorEl.textContent = I18N.t('js.toast_password_mismatch');
                 errorEl.classList.remove('hidden');
                 return;
             }
@@ -586,7 +645,7 @@
                 });
                 const result = await resp.json();
                 if (!resp.ok) {
-                    errorEl.textContent = result.error || '注册失败';
+                    errorEl.textContent = result.error || I18N.t('js.toast_register_failed');
                     errorEl.classList.remove('hidden');
                     return;
                 }
@@ -594,14 +653,14 @@
                 window.appState = { user: result.user };
                 closeAuthModal();
                 updateNavAuth();
-                showToast('注册成功', 'success');
+                showToast(I18N.t('js.toast_register_success'), 'success');
                 if (typeof onAuthSuccess === 'function') onAuthSuccess();
             } catch (err) {
-                errorEl.textContent = '网络错误，请重试';
+                errorEl.textContent = I18N.t('js.toast_network_error');
                 errorEl.classList.remove('hidden');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '注册';
+                submitBtn.textContent = I18N.t('nav.register');
             }
         }
 
@@ -612,7 +671,7 @@
             clearToken();
             window.appState = { user: null };
             updateNavAuth();
-            showToast('已退出登录', 'success');
+            showToast(I18N.t('js.toast_logout'), 'success');
         }
 
         function updateNavAuth() {
@@ -658,10 +717,10 @@
         async function submitGlobalFeedback() {
             var title = document.getElementById('global-fb-title').value.trim();
             var content = document.getElementById('global-fb-content').value.trim();
-            if (!title || !content) { showToast('标题和内容不能为空', 'error'); return; }
+            if (!title || !content) { showToast(I18N.t('js.toast_feedback_empty'), 'error'); return; }
             var submitBtn = document.getElementById('global-fb-submit');
             submitBtn.disabled = true;
-            submitBtn.textContent = '提交中...';
+            submitBtn.textContent = I18N.t('js.toast_feedback_submitting');
             try {
                 var resp = await fetch('/api/feedback', {
                     method: 'POST',
@@ -675,18 +734,18 @@
                     })
                 });
                 var result = await resp.json();
-                if (!resp.ok) { showToast(result.error || '提交失败', 'error'); return; }
-                showToast('反馈提交成功，感谢你的建议！', 'success');
+                if (!resp.ok) { showToast(result.error || I18N.t('js.toast_feedback_failed'), 'error'); return; }
+                showToast(I18N.t('js.toast_feedback_success'), 'success');
                 document.getElementById('global-fb-title').value = '';
                 document.getElementById('global-fb-content').value = '';
                 setGlobalFbRating(0);
                 document.getElementById('feedback-panel').classList.remove('active');
                 document.getElementById('feedback-overlay').classList.remove('active');
             } catch (err) {
-                showToast('网络错误，请重试', 'error');
+                showToast(I18N.t('js.toast_network_error'), 'error');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '提交反馈';
+                submitBtn.textContent = I18N.t('js.toast_feedback_btn');
                 if (typeof I18N !== 'undefined') submitBtn.textContent = I18N.t('feedback.submit');
             }
         }

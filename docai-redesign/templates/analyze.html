@@ -1,0 +1,1204 @@
+{% extends "base.html" %}
+{% block title %}DocAI - 智能分析{% endblock %}
+
+{% block extra_head %}
+<style>
+    .upload-zone.drag-over {
+        border-color: var(--color-accent) !important;
+        background: var(--color-accent-tint-50) !important;
+    }
+    .share-mockup {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    }
+    @keyframes progress-indeterminate {
+        0% { left: -30%; }
+        100% { left: 100%; }
+    }
+    .progress-indeterminate {
+        position: absolute; top: 0; bottom: 0; width: 30%;
+        background: var(--color-accent);
+        border-radius: 9999px;
+        animation: progress-indeterminate 1.2s ease-in-out infinite;
+    }
+
+    /* Circular Score Gauge */
+    .score-gauge { position: relative; width: 120px; height: 120px; }
+    .score-gauge svg { transform: rotate(-90deg); }
+    .score-gauge .score-track { fill: none; stroke: var(--color-border-light); stroke-width: 8; }
+    .score-gauge .score-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1.5s ease-out; }
+    .score-gauge .score-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+
+    /* Risk Distribution Bar */
+    .risk-bar { height: 8px; border-radius: 4px; overflow: hidden; display: flex; background: var(--color-border-light); }
+    .risk-bar-segment { height: 100%; transition: width 0.8s ease-out; }
+
+    /* Accordion */
+    .risk-accordion-item { border: 1px solid var(--color-border-light); border-radius: 8px; margin-bottom: 8px; overflow: hidden; transition: box-shadow 150ms; }
+    .risk-accordion-item:hover { box-shadow: var(--shadow-sm); }
+    .risk-accordion-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; user-select: none; background: var(--color-surface); }
+    .risk-accordion-header:hover { background: var(--color-bg-secondary); }
+    .risk-accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease-out; padding: 0 16px; }
+    .risk-accordion-item.open .risk-accordion-body { max-height: 300px; padding: 0 16px 16px; }
+    .risk-accordion-item.open .accordion-chevron { transform: rotate(180deg); }
+    .accordion-chevron { transition: transform 0.2s ease; flex-shrink: 0; }
+
+    /* Chat Panel */
+    .chat-panel { border: 1px solid var(--color-border-light); border-radius: 12px; overflow: hidden; }
+    .chat-messages { max-height: 400px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .chat-bubble { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; word-break: break-word; }
+    .chat-bubble.user { align-self: flex-end; background: var(--color-primary); color: white; border-bottom-right-radius: 4px; }
+    .chat-bubble.ai { align-self: flex-start; background: var(--color-bg-secondary); color: var(--color-text-primary); border-bottom-left-radius: 4px; }
+    .chat-input-area { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--color-border-light); background: var(--color-surface); }
+    .chat-input-area input { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--color-border); font-size: 14px; outline: none; background: var(--color-bg); color: var(--color-text-primary); }
+    .chat-input-area input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-tint-100); }
+    .chat-input-area button { padding: 10px 16px; border-radius: 8px; border: none; background: var(--color-accent); color: white; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; transition: background 150ms; }
+    .chat-input-area button:hover { background: var(--color-accent-light); }
+    .chat-input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Quick Question Chips */
+    .quick-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px; }
+    .quick-chip { padding: 6px 12px; border-radius: 20px; font-size: 13px; border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); cursor: pointer; transition: all 150ms; white-space: nowrap; }
+    .quick-chip:hover { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-tint-50); }
+
+    /* Typing indicator */
+    .typing-indicator { display: flex; gap: 4px; padding: 12px 16px; align-self: flex-start; }
+    .typing-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-text-tertiary); animation: typing-bounce 1.4s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing-bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+    /* Step indicators */
+    .analysis-steps { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px; }
+    .analysis-step { font-size: 12px; color: var(--color-text-tertiary); transition: color 0.3s; display: flex; align-items: center; gap: 4px; }
+    .analysis-step.active { color: var(--color-accent); font-weight: 600; }
+    .analysis-step.done { color: var(--color-accent); }
+    .step-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; transition: transform 0.3s, box-shadow 0.3s; }
+    .analysis-step.active .step-dot {
+        animation: stepPulse 1.2s ease-in-out infinite;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    .analysis-step.done .step-dot {
+        transform: scale(1);
+        box-shadow: none;
+    }
+    @keyframes stepPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+        50% { transform: scale(1.4); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+    }
+    .step-separator { width: 20px; height: 1px; background: var(--color-border-light); transition: background 0.3s; }
+
+    /* Stance toggle buttons */
+    .stance-btn { transition: all 150ms; cursor: pointer; }
+    .stance-btn.active { background: var(--color-accent-tint-50); color: var(--color-accent); border-color: var(--color-accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Upload Section -->
+<section class="pb-16 lg:pb-20" style="background: var(--color-bg);">
+    <div class="mx-auto max-w-3xl px-6 lg:px-8">
+
+        <!-- Upload Zone -->
+        <div id="upload-zone" class="border-2 border-dashed rounded-lg p-8 sm:p-12 flex flex-col items-center text-center cursor-pointer" style="border-color: var(--color-border); transition: border-color 150ms, background 150ms;" onclick="document.getElementById('file-input').click()" role="button" tabindex="0" aria-label="上传合同文件">
+            <input type="file" id="file-input" accept=".pdf,.docx,.txt,.csv" class="hidden">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-accent-tint-50);">
+                <i data-lucide="upload-cloud" class="w-6 h-6" style="color: var(--color-accent);"></i>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-semibold tracking-tight" data-i18n="analyze.upload_title" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">上传合同文件</h1>
+            <p class="mt-2 text-sm" data-i18n="analyze.upload_hint" style="color: var(--color-text-secondary);">拖拽文件到此处，或点击选择</p>
+            <p class="mt-3 text-xs" data-i18n="analyze.upload_format" style="color: var(--color-text-tertiary);">支持 PDF / DOCX / TXT / CSV，最大 10MB</p>
+        </div>
+
+        <!-- Sample Contracts -->
+        <div class="mt-6">
+            <div class="flex items-center gap-2 mb-3">
+                <i data-lucide="sparkles" class="w-4 h-4" style="color: var(--color-accent);"></i>
+                <span class="text-sm font-medium" style="color: var(--color-text-secondary);" data-i18n="analyze.sample_title">没有合同？试试示例</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button class="sample-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border); cursor: pointer; transition: all 150ms;" onclick="loadSample('rental')" onmouseenter="this.style.borderColor='var(--color-accent)'; this.style.color='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'; this.style.color='var(--color-text-secondary)'">
+                    <i data-lucide="home" class="w-3.5 h-3.5"></i>
+                    <span data-i18n="analyze.sample_rental">房屋租赁合同</span>
+                </button>
+                <button class="sample-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border); cursor: pointer; transition: all 150ms;" onclick="loadSample('labor')" onmouseenter="this.style.borderColor='var(--color-accent)'; this.style.color='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'; this.style.color='var(--color-text-secondary)'">
+                    <i data-lucide="briefcase" class="w-3.5 h-3.5"></i>
+                    <span data-i18n="analyze.sample_labor">劳动合同</span>
+                </button>
+                <button class="sample-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border); cursor: pointer; transition: all 150ms;" onclick="loadSample('service')" onmouseenter="this.style.borderColor='var(--color-accent)'; this.style.color='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'; this.style.color='var(--color-text-secondary)'">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                    <span data-i18n="analyze.sample_service">服务协议</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="flex items-center gap-4 my-8">
+            <div class="flex-1 h-px" style="background: var(--color-border-light);"></div>
+            <span class="text-sm whitespace-nowrap" data-i18n="analyze.or" style="color: var(--color-text-tertiary);">或</span>
+            <div class="flex-1 h-px" style="background: var(--color-border-light);"></div>
+        </div>
+
+        <!-- Textarea with character counter -->
+        <div class="relative">
+            <textarea id="contract-text" class="w-full h-32 resize-none rounded-lg px-4 py-3 text-sm outline-none pr-28" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" data-i18n-placeholder="analyze.textarea_placeholder" placeholder="直接粘贴合同文本..." maxlength="10000" aria-label="合同文本输入" onfocus="this.style.borderColor='var(--color-accent)'; this.style.boxShadow='0 0 0 3px var(--color-accent-tint-100)'" onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none'"></textarea>
+            <span id="char-counter" class="char-counter absolute top-3 right-3 text-xs pointer-events-none select-none" style="color: var(--color-text-tertiary); font-variant-numeric: tabular-nums;"><span data-i18n="analyze.char_count">0 / 10000 字</span></span>
+        </div>
+        <!-- Warning when over limit -->
+        <div id="char-warning" class="mt-2 text-sm hidden" style="color: var(--state-error);">
+            <i data-lucide="alert-triangle" class="w-4 h-4 inline-block align-text-bottom mr-1"></i>
+            <span data-i18n="analyze.char_warning">文本超出 10000 字限制，请缩减后重试</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-6 flex items-center justify-center gap-4">
+            <button id="btn-upload" onclick="handleUploadClick()" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-primary); cursor: pointer; transition: background 150ms;" onmouseenter="this.style.background='var(--color-primary-tint-50)'" onmouseleave="this.style.background='var(--color-surface)'">
+                <i data-lucide="upload" class="w-4 h-4 mr-2"></i><span data-i18n="analyze.btn_upload">上传文件</span>
+            </button>
+            <button id="btn-analyze" onclick="handleAnalyze()" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer; transition: background 150ms;" onmouseenter="if(!this.disabled)this.style.background='var(--color-accent-light)'" onmouseleave="if(!this.disabled)this.style.background='var(--color-accent)'">
+                <i data-lucide="search" class="w-4 h-4 mr-2"></i><span data-i18n="analyze.btn_analyze">开始分析</span>
+            </button>
+        </div>
+
+        <!-- Mode Selector Tabs -->
+        <div class="mt-12 flex items-center justify-center border-b" style="border-color: var(--color-border-light);">
+            <button class="mode-tab tab-item inline-flex items-center gap-2 px-6 py-3 text-sm font-medium whitespace-nowrap border-b-2" style="border-color: var(--color-accent); color: var(--color-accent); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-mode="risk" onclick="switchMode('risk')">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span data-i18n="analyze.tab_risk">合同风险分析</span>
+            </button>
+            <button class="mode-tab tab-item inline-flex items-center gap-2 px-6 py-3 text-sm font-medium whitespace-nowrap border-b-2" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-mode="summary" onclick="switchMode('summary')">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                <span data-i18n="analyze.tab_summary">概括总结</span>
+            </button>
+            <button class="mode-tab tab-item inline-flex items-center gap-2 px-6 py-3 text-sm font-medium whitespace-nowrap border-b-2" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" data-mode="plain" onclick="switchMode('plain')">
+                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                <span data-i18n="analyze.tab_plain">通俗理解</span>
+            </button>
+        </div>
+
+        <!-- Risk preference button (for risk mode) -->
+        <div id="pref-btn-row" class="mt-4 flex justify-end">
+            <button onclick="openPreferencePanel()" class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md" style="background: none; border: 1px solid var(--color-border); color: var(--color-text-secondary); cursor: pointer; transition: border-color 150ms;" onmouseenter="this.style.borderColor='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                <span data-i18n="analyze.pref_btn">风控偏好设置</span>
+            </button>
+        </div>
+
+        <!-- Stance Selector (only visible in risk mode) -->
+        <div id="stance-selector" class="mt-4 flex flex-col items-center hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <i data-lucide="users" class="w-4 h-4" style="color: var(--color-accent);"></i>
+                <span class="text-sm font-medium" style="color: var(--color-text-secondary);" data-i18n="analyze.stance_label">选择分析视角</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="stance-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium" style="background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border);" data-stance="party_a" onclick="selectStance('party_a')">
+                    <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+                    <span data-i18n="analyze.stance_a">甲方视角</span>
+                </button>
+                <button class="stance-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium" style="background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border);" data-stance="party_b" onclick="selectStance('party_b')">
+                    <i data-lucide="user" class="w-3.5 h-3.5"></i>
+                    <span data-i18n="analyze.stance_b">乙方视角</span>
+                </button>
+            </div>
+            <p class="mt-2 text-xs text-center" style="color: var(--color-text-tertiary);" data-i18n="analyze.stance_hint">选择你的角色，AI 将针对性分析保护你权益的条款</p>
+        </div>
+    </div>
+</section>
+
+<!-- Analysis Results (hidden initially) -->
+<section id="results-section" class="py-16 lg:py-20 hidden" style="background: var(--color-surface);">
+    <div class="mx-auto max-w-3xl px-6 lg:px-8">
+
+        <!-- Progress Area -->
+        <div id="progress-area" class="mb-8 hidden">
+            <!-- Step indicators -->
+            <div class="analysis-steps" id="analysis-steps">
+                <div class="analysis-step active" id="step-1">
+                    <span class="step-dot"></span>
+                    <span data-i18n="analyze.step1">识别条款</span>
+                </div>
+                <div class="step-separator"></div>
+                <div class="analysis-step" id="step-2">
+                    <span class="step-dot"></span>
+                    <span data-i18n="analyze.step2">评估风险</span>
+                </div>
+                <div class="step-separator"></div>
+                <div class="analysis-step" id="step-3">
+                    <span class="step-dot"></span>
+                    <span data-i18n="analyze.step3">生成报告</span>
+                </div>
+            </div>
+            <!-- Progress bar -->
+            <div class="flex items-center justify-between mb-2">
+                <span id="progress-label" class="text-xs font-medium" data-i18n="analyze.analyzing" style="color: var(--color-accent);">分析中...</span>
+                <span id="progress-time" class="text-xs" style="color: var(--color-text-tertiary);"></span>
+            </div>
+            <div class="w-full h-1.5 rounded-full overflow-hidden" style="background: var(--color-accent-tint-50);">
+                <div id="progress-bar" class="progress-fill h-full rounded-full" style="background: var(--color-accent); width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- Completed Progress -->
+        <div id="completed-progress" class="mb-8 hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium" data-i18n="analyze.completed" style="color: var(--color-accent);">分析完成</span>
+                <span id="completed-time" class="text-xs" style="color: var(--color-text-tertiary);"></span>
+            </div>
+            <div class="w-full h-1.5 rounded-full overflow-hidden" style="background: var(--color-accent-tint-50);">
+                <div class="progress-fill h-full rounded-full" style="background: var(--color-accent); width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- Results Dashboard -->
+        <div id="results-dashboard" class="hidden">
+
+            <!-- Results Header with Export -->
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold tracking-tight" data-i18n="analyze.results_title" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">分析结果</h2>
+                <a id="export-btn" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium hidden" style="background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); text-decoration: none; cursor: pointer; transition: all 150ms;" onmouseenter="this.style.borderColor='var(--color-accent)'; this.style.color='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'; this.style.color='var(--color-text-secondary)'">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span data-i18n="analyze.export_report">导出报告</span>
+                </a>
+            </div>
+
+            <!-- Score Dashboard: Top Row -->
+            <div id="score-dashboard" class="hidden flex flex-col sm:flex-row items-center sm:items-start gap-8 mb-8 border rounded-lg p-6" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <!-- Circular Score Gauge -->
+                <div class="flex flex-col items-center shrink-0">
+                    <div class="score-gauge">
+                        <svg viewBox="0 0 120 120" width="120" height="120">
+                            <circle class="score-track" cx="60" cy="60" r="52"></circle>
+                            <circle class="score-fill" id="score-gauge-fill" cx="60" cy="60" r="52" stroke="var(--risk-low)" stroke-dasharray="326.73" stroke-dashoffset="326.73"></circle>
+                        </svg>
+                        <div class="score-text">
+                            <div id="score-gauge-number" class="text-3xl font-bold" style="color: var(--color-text-primary); font-variant-numeric: tabular-nums; font-family: var(--font-display);">--</div>
+                            <div class="text-xs" style="color: var(--color-text-tertiary);" data-i18n="analyze.score_label">综合评分</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Risk Distribution + Legend -->
+                <div class="flex-1 min-w-0 w-full">
+                    <h2 class="text-sm font-semibold mb-3" data-i18n="analyze.risk_analysis" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">风险条款分析</h2>
+                    <div class="risk-bar mb-3" id="risk-bar">
+                        <div class="risk-bar-segment" id="risk-bar-high" style="width: 0%; background: var(--risk-high);"></div>
+                        <div class="risk-bar-segment" id="risk-bar-medium" style="width: 0%; background: var(--risk-medium);"></div>
+                        <div class="risk-bar-segment" id="risk-bar-low" style="width: 0%; background: var(--risk-low);"></div>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs" style="color: var(--color-text-secondary);">
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background: var(--risk-high);"></span><span data-i18n="analyze.risk_badge_high">高风险</span> <span id="risk-count-high" class="font-semibold" style="color: var(--color-text-primary);">0</span></span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background: var(--risk-medium);"></span><span data-i18n="analyze.risk_badge_medium">中风险</span> <span id="risk-count-medium" class="font-semibold" style="color: var(--color-text-primary);">0</span></span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background: var(--risk-low);"></span><span data-i18n="analyze.risk_badge_low">低风险</span> <span id="risk-count-low" class="font-semibold" style="color: var(--color-text-primary);">0</span></span>
+                    </div>
+                    <div id="risk-summary-line" class="mt-3 text-xs" style="color: var(--color-text-tertiary);"></div>
+                </div>
+            </div>
+
+            <!-- One-line Summary -->
+            <div id="summary-card" class="border rounded-lg p-5 sm:p-6 mb-6 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <h2 class="text-xs font-semibold uppercase mb-3" data-i18n="analyze.one_line_label" style="color: var(--color-text-tertiary); letter-spacing: 0.08em;">一句话总结</h2>
+                        <p id="summary-text" class="text-base leading-relaxed" style="color: var(--color-text-primary);"></p>
+                    </div>
+                    <button class="copy-btn shrink-0 mt-1" style="color: var(--color-text-tertiary); background: none; border: none;" aria-label="复制总结" title="复制" onclick="copyText(document.getElementById('summary-text').textContent)">
+                        <i data-lucide="clipboard" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Risk Preference Alert -->
+            <div id="pref-alert" class="rounded-lg p-5 sm:p-6 mb-6 hidden" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="flex items-start gap-3">
+                    <div class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5" style="background: rgba(232, 163, 61, 0.12);">
+                        <i data-lucide="shield-alert" class="w-4 h-4" style="color: var(--state-warning);"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">检测到触碰你的风控红线</p>
+                        <p id="pref-alert-text" class="mt-2 text-sm leading-relaxed" style="color: var(--color-text-secondary);"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Items Accordion (risk mode) -->
+            <div id="risk-section" class="hidden">
+                <div id="risk-accordion-summary" class="mb-3 text-sm font-medium" style="color: var(--color-text-secondary);"></div>
+                <div id="risk-accordion-container"></div>
+            </div>
+
+            <!-- Suggestions -->
+            <div id="suggestions-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold tracking-tight" data-i18n="analyze.suggestions" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">改进建议</h2>
+                <ol id="suggestions-list" class="mt-5 space-y-4" style="list-style: none; padding: 0; margin: 0; counter-reset: suggestion-counter;"></ol>
+            </div>
+
+            <!-- Key Points (summary mode) -->
+            <div id="keypoints-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold tracking-tight" data-i18n="analyze.keypoints" style="color: var(--color-text-primary);">核心要点</h2>
+                <ul id="keypoints-list" class="mt-5 space-y-4" style="list-style: none; padding: 0; margin: 0;"></ul>
+            </div>
+
+            <!-- Plain Explanation (plain mode) -->
+            <div id="plain-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold tracking-tight" data-i18n="analyze.plain_explanation" style="color: var(--color-text-primary);">通俗解读</h2>
+                <div id="plain-text" class="mt-5 text-sm leading-relaxed" style="color: var(--color-text-secondary); white-space: pre-wrap;"></div>
+            </div>
+
+            <!-- Key Terms (plain mode) -->
+            <div id="keyterms-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold tracking-tight" data-i18n="analyze.key_terms" style="color: var(--color-text-primary);">专业术语解读</h2>
+                <ul id="keyterms-list" class="mt-5 space-y-4" style="list-style: none; padding: 0; margin: 0;"></ul>
+            </div>
+
+            <!-- Things to Watch (plain mode) -->
+            <div id="watch-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold tracking-tight" data-i18n="analyze.watch_items" style="color: var(--color-text-primary);">需要注意的事项</h2>
+                <ul id="watch-list" class="mt-5 space-y-4" style="list-style: none; padding: 0; margin: 0;"></ul>
+            </div>
+
+            <!-- Share Card Preview (risk mode) -->
+            <div id="share-card" class="border rounded-lg p-5 sm:p-6 mb-8 hidden" style="border-color: var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h2 class="text-lg font-semibold tracking-tight" data-i18n="analyze.share_card_title" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">一键生成摘要卡片</h2>
+                <p class="mt-2 text-sm" data-i18n="analyze.share_card_hint" style="color: var(--color-text-tertiary);">生成可分享的分析摘要图片</p>
+                <div class="share-mockup mt-5 rounded-lg p-6 sm:p-8 text-center">
+                    <div class="text-sm font-semibold tracking-tight" style="color: var(--color-text-inverse); font-family: var(--font-display); opacity: 0.9;">DocAI</div>
+                    <div id="share-score" class="mt-4 text-4xl sm:text-5xl font-bold" style="color: var(--color-accent-light); font-variant-numeric: tabular-nums; font-family: var(--font-display);">--</div>
+                    <div class="mt-1 text-xs" data-i18n="analyze.score_label" style="color: var(--color-text-inverse); opacity: 0.6;">综合评分</div>
+                    <div id="share-badges" class="mt-4 flex items-center justify-center gap-3 flex-wrap"></div>
+                    <div id="share-date" class="mt-4 text-xs" style="color: var(--color-text-inverse); opacity: 0.4;"></div>
+                </div>
+                <div class="mt-5 flex items-center justify-center">
+                    <a id="share-link" href="#" target="_blank" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none;">
+                        <span data-i18n="analyze.view_card">查看摘要卡片</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- AI Followup Chat Panel -->
+            <div id="chat-panel" class="chat-panel mb-8 hidden">
+                <!-- Chat Header -->
+                <div class="flex items-center gap-2 px-4 py-3 border-b" style="border-color: var(--color-border-light); background: var(--color-surface);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 1 8 8v2a8 8 0 0 1-8 8"/><path d="M8 20H4a1 1 0 0 1-1-1v-1a4 4 0 0 1 4-4h1"/><circle cx="12" cy="10" r="1"/></svg>
+                    <span class="text-sm font-semibold" data-i18n="analyze.chat_title" style="color: var(--color-text-primary);">继续追问</span>
+                </div>
+                <!-- Quick Question Chips -->
+                <div class="quick-chips" id="quick-chips">
+                    <button class="quick-chip" onclick="sendFollowup(this.textContent)" data-i18n="analyze.quick_q1">这个条款对我有什么影响？</button>
+                    <button class="quick-chip" onclick="sendFollowup(this.textContent)" data-i18n="analyze.quick_q2">如果我是乙方公平吗？</button>
+                    <button class="quick-chip" onclick="sendFollowup(this.textContent)" data-i18n="analyze.quick_q3">赔偿条款合理吗？</button>
+                    <button class="quick-chip" onclick="sendFollowup(this.textContent)" data-i18n="analyze.quick_q4">帮我起草修改建议</button>
+                </div>
+                <!-- Chat Messages Area -->
+                <div class="chat-messages" id="chat-messages"></div>
+                <!-- Chat Input Area -->
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" data-i18n-placeholder="analyze.chat_placeholder" placeholder="对分析结果有疑问？继续提问..." autocomplete="off">
+                    <button id="chat-send-btn" onclick="sendFollowupFromInput()" data-i18n="analyze.chat_send">发送</button>
+                </div>
+            </div>
+
+        </div><!-- /results-dashboard -->
+
+    </div>
+</section>
+
+<!-- Risk Preference Slide Panel -->
+<div id="pref-panel-overlay" class="slide-panel-overlay" onclick="closePreferencePanel()"></div>
+<div id="pref-panel" class="slide-panel">
+    <div class="p-6 border-b" style="border-color: var(--color-border-light);">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold" data-i18n="analyze.pref_btn" style="color: var(--color-text-primary);">风控偏好设置</h2>
+            <button onclick="closePreferencePanel()" style="background: none; border: none; cursor: pointer; color: var(--color-text-tertiary);" aria-label="关闭">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <p class="mt-2 text-sm" data-i18n="analyze.pref_hint" style="color: var(--color-text-secondary);">设定你的合同红线，AI 分析时会特别关注这些方面。</p>
+    </div>
+    <div class="p-6">
+        <div class="flex gap-2">
+            <input type="text" id="pref-input" data-i18n-placeholder="analyze.pref_input_placeholder" placeholder="例如：赔偿金额必须有上限" class="flex-1 px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border);">
+            <button onclick="addPreference()" class="px-4 py-3 rounded-lg text-sm font-semibold whitespace-nowrap" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;"><span data-i18n="analyze.pref_add">添加</span></button>
+        </div>
+        <ul id="pref-list" class="mt-4 space-y-2" style="list-style: none; padding: 0; margin: 0;"></ul>
+        <button onclick="savePreferences()" class="mt-6 w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;">
+            <span data-i18n="analyze.pref_save">保存设置</span>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    let currentMode = 'risk';
+    let currentFilename = '';
+    let preferences = [];
+    let lastAnalysisId = null;
+    let chatSending = false;
+    let reviewStance = '';
+    const MAX_LEN = 10000;
+    const WARN_THRESHOLD = 8000;
+    const GAUGE_CIRCUMFERENCE = 2 * Math.PI * 52; // ~326.73
+
+    const textarea = document.getElementById('contract-text');
+    const counter = document.getElementById('char-counter');
+    const charWarning = document.getElementById('char-warning');
+    const btnAnalyze = document.getElementById('btn-analyze');
+    const resultsSection = document.getElementById('results-section');
+    const progressArea = document.getElementById('progress-area');
+    const progressBar = document.getElementById('progress-bar');
+    const progressLabel = document.getElementById('progress-label');
+
+    // Character counter
+    textarea.addEventListener('input', function() {
+        const len = textarea.value.length;
+        counter.textContent = len + ' / ' + MAX_LEN + ' 字';
+        counter.classList.remove('warn', 'error');
+        charWarning.classList.add('hidden');
+        if (len >= MAX_LEN) {
+            counter.classList.add('error');
+            charWarning.classList.remove('hidden');
+            btnAnalyze.disabled = true;
+            btnAnalyze.style.opacity = '0.5';
+            btnAnalyze.style.cursor = 'not-allowed';
+        } else if (len >= WARN_THRESHOLD) {
+            counter.classList.add('warn');
+            btnAnalyze.disabled = false;
+            btnAnalyze.style.opacity = '1';
+            btnAnalyze.style.cursor = 'pointer';
+        } else {
+            btnAnalyze.disabled = false;
+            btnAnalyze.style.opacity = '1';
+            btnAnalyze.style.cursor = 'pointer';
+        }
+    });
+
+    // File upload handling
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+
+    ['dragenter', 'dragover'].forEach(evt => {
+        uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+        uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); });
+    });
+    uploadZone.addEventListener('drop', e => { handleFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+    function handleFile(file) {
+        if (!file) return;
+        currentFilename = file.name;
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'pdf' || ext === 'docx') {
+            showToast('PDF/DOCX 解析功能开发中，请粘贴文本', 'warning');
+            return;
+        }
+        if (ext === 'txt' || ext === 'csv') {
+            const reader = new FileReader();
+            reader.onload = e => {
+                textarea.value = e.target.result;
+                textarea.dispatchEvent(new Event('input'));
+                showToast(I18N.t('js.toast_file_read'), 'success');
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    // Upload button click
+    window.handleUploadClick = function() {
+        requireAuth(() => {
+            fileInput.click();
+        });
+    };
+
+    // Load sample contract
+    window.loadSample = function(id) {
+        var sample = SampleContracts.get(id);
+        if (!sample) return;
+        textarea.value = sample.text;
+        textarea.dispatchEvent(new Event('input'));
+        // Scroll to textarea
+        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    };
+
+    // Mode switching
+    window.switchMode = function(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-tab').forEach(tab => {
+            if (tab.dataset.mode === mode) {
+                tab.style.borderColor = 'var(--color-accent)';
+                tab.style.color = 'var(--color-accent)';
+            } else {
+                tab.style.borderColor = 'transparent';
+                tab.style.color = 'var(--color-text-tertiary)';
+            }
+        });
+        // Show/hide preference button and stance selector (risk mode only)
+        const isRiskMode = (mode === 'risk');
+        document.getElementById('pref-btn-row').style.display = isRiskMode ? 'flex' : 'none';
+        document.getElementById('stance-selector').classList.toggle('hidden', !isRiskMode);
+        // Reset stance when switching away from risk mode
+        if (!isRiskMode) {
+            reviewStance = '';
+            document.querySelectorAll('.stance-btn').forEach(btn => btn.classList.remove('active'));
+        }
+    };
+
+    // Stance selection
+    window.selectStance = function(stance) {
+        if (reviewStance === stance) {
+            // Deselect if clicking the same one
+            reviewStance = '';
+            document.querySelectorAll('.stance-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.borderColor = 'var(--color-border)';
+                btn.style.color = 'var(--color-text-secondary)';
+                btn.style.background = 'var(--color-surface)';
+            });
+        } else {
+            reviewStance = stance;
+            document.querySelectorAll('.stance-btn').forEach(btn => {
+                if (btn.dataset.stance === stance) {
+                    btn.classList.add('active');
+                    btn.style.borderColor = 'var(--color-accent)';
+                    btn.style.color = 'var(--color-accent)';
+                    btn.style.background = 'var(--color-accent-tint-50)';
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.borderColor = 'var(--color-border)';
+                    btn.style.color = 'var(--color-text-secondary)';
+                    btn.style.background = 'var(--color-surface)';
+                }
+            });
+        }
+    };
+
+    // Reset step indicators
+    function resetSteps() {
+        for (let i = 1; i <= 3; i++) {
+            const el = document.getElementById('step-' + i);
+            el.classList.remove('active', 'done');
+        }
+        document.getElementById('step-1').classList.add('active');
+    }
+
+    // Update step indicators based on progress
+    function updateSteps(progress) {
+        const step1 = document.getElementById('step-1');
+        const step2 = document.getElementById('step-2');
+        const step3 = document.getElementById('step-3');
+
+        step1.classList.remove('active');
+        step2.classList.remove('active', 'done');
+        step3.classList.remove('active');
+
+        if (progress < 33) {
+            step1.classList.add('active');
+        } else if (progress < 66) {
+            step1.classList.add('done');
+            step2.classList.add('active');
+        } else {
+            step1.classList.add('done');
+            step2.classList.add('done');
+            step3.classList.add('active');
+        }
+    }
+
+    // Mark all steps as done
+    function completeSteps() {
+        for (let i = 1; i <= 3; i++) {
+            const el = document.getElementById('step-' + i);
+            el.classList.remove('active');
+            el.classList.add('done');
+        }
+    }
+
+    // Main analysis flow
+    window.handleAnalyze = function() {
+        requireAuth(async () => {
+            const text = textarea.value.trim();
+            if (!text) { showToast(I18N.t('js.toast_empty_text'), 'warning'); return; }
+            if (text.length > MAX_LEN) { showToast(I18N.t('js.toast_text_too_long'), 'error'); return; }
+
+            btnAnalyze.disabled = true;
+            btnAnalyze.innerHTML = '<span class="spinner"></span> ' + I18N.t('js.toast_analyzing');
+
+            // Show progress
+            resultsSection.classList.remove('hidden');
+            progressArea.classList.remove('hidden');
+            document.getElementById('completed-progress').classList.add('hidden');
+            document.getElementById('results-dashboard').classList.add('hidden');
+            progressBar.style.width = '0%';
+            progressBar.classList.add('progress-animated');
+            progressLabel.textContent = I18N.t('js.toast_analyzing');
+            document.getElementById('progress-time').textContent = '';
+            resetSteps();
+
+            const startTime = Date.now();
+            // Progress simulation timer to drive step animations during API wait
+            let progressTimer = null;
+            let simulatedProgress = 0;
+            const PROGRESS_INTERVAL = 300; // ms per tick
+            const PROGRESS_MAX = 90; // cap at 90% until real completion
+
+            function tickProgress() {
+                // Slow down as we approach the cap (eased approach)
+                const remaining = PROGRESS_MAX - simulatedProgress;
+                const step = Math.max(0.5, remaining * 0.06);
+                simulatedProgress = Math.min(PROGRESS_MAX, simulatedProgress + step);
+                const pct = Math.round(simulatedProgress);
+                progressBar.style.width = pct + '%';
+                updateSteps(pct);
+            }
+
+            progressTimer = setInterval(tickProgress, PROGRESS_INTERVAL);
+
+            try {
+                const resp = await apiFetch('/api/analysis', {
+                    method: 'POST',
+                    body: JSON.stringify({ text, mode: currentMode, filename: currentFilename || null, review_stance: reviewStance || null })
+                });
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+
+                const data = await resp.json();
+                if (!resp.ok) {
+                    clearInterval(progressTimer);
+                    showToast(data.error || I18N.t('js.toast_analysis_failed'), 'error');
+                    progressArea.classList.add('hidden');
+                    resultsSection.classList.add('hidden');
+                    btnAnalyze.disabled = false;
+                    btnAnalyze.innerHTML = '<i data-lucide="search" class="w-4 h-4 mr-2"></i>' + I18N.t('js.toast_start_analysis');
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    return;
+                }
+
+                clearInterval(progressTimer);
+                // Complete progress
+                completeSteps();
+                progressBar.style.width = '100%';
+                progressBar.classList.remove('progress-animated');
+                progressArea.classList.add('hidden');
+                document.getElementById('completed-progress').classList.remove('hidden');
+                document.getElementById('completed-time').textContent = I18N.t('js.toast_time_spent').replace('{s}', elapsed);
+
+                // Render results
+                document.getElementById('results-dashboard').classList.remove('hidden');
+                renderResults(data.analysis, elapsed);
+                lastAnalysisId = data.analysis.id;
+
+                // Show export button and set link
+                if (lastAnalysisId) {
+                    const exportBtn = document.getElementById('export-btn');
+                    exportBtn.href = '/api/analysis/' + lastAnalysisId + '/export';
+                    exportBtn.classList.remove('hidden');
+                }
+
+            } catch (err) {
+                clearInterval(progressTimer);
+                showToast(I18N.t('js.toast_network_error'), 'error');
+                progressArea.classList.add('hidden');
+                resultsSection.classList.add('hidden');
+            } finally {
+                clearInterval(progressTimer);
+                btnAnalyze.disabled = false;
+                btnAnalyze.innerHTML = '<i data-lucide="search" class="w-4 h-4 mr-2"></i>' + I18N.t('js.toast_start_analysis');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        });
+    };
+
+    function renderResults(analysis, elapsed) {
+        const result = analysis.result ? JSON.parse(analysis.result) : null;
+
+        // One-line summary
+        if (analysis.one_line_summary) {
+            document.getElementById('summary-text').textContent = analysis.one_line_summary;
+            document.getElementById('summary-card').classList.remove('hidden');
+        }
+
+        // Risk preference alert (risk mode)
+        if (currentMode === 'risk' && preferences.length > 0 && analysis.one_line_summary) {
+            document.getElementById('pref-alert-text').innerHTML = preferences.map(p =>
+                '<strong>' + escapeHtml(p) + '</strong>'
+            ).join('、') + ' — 请关注分析结果中是否触碰这些红线。';
+            document.getElementById('pref-alert').classList.remove('hidden');
+        }
+
+        // Risk mode specific
+        if (currentMode === 'risk') {
+
+            // Show score dashboard
+            document.getElementById('score-dashboard').classList.remove('hidden');
+            document.getElementById('risk-section').classList.remove('hidden');
+
+            // Animated score gauge
+            if (analysis.score != null) {
+                const score = analysis.score;
+                const scoreNum = document.getElementById('score-gauge-number');
+                const scoreFill = document.getElementById('score-gauge-fill');
+                const offset = GAUGE_CIRCUMFERENCE - (GAUGE_CIRCUMFERENCE * score / 100);
+
+                // Determine color
+                let colorVar;
+                if (score >= 80) colorVar = 'var(--risk-low)';
+                else if (score >= 60) colorVar = 'var(--risk-medium)';
+                else colorVar = 'var(--risk-high)';
+
+                scoreFill.style.stroke = colorVar;
+                scoreNum.style.color = colorVar;
+
+                // Animate: start from full offset, then transition to target
+                scoreFill.style.strokeDashoffset = GAUGE_CIRCUMFERENCE;
+                // Force reflow
+                scoreFill.getBoundingClientRect();
+                scoreFill.style.strokeDashoffset = offset;
+
+                // Animate number counting
+                animateCounter(scoreNum, 0, score, 1200);
+            }
+
+            // Risk distribution bar
+            const riskItems = analysis.risk_items ? JSON.parse(analysis.risk_items) : (result && result.risk_items ? result.risk_items : []);
+            const riskDist = { high: 0, medium: 0, low: 0 };
+            riskItems.forEach(item => {
+                if (riskDist[item.risk_level] !== undefined) riskDist[item.risk_level]++;
+            });
+            const totalRisks = riskItems.length || 1;
+
+            document.getElementById('risk-count-high').textContent = riskDist.high;
+            document.getElementById('risk-count-medium').textContent = riskDist.medium;
+            document.getElementById('risk-count-low').textContent = riskDist.low;
+
+            // Animate risk bar segments
+            setTimeout(() => {
+                document.getElementById('risk-bar-high').style.width = (riskDist.high / totalRisks * 100) + '%';
+                document.getElementById('risk-bar-medium').style.width = (riskDist.medium / totalRisks * 100) + '%';
+                document.getElementById('risk-bar-low').style.width = (riskDist.low / totalRisks * 100) + '%';
+            }, 100);
+
+            // Risk summary line
+            const summaryLine = document.getElementById('risk-summary-line');
+            if (riskItems.length > 0) {
+                summaryLine.textContent = I18N.t('js.toast_risk_found').replace('{n}', riskItems.length).replace('{h}', riskDist.high).replace('{m}', riskDist.medium).replace('{l}', riskDist.low);
+            } else {
+                summaryLine.textContent = '';
+            }
+
+            // Build accordion risk items
+            const accordionSummary = document.getElementById('risk-accordion-summary');
+            const accordionContainer = document.getElementById('risk-accordion-container');
+            accordionContainer.innerHTML = '';
+
+            if (riskItems.length === 0 && analysis.score != null) {
+                const rl = analysis.risk_level || 'low';
+                accordionSummary.textContent = I18N.t('js.toast_overall_assessment');
+                accordionContainer.innerHTML = buildAccordionItem(I18N.t('js.toast_overall_assessment'), rl === 'high' ? I18N.t('js.toast_overall_risk_high') : rl === 'medium' ? I18N.t('js.toast_overall_risk_medium') : I18N.t('js.toast_overall_risk_low'), rl, '');
+            } else {
+                accordionSummary.textContent = riskItems.length > 0
+                    ? I18N.t('js.toast_risk_found').replace('{n}', riskItems.length).replace('{h}', riskDist.high).replace('{m}', riskDist.medium).replace('{l}', riskDist.low)
+                    : '';
+                riskItems.forEach((item, idx) => {
+                    accordionContainer.innerHTML += buildAccordionItem(
+                        item.clause_name,
+                        item.description,
+                        item.risk_level,
+                        item.suggestion || '',
+                        item.plain_explanation || ''
+                    );
+                });
+            }
+
+            // Bind accordion click handlers
+            accordionContainer.querySelectorAll('.risk-accordion-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    const item = this.parentElement;
+                    const wasOpen = item.classList.contains('open');
+                    // Close all others
+                    accordionContainer.querySelectorAll('.risk-accordion-item').forEach(el => {
+                        el.classList.remove('open');
+                    });
+                    // Toggle current
+                    if (!wasOpen) {
+                        item.classList.add('open');
+                    }
+                });
+            });
+
+            // Suggestions with numbered styling
+            const suggestions = analysis.suggestions ? JSON.parse(analysis.suggestions) : (result && result.suggestions ? result.suggestions : []);
+            if (suggestions.length > 0) {
+                const list = document.getElementById('suggestions-list');
+                list.innerHTML = '';
+                suggestions.forEach((s, i) => {
+                    list.innerHTML += '<li class="flex items-start gap-3">' +
+                        '<span class="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold mt-0.5" style="background: var(--color-accent-tint-50); color: var(--color-accent);">' + (i + 1) + '</span>' +
+                        '<div class="flex-1 min-w-0"><span class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(s) + '</span></div>' +
+                        '<button class="copy-btn shrink-0 mt-0.5" style="color: var(--color-text-tertiary); background: none; border: none;" onclick="copyText(\'' + escapeJs(s) + '\')" title="复制">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>' +
+                        '</button></li>';
+                });
+                document.getElementById('suggestions-card').classList.remove('hidden');
+            }
+
+            // Share card
+            if (analysis.score != null) {
+                document.getElementById('share-score').textContent = analysis.score;
+                const badges = document.getElementById('share-badges');
+                badges.innerHTML = '';
+                if (riskDist.high > 0) badges.innerHTML += '<span class="inline-flex items-center text-xs font-medium px-2 py-1 rounded" style="color: var(--risk-high); background: rgba(212,80,80,0.2);">' + I18N.t('js.risk_high') + ' x' + riskDist.high + '</span>';
+                if (riskDist.medium > 0) badges.innerHTML += '<span class="inline-flex items-center text-xs font-medium px-2 py-1 rounded" style="color: var(--risk-medium); background: rgba(232,163,61,0.2);">' + I18N.t('js.risk_medium') + ' x' + riskDist.medium + '</span>';
+                if (riskDist.low > 0) badges.innerHTML += '<span class="inline-flex items-center text-xs font-medium px-2 py-1 rounded" style="color: var(--risk-low); background: rgba(45,157,120,0.2);">' + I18N.t('js.risk_low') + ' x' + riskDist.low + '</span>';
+                document.getElementById('share-date').textContent = new Date().toISOString().slice(0, 10);
+                if (analysis.id) {
+                    document.getElementById('share-link').href = '/api/card/' + analysis.id;
+                    document.getElementById('share-card').classList.remove('hidden');
+                }
+            }
+
+            // Show chat panel for risk mode
+            document.getElementById('chat-panel').classList.remove('hidden');
+            // Clear previous chat messages
+            document.getElementById('chat-messages').innerHTML = '';
+        }
+
+        // Summary mode
+        if (currentMode === 'summary' && result) {
+            const kpList = document.getElementById('keypoints-list');
+            kpList.innerHTML = '';
+            (result.key_points || []).forEach(kp => {
+                kpList.innerHTML += '<li class="risk-card border rounded-lg p-4 sm:p-5 border-l-4" style="border-color: var(--color-border-light); border-left-color: var(--color-primary);">' +
+                    '<h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(kp.point) + '</h3>' +
+                    '<p class="mt-1 text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(kp.detail) + '</p></li>';
+            });
+            if (result.key_points && result.key_points.length > 0) {
+                document.getElementById('keypoints-card').classList.remove('hidden');
+            }
+        }
+
+        // Plain language mode
+        if (currentMode === 'plain' && result) {
+            if (result.plain_explanation) {
+                document.getElementById('plain-text').textContent = result.plain_explanation;
+                document.getElementById('plain-card').classList.remove('hidden');
+            }
+            const ktList = document.getElementById('keyterms-list');
+            ktList.innerHTML = '';
+            (result.key_terms || []).forEach(kt => {
+                ktList.innerHTML += '<li class="flex items-start justify-between gap-3">' +
+                    '<div><span class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(kt.term) + '</span>' +
+                    '<span class="text-sm ml-2" style="color: var(--color-text-secondary);">' + escapeHtml(kt.plain_explanation) + '</span></div></li>';
+            });
+            if (result.key_terms && result.key_terms.length > 0) {
+                document.getElementById('keyterms-card').classList.remove('hidden');
+            }
+            const wList = document.getElementById('watch-list');
+            wList.innerHTML = '';
+            (result.things_to_watch || []).forEach(tw => {
+                wList.innerHTML += '<li class="risk-card border rounded-lg p-4 sm:p-5 border-l-4" style="border-color: var(--color-border-light); border-left-color: var(--state-warning);">' +
+                    '<h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(tw.item) + '</h3>' +
+                    '<p class="mt-1 text-sm" style="color: var(--color-text-secondary);"><strong>为什么重要：</strong>' + escapeHtml(tw.why_important) + '</p>' +
+                    '<p class="mt-1 text-sm" style="color: var(--color-text-secondary);"><strong>建议：</strong>' + escapeHtml(tw.suggestion) + '</p></li>';
+            });
+            if (result.things_to_watch && result.things_to_watch.length > 0) {
+                document.getElementById('watch-card').classList.remove('hidden');
+            }
+        }
+
+        // Highlight legal terms in rendered results
+        setTimeout(function() {
+            var resultIds = ['risk-accordion-container', 'suggestions-list', 'keypoints-list', 'plain-text', 'keyterms-list', 'watch-list'];
+            resultIds.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) LegalTerms.highlight(el);
+            });
+            // Also highlight one-line summary
+            var summaryEl = document.getElementById('summary-text');
+            if (summaryEl) LegalTerms.highlight(summaryEl);
+        }, 100);
+
+        // Scroll to results
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // Animate counter from start to end
+    function animateCounter(el, start, end, duration) {
+        const startTime = performance.now();
+        function tick(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease-out
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(start + (end - start) * eased);
+            el.textContent = current;
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            }
+        }
+        requestAnimationFrame(tick);
+    }
+
+    // Build accordion item HTML
+    function buildAccordionItem(name, desc, level, suggestion, plainExplanation) {
+        const colors = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
+        const labels = { high: I18N.t('js.risk_high'), medium: I18N.t('js.risk_medium'), low: I18N.t('js.risk_low') };
+        const pillBgs = {
+            high: 'rgba(212,80,80,0.12)',
+            medium: 'rgba(232,163,61,0.12)',
+            low: 'rgba(45,157,120,0.12)'
+        };
+        const c = colors[level] || colors.low;
+        const l = labels[level] || I18N.t('js.risk_unknown');
+        const bg = pillBgs[level] || pillBgs.low;
+
+        let bodyContent = '<p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(desc) + '</p>';
+        if (plainExplanation) {
+            bodyContent += '<div style="margin-top:6px;padding:6px 10px;border-radius:6px;background:var(--color-accent-tint-50);font-size:13px;color:var(--color-accent);"><span style="margin-right:4px;">\uD83D\uDCA1</span>' + escapeHtml(plainExplanation) + '</div>';
+        }
+        if (suggestion) {
+            bodyContent += '<div class="mt-3 p-3 rounded-md" style="background: var(--color-bg-secondary);">' +
+                '<p class="text-xs font-semibold mb-1" style="color: var(--color-accent);">建议</p>' +
+                '<p class="text-sm" style="color: var(--color-text-secondary);">' + escapeHtml(suggestion) + '</p></div>';
+        }
+
+        return '<div class="risk-accordion-item">' +
+            '<div class="risk-accordion-header">' +
+                '<div class="flex items-center gap-3 min-w-0">' +
+                    '<span class="text-sm font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">' + escapeHtml(name) + '</span>' +
+                    '<span class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full shrink-0" style="color: ' + c + '; background: ' + bg + ';">' + l + '</span>' +
+                '</div>' +
+                '<svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>' +
+            '</div>' +
+            '<div class="risk-accordion-body">' + bodyContent + '</div>' +
+        '</div>';
+    }
+
+    // Chat Panel: Send followup
+    window.sendFollowup = function(question) {
+        if (!question || !question.trim()) return;
+        if (!lastAnalysisId) return;
+        if (chatSending) return;
+
+        question = question.trim();
+        chatSending = true;
+        const messagesEl = document.getElementById('chat-messages');
+        const sendBtn = document.getElementById('chat-send-btn');
+        const inputEl = document.getElementById('chat-input');
+
+        // Disable input
+        inputEl.disabled = true;
+        sendBtn.disabled = true;
+
+        // Add user bubble
+        const userBubble = document.createElement('div');
+        userBubble.className = 'chat-bubble user';
+        userBubble.textContent = question;
+        messagesEl.appendChild(userBubble);
+
+        // Add typing indicator
+        const typingEl = document.createElement('div');
+        typingEl.className = 'typing-indicator';
+        typingEl.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+        messagesEl.appendChild(typingEl);
+
+        // Scroll to bottom
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+
+        // Stream response via fetch + ReadableStream
+        fetch('/api/analysis/' + lastAnalysisId + '/followup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: question })
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Followup request failed: ' + response.status);
+            }
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let aiBubble = null;
+
+            function readChunk() {
+                reader.read().then(({ done, value }) => {
+                    if (done) {
+                        // Remove typing indicator if still present
+                        if (typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+                        chatSending = false;
+                        inputEl.disabled = false;
+                        sendBtn.disabled = false;
+                        inputEl.focus();
+                        // Highlight legal terms in AI response
+                        var aiBubbles = document.querySelectorAll('.chat-bubble.ai');
+                        if (aiBubbles.length > 0) {
+                            LegalTerms.highlight(aiBubbles[aiBubbles.length - 1]);
+                        }
+                        return;
+                    }
+
+                    // Remove typing indicator on first chunk
+                    if (typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+
+                    // Create AI bubble if not exists
+                    if (!aiBubble) {
+                        aiBubble = document.createElement('div');
+                        aiBubble.className = 'chat-bubble ai';
+                        messagesEl.appendChild(aiBubble);
+                    }
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    // Try to parse SSE lines
+                    const lines = chunk.split('\n');
+                    lines.forEach(line => {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') return;
+                            try {
+                                const parsed = JSON.parse(data);
+                                if (parsed.content) {
+                                    aiBubble.textContent += parsed.content;
+                                } else if (parsed.text) {
+                                    aiBubble.textContent += parsed.text;
+                                } else if (typeof parsed === 'string') {
+                                    aiBubble.textContent += parsed;
+                                }
+                            } catch (e) {
+                                // Plain text chunk
+                                aiBubble.textContent += data;
+                            }
+                        } else if (line.trim() && !line.startsWith(':') && !line.startsWith('event:') && !line.startsWith('id:') && !line.startsWith('retry:')) {
+                            // Non-SSE plain text response
+                            if (!aiBubble) {
+                                aiBubble = document.createElement('div');
+                                aiBubble.className = 'chat-bubble ai';
+                                messagesEl.appendChild(aiBubble);
+                            }
+                            aiBubble.textContent += line;
+                        }
+                    });
+
+                    messagesEl.scrollTop = messagesEl.scrollHeight;
+                    readChunk();
+                }).catch(err => {
+                    if (typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+                    // Show error in chat
+                    const errBubble = document.createElement('div');
+                    errBubble.className = 'chat-bubble ai';
+                    errBubble.style.color = 'var(--state-error)';
+                    errBubble.textContent = I18N.t('js.toast_followup_error');
+                    messagesEl.appendChild(errBubble);
+                    chatSending = false;
+                    inputEl.disabled = false;
+                    sendBtn.disabled = false;
+                });
+            }
+
+            readChunk();
+        }).catch(err => {
+            if (typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+            const errBubble = document.createElement('div');
+            errBubble.className = 'chat-bubble ai';
+            errBubble.style.color = 'var(--state-error)';
+            errBubble.textContent = I18N.t('js.toast_followup_error');
+            messagesEl.appendChild(errBubble);
+            chatSending = false;
+            inputEl.disabled = false;
+            sendBtn.disabled = false;
+        });
+    };
+
+    // Send from input field
+    window.sendFollowupFromInput = function() {
+        const input = document.getElementById('chat-input');
+        const question = input.value.trim();
+        if (!question) return;
+        input.value = '';
+        sendFollowup(question);
+    };
+
+    // Enter key for chat input
+    document.getElementById('chat-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendFollowupFromInput();
+        }
+    });
+
+    // Risk Preferences
+    window.openPreferencePanel = function() {
+        requireAuth(async () => {
+            document.getElementById('pref-panel').classList.add('active');
+            document.getElementById('pref-panel-overlay').classList.add('active');
+            try {
+                const resp = await apiFetch('/api/preferences');
+                const data = await resp.json();
+                preferences = data.preferences || [];
+                renderPreferences();
+            } catch (e) { showToast(I18N.t('js.toast_pref_load_failed'), 'error'); }
+        });
+    };
+
+    window.closePreferencePanel = function() {
+        document.getElementById('pref-panel').classList.remove('active');
+        document.getElementById('pref-panel-overlay').classList.remove('active');
+    };
+
+    window.addPreference = function() {
+        const input = document.getElementById('pref-input');
+        const val = input.value.trim();
+        if (!val) return;
+        if (preferences.includes(val)) { showToast(I18N.t('js.toast_pref_exists'), 'warning'); return; }
+        preferences.push(val);
+        input.value = '';
+        renderPreferences();
+    };
+
+    window.removePreference = function(idx) {
+        preferences.splice(idx, 1);
+        renderPreferences();
+    };
+
+    function renderPreferences() {
+        const list = document.getElementById('pref-list');
+        list.innerHTML = '';
+        preferences.forEach((p, i) => {
+            list.innerHTML += '<li class="flex items-center justify-between p-3 rounded-lg" style="background: var(--color-bg-secondary);">' +
+                '<span class="text-sm" style="color: var(--color-text-primary);">' + escapeHtml(p) + '</span>' +
+                '<button onclick="removePreference(' + i + ')" style="background: none; border: none; cursor: pointer; color: var(--color-text-tertiary); flex-shrink: 0; margin-left: 8px;">' +
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></li>';
+        });
+    }
+
+    window.savePreferences = async function() {
+        try {
+            const resp = await apiFetch('/api/preferences', {
+                method: 'PUT',
+                body: JSON.stringify({ preferences })
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                showToast(I18N.t('js.toast_pref_saved'), 'success');
+                closePreferencePanel();
+            } else {
+                showToast(data.error || I18N.t('js.toast_pref_save_failed'), 'error');
+            }
+        } catch (e) { showToast(I18N.t('js.toast_network_error'), 'error'); }
+    };
+
+    // Enter key for pref input
+    document.getElementById('pref-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); addPreference(); }
+    });
+
+    // Helper functions
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    function escapeJs(str) {
+        if (!str) return '';
+        return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+    }
+})();
+</script>
+{% endblock %}
