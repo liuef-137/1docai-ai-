@@ -46,27 +46,65 @@ window.LegalTerms = (function() {
         { term: '惩罚性赔偿', alias: ['惩罚性赔偿金', '惩罚赔偿'], plain: '超过实际损失数额的赔偿，用于惩罚恶意或严重违法行为（如消费者权益保护中的3倍赔偿）。', category: 'general' },
         { term: '实际履行', alias: ['继续履行'], plain: '一方违约后，对方可以要求其按照合同约定继续完成义务，而不是仅仅赔偿了事。', category: 'contract' },
     ];
+
+    var glossaryEn = [
+        { term: 'Indemnification', alias: ['indemnify', 'indemnifies', 'indemnified'], plain: 'One party compensates another for losses or third-party claims. In plain words: "I\'ve got your back if someone sues."', category: 'contract' },
+        { term: 'Force Majeure', alias: ['force majeure'], plain: 'Unforeseeable events (earthquakes, wars, pandemics) that excuse a party from performing its obligations.', category: 'contract' },
+        { term: 'Governing Law', alias: ['governing law', 'applicable law'], plain: 'The law of a specific country or state used to interpret the contract and resolve disputes.', category: 'contract' },
+        { term: 'Jurisdiction', alias: ['jurisdiction', 'venue'], plain: 'The court or arbitration forum that will hear disputes under the contract.', category: 'contract' },
+        { term: 'Confidentiality', alias: ['confidential', 'non-disclosure', 'NDA'], plain: 'An obligation to keep contract information and trade secrets secret from third parties.', category: 'contract' },
+        { term: 'Termination', alias: ['terminate', 'termination', 'terminated'], plain: 'Ending the contract relationship before its natural expiration, either by agreement or for cause.', category: 'contract' },
+        { term: 'Liquidated Damages', alias: ['liquidated damages'], plain: 'A pre-agreed sum payable if a party breaches the contract, designed to simplify damage calculation.', category: 'contract' },
+        { term: 'Intellectual Property', alias: ['IP', 'intellectual property rights'], plain: 'Exclusive rights to creations of the mind, such as inventions, works, and trademarks.', category: 'general' },
+        { term: 'Non-Compete', alias: ['non-compete', 'non-competition'], plain: 'A restriction preventing one party from competing with the other for a period after the contract ends.', category: 'contract' },
+        { term: 'Arbitration', alias: ['arbitrate', 'arbitrator'], plain: 'Resolving disputes through a private arbitrator instead of a public court; usually final and binding.', category: 'contract' },
+        { term: 'Breach of Contract', alias: ['breach', 'breached'], plain: 'Failure to perform or improper performance of contractual obligations.', category: 'contract' },
+        { term: 'Limitation of Liability', alias: ['liability cap', 'limit liability'], plain: 'A clause that sets a maximum amount one party must pay for damages.', category: 'contract' },
+        { term: 'Warranty', alias: ['warranties'], plain: 'A guarantee that certain facts are true or that future performance will meet standards.', category: 'contract' },
+        { term: 'Assignment', alias: ['assign', 'assigns', 'assigned'], plain: 'Transferring contractual rights or duties to a third party.', category: 'contract' },
+        { term: 'Severability', alias: ['severable'], plain: 'If one provision is invalid, the rest of the contract remains in effect.', category: 'contract' },
+        { term: 'Consideration', alias: ['consideration'], plain: 'Something of value exchanged by the parties to form a binding contract.', category: 'contract' },
+        { term: 'Representations and Warranties', alias: ['representations', 'warranties'], plain: 'Statements of present fact and promises about future conditions made by a party.', category: 'contract' },
+        { term: 'Dispute Resolution', alias: ['dispute resolution'], plain: 'The agreed process for resolving conflicts, such as negotiation, mediation, arbitration, or litigation.', category: 'contract' },
+    ];
+
+    // Simple CJK detection for client-side language hint (mirrors server logic)
+    function detectLanguage(text) {
+        if (!text) return 'zh';
+        var cjk = (text.match(/[\u4e00-\u9fff\u3400-\u4dbf\u3000-\u303f\uff00-\uffef]/g) || []).length;
+        return cjk / text.length > 0.15 ? 'zh' : 'en';
+    }
     
     return {
         glossary: glossary,
+        glossaryEn: glossaryEn,
+        detectLanguage: detectLanguage,
         
         /**
          * Auto-highlight legal terms in a text container.
          * Wraps matched terms with <span class="legal-term" data-term-index="i">...</span>
          * and attaches a click handler to show a tooltip.
+         * @param {HTMLElement} container
+         * @param {string} lang - 'zh' or 'en'; defaults to auto-detect from container text
          */
-        highlight: function(container) {
-            if (!container || !glossary.length) return;
+        highlight: function(container, lang) {
+            if (!container) return;
+            
+            // Determine glossary to use
+            var useLang = lang || detectLanguage(container.textContent || '');
+            var terms = (useLang === 'en') ? glossaryEn : glossary;
+            if (!terms.length) return;
             
             // Skip if already highlighted
             if (container.classList.contains('lt-highlighted')) return;
             container.classList.add('lt-highlighted');
+            container.setAttribute('data-legal-lang', useLang);
             
             // Build a combined pattern of all terms and aliases, sorted by length (longest first)
             var allPatterns = [];
-            glossary.forEach(function(entry, idx) {
-                var terms = [entry.term].concat(entry.alias || []);
-                terms.forEach(function(pattern) {
+            terms.forEach(function(entry, idx) {
+                var termList = [entry.term].concat(entry.alias || []);
+                termList.forEach(function(pattern) {
                     allPatterns.push({ text: pattern, index: idx });
                 });
             });
@@ -77,7 +115,7 @@ window.LegalTerms = (function() {
             var escaped = allPatterns.map(function(p) {
                 return p.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             });
-            var combinedRegex = new RegExp('(' + escaped.join('|') + ')', 'g');
+            var combinedRegex = new RegExp('(' + escaped.join('|') + ')', 'gi');
             
             // Walk text nodes and replace
             var walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
@@ -96,7 +134,7 @@ window.LegalTerms = (function() {
             }
             
             var patternMap = {};
-            allPatterns.forEach(function(p) { patternMap[p.text] = p.index; });
+            allPatterns.forEach(function(p) { patternMap[p.text.toLowerCase()] = p.index; });
             
             textNodes.forEach(function(textNode) {
                 var text = textNode.textContent;
@@ -116,10 +154,12 @@ window.LegalTerms = (function() {
                     // Create highlighted span
                     var span = document.createElement('span');
                     span.className = 'legal-term';
-                    span.setAttribute('data-term-idx', patternMap[match[0]]);
+                    var termIdx = patternMap[match[0].toLowerCase()];
+                    span.setAttribute('data-term-idx', termIdx);
+                    span.setAttribute('data-legal-lang', useLang);
                     span.setAttribute('tabindex', '0');
                     span.setAttribute('role', 'button');
-                    span.setAttribute('aria-label', '\u6CD5\u5F8B\u672F\u8BED: ' + glossary[patternMap[match[0]]].term);
+                    span.setAttribute('aria-label', 'Legal term: ' + terms[termIdx].term);
                     span.textContent = match[0];
                     frag.appendChild(span);
                     
@@ -136,15 +176,16 @@ window.LegalTerms = (function() {
             });
             
             // Attach click/keydown handlers
+            var self = this;
             container.querySelectorAll('.legal-term').forEach(function(el) {
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    LegalTerms.showTooltip(el, parseInt(el.getAttribute('data-term-idx')));
+                    self.showTooltip(el, parseInt(el.getAttribute('data-term-idx')));
                 });
                 el.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        LegalTerms.showTooltip(el, parseInt(el.getAttribute('data-term-idx')));
+                        self.showTooltip(el, parseInt(el.getAttribute('data-term-idx')));
                     }
                 });
             });
@@ -157,7 +198,9 @@ window.LegalTerms = (function() {
             // Remove existing tooltip
             LegalTerms.hideTooltip();
             
-            var entry = glossary[termIdx];
+            var useLang = anchorEl.getAttribute('data-legal-lang') || 'zh';
+            var terms = (useLang === 'en') ? glossaryEn : glossary;
+            var entry = terms[termIdx];
             if (!entry) return;
             
             var tooltip = document.createElement('div');

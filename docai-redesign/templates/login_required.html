@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}DocAI - 请先登录{% endblock %}
+
+{% block content %}
+<section class="min-h-[calc(100vh-72px)] flex items-center justify-center px-6 py-16" style="background: var(--color-bg);">
+    <div class="w-full max-w-md text-center">
+        <!-- 图标 -->
+        <div class="mx-auto w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style="background: var(--color-primary-tint-50); border: 1px solid var(--color-primary-tint-100);">
+            <i data-lucide="lock-keyhole" class="w-10 h-10" style="color: var(--color-primary);"></i>
+        </div>
+
+        <!-- 标题 -->
+        <h1 class="text-2xl font-bold mb-3" style="color: var(--color-text-primary); font-family: var(--font-display);" data-i18n="login_required.title">请先登录</h1>
+        <p class="text-sm leading-relaxed mb-8" style="color: var(--color-text-secondary);" data-i18n="login_required.desc">登录账号即可查看你的个人主页、数据看板、使用记录和消息通知。</p>
+
+        <!-- 操作按钮 -->
+        <div class="flex flex-col sm:flex-row gap-3 justify-center mb-6">
+            <a href="/login?redirect=/dashboard" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-colors" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none;" onmouseenter="this.style.background='var(--color-accent-dark)'" onmouseleave="this.style.background='var(--color-accent)'">
+                <i data-lucide="log-in" class="w-4 h-4"></i>
+                <span data-i18n="login_required.login_btn">立即登录</span>
+            </a>
+            <a href="/login?tab=register&redirect=/dashboard" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-colors" style="background: var(--color-surface); color: var(--color-primary); text-decoration: none; border: 1px solid var(--color-primary-tint-200);" onmouseenter="this.style.background='var(--color-bg-secondary)'" onmouseleave="this.style.background='var(--color-surface)'">
+                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                <span data-i18n="login_required.register_btn">注册新账号</span>
+            </a>
+        </div>
+
+        <!-- 返回首页 -->
+        <a href="/" class="inline-flex items-center gap-1.5 text-sm" style="color: var(--color-text-tertiary); text-decoration: none;" onmouseenter="this.style.color='var(--color-primary)'" onmouseleave="this.style.color='var(--color-text-tertiary)'">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            <span data-i18n="login_required.back_home">返回首页</span>
+        </a>
+    </div>
+</section>
+{% endblock %}

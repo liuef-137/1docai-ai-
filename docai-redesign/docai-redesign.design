@@ -358,7 +358,11 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 0,
-        "y": 12205
+        "y": 12205,
+        "naturalSize": {
+          "width": 1368,
+          "height": 768
+        }
       },
       "devMetadata": {
         "imageSrc": "assets/hero-analysis.png"
@@ -372,7 +376,11 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 620,
-        "y": 12205
+        "y": 12205,
+        "naturalSize": {
+          "width": 1368,
+          "height": 768
+        }
       },
       "devMetadata": {
         "imageSrc": "assets/hero-v2.png"
@@ -386,7 +394,11 @@
       "createdAt": 1752345600000,
       "canvasData": {
         "x": 1240,
-        "y": 12205
+        "y": 12205,
+        "naturalSize": {
+          "width": 1368,
+          "height": 768
+        }
       },
       "devMetadata": {
         "imageSrc": "assets/hero-compare.png"

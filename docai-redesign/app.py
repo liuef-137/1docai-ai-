@@ -27,14 +27,25 @@ def _auto_migrate(db):
         existing = {row[1] for row in cursor.fetchall()}
     except Exception:
         pass
-    
+
+    # Get existing columns for 'user' table
+    user_existing = set()
+    try:
+        cursor.execute("PRAGMA table_info(user)")
+        user_existing = {row[1] for row in cursor.fetchall()}
+    except Exception:
+        pass
+
     # Add missing columns
     migrations = [
         ("analysis", "text_hash", "VARCHAR(16)"),
         ("analysis", "contract_type", "VARCHAR(20)"),
+        ("analysis", "language", "VARCHAR(10)"),
+        ("user", "avatar", "VARCHAR(256)"),
     ]
     for table, col, col_type in migrations:
-        if col not in existing:
+        cols = existing if table == 'analysis' else user_existing
+        if col not in cols:
             try:
                 cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}")
                 print(f'[DocAI Migration] Added {table}.{col}')
@@ -93,6 +104,7 @@ def _create_app():
                 'username': user.username,
                 'email': user.email,
                 'role': user.role,
+                'avatar': getattr(user, 'avatar', None),
             } if user else None,
         }
         return {'app_state': app_state, 'current_user': user, 'i18n_data': json.dumps(I18N_DATA)}
@@ -134,6 +146,19 @@ def _create_app():
             db.session.commit()
             print('[DocAI] Default admin created: admin / admin123')
 
+        # Seed default notifications if table is empty
+        from models import Notification
+        if Notification.query.count() == 0:
+            default_notifs = [
+                Notification(title='欢迎使用 DocAI', summary='DocAI 智能合同分析平台已为你准备就绪，开始你的第一次合同分析吧！', notif_type='system', icon='sparkles'),
+                Notification(title='新功能上线：合同对比', summary='合同对比功能现已支持双文档智能比对，立即体验差异检测与风险评估。', notif_type='system', icon='git-compare'),
+                Notification(title='系统维护通知', summary='系统将于本周日凌晨 2:00-4:00 进行例行维护升级，期间服务可能短暂中断。', notif_type='system', icon='megaphone'),
+            ]
+            for n in default_notifs:
+                db.session.add(n)
+            db.session.commit()
+            print('[DocAI] Default notifications seeded')
+
     return app
 
 
@@ -142,7 +167,5 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 7777))
     app.run(host='0.0.0.0', port=port, debug=True)
 
-
 # Gunicorn entry point: gunicorn will use "app:app"
 app = create_app()
-

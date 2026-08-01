@@ -15,6 +15,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default='user')  # 'admin' or 'user'
+    avatar = db.Column(db.String(256), default=None)  # 头像图片 URL，无则用首字母占位
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     analyses = db.relationship('Analysis', backref='user', lazy=True)
@@ -34,6 +35,7 @@ class User(db.Model):
             'username': self.username,
             'email': self.email,
             'role': self.role,
+            'avatar': self.avatar,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -47,6 +49,7 @@ class Analysis(db.Model):
     contract_text = db.Column(db.Text, nullable=False)
     text_hash = db.Column(db.String(16))
     contract_type = db.Column(db.String(20))
+    language = db.Column(db.String(10), default='zh')  # 'zh' or 'en'
     analysis_mode = db.Column(db.String(50), nullable=False)  # 'risk', 'summary', 'plain'
     result = db.Column(db.Text)  # JSON string of full analysis result
     score = db.Column(db.Integer)
@@ -65,6 +68,7 @@ class Analysis(db.Model):
             'contract_text': self.contract_text,
             'text_hash': self.text_hash,
             'contract_type': self.contract_type,
+            'language': self.language or 'zh',
             'analysis_mode': self.analysis_mode,
             'result': self.result,
             'score': self.score,
@@ -274,3 +278,62 @@ class Conversation(db.Model):
             'messages': self.get_messages(),
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class Notification(db.Model):
+    """通知模板表：每条通知的原始内容，向所有用户广播。"""
+    __tablename__ = 'notification'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    summary = db.Column(db.Text)
+    notif_type = db.Column(db.String(20), default='system')  # system / business / alert / team
+    icon = db.Column(db.String(50))  # lucide icon name
+    link = db.Column(db.String(256))  # 点击跳转链接（可选）
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # 关联每个用户的已读状态
+    user_states = db.relationship('UserNotification', backref='notification', lazy=True, cascade='all, delete-orphan')
+
+    def to_dict(self, user_id=None):
+        read = False
+        if user_id:
+            state = UserNotification.query.filter_by(
+                notification_id=self.id, user_id=user_id
+            ).first()
+            read = state.is_read if state else False
+        return {
+            'id': self.id,
+            'title': self.title,
+            'summary': self.summary,
+            'notif_type': self.notif_type,
+            'icon': self.icon or self._default_icon(),
+            'link': self.link,
+            'read': read,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def _default_icon(self):
+        return {
+            'alert': 'alert-triangle',
+            'business': 'file-check',
+            'team': 'users',
+            'system': 'megaphone',
+        }.get(self.notif_type, 'bell')
+
+
+class UserNotification(db.Model):
+    """用户-通知关联表：记录每个用户对每条通知的已读状态。"""
+    __tablename__ = 'user_notification'
+
+    id = db.Column(db.Integer, primary_key=True)
+    notification_id = db.Column(db.Integer, db.ForeignKey('notification.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    read_at = db.Column(db.DateTime)
+    deleted = db.Column(db.Boolean, default=False)  # 用户软删除（隐藏）
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (db.UniqueConstraint('notification_id', 'user_id', name='uq_notif_user'),)
+
+    user = db.relationship('User', backref='notification_states', lazy=True)

@@ -4,3 +4,4 @@ werkzeug>=3.0
 requests>=2.31
 python-dotenv>=1.0
 gunicorn>=21.2
+langdetect==1.0.9

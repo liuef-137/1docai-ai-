@@ -222,6 +222,13 @@
             .progress-animated { animation: none; }
         }
 
+        /* Nav user hover dropdown */
+        #user-menu { transition: opacity 160ms ease, transform 160ms ease; opacity: 0; transform: translateY(-4px); pointer-events: none; }
+        #user-menu.open { display: block; opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .user-menu-item { transition: background 120ms ease; }
+        .user-menu-item:hover { background: var(--color-bg-secondary); }
+        .user-menu-item.danger:hover { background: rgba(212,80,80,0.06); }
+
         /* Legal Terms Highlighting */
         .legal-term {
             background: var(--color-accent-tint-50);
@@ -292,42 +299,93 @@
                 DocAI
             </a>
             <!-- Desktop Nav -->
-            <div class="hidden md:flex items-center gap-8">
-                <a href="/dashboard" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">工作台</a>
-                <a href="/analyze" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">智能分析</a>
-                <a href="/archive" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">合同档案</a>
-                <a href="/compare" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">合同对比</a>
-                <a href="/pricing" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">定价</a>
-                <a href="/about" class="nav-link text-sm font-medium whitespace-nowrap" style="color: var(--color-text-inverse); text-decoration: none; opacity: 0.8;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.8'">关于</a>
+            <div class="hidden md:flex items-center gap-1">
+                <a href="/dashboard" class="nav-link text-sm font-medium whitespace-nowrap px-3 py-2 rounded-md transition-colors" style="color: var(--color-text-inverse); text-decoration: none; {% if active_nav == 'dashboard' %}background: rgba(255,255,255,0.15); opacity: 1;{% else %}opacity: 0.7;{% endif %}" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='{% if active_nav == 'dashboard' %}1{% else %}0.7{% endif %}'" data-i18n="nav.dashboard">工作台</a>
+                <a href="/analyze" class="nav-link text-sm font-medium whitespace-nowrap px-3 py-2 rounded-md transition-colors" style="color: var(--color-text-inverse); text-decoration: none; {% if active_nav == 'analyze' %}background: rgba(255,255,255,0.15); opacity: 1;{% else %}opacity: 0.7;{% endif %}" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='{% if active_nav == 'analyze' %}1{% else %}0.7{% endif %}'" data-i18n="nav.analyze">智能分析</a>
+                <a href="/archive" class="nav-link text-sm font-medium whitespace-nowrap px-3 py-2 rounded-md transition-colors" style="color: var(--color-text-inverse); text-decoration: none; {% if active_nav == 'archive' %}background: rgba(255,255,255,0.15); opacity: 1;{% else %}opacity: 0.7;{% endif %}" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='{% if active_nav == 'archive' %}1{% else %}0.7{% endif %}'" data-i18n="nav.archive">合同档案</a>
+                <a href="/compare" class="nav-link text-sm font-medium whitespace-nowrap px-3 py-2 rounded-md transition-colors" style="color: var(--color-text-inverse); text-decoration: none; {% if active_nav == 'compare' %}background: rgba(255,255,255,0.15); opacity: 1;{% else %}opacity: 0.7;{% endif %}" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='{% if active_nav == 'compare' %}1{% else %}0.7{% endif %}'" data-i18n="nav.compare">合同对比</a>
+                <a href="/pricing" class="nav-link text-sm font-medium whitespace-nowrap px-3 py-2 rounded-md transition-colors" style="color: var(--color-text-inverse); text-decoration: none; {% if active_nav == 'pricing' %}background: rgba(255,255,255,0.15); opacity: 1;{% else %}opacity: 0.7;{% endif %}" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='{% if active_nav == 'pricing' %}1{% else %}0.7{% endif %}'" data-i18n="nav.pricing">定价</a>
+                <a href="/about" class="nav-link text-sm font-medium whitespace-nowrap px-3 py-2 rounded-md transition-colors" style="color: var(--color-text-inverse); text-decoration: none; {% if active_nav == 'about' %}background: rgba(255,255,255,0.15); opacity: 1;{% else %}opacity: 0.7;{% endif %}" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='{% if active_nav == 'about' %}1{% else %}0.7{% endif %}'" data-i18n="nav.about">关于</a>
             </div>
             <!-- Right Side -->
             <div class="flex items-center gap-3">
                 <!-- Language toggle -->
                 <button id="lang-toggle-btn" onclick="toggleLang()" class="text-xs px-2.5 py-1.5 rounded-md font-semibold" style="color: var(--color-text-inverse); background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); cursor: pointer;">EN</button>
                 {% if current_user %}
-                    <span class="hidden sm:inline text-sm" style="color: var(--color-text-inverse); opacity: 0.9;">{{ current_user.username }}</span>
-                    {% if current_user.role == 'admin' %}
-                        <a href="/admin" class="text-sm px-3 py-1.5 rounded-md" style="color: var(--color-text-inverse); text-decoration: none; background: var(--color-primary-light);">后台</a>
-                    {% endif %}
-                    <button onclick="handleLogout()" class="text-sm px-3 py-1.5 rounded-md" style="color: var(--color-text-inverse); opacity: 0.8; background: none; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">退出</button>
+                <!-- Logged in: Notification bell + User hover dropdown -->
+                <a href="/dashboard?tab=notifications" class="nav-bell relative hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors" style="color: var(--color-text-inverse); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); text-decoration: none;" onmouseenter="this.style.background='rgba(255,255,255,0.2)'" onmouseleave="this.style.background='rgba(255,255,255,0.1)'" aria-label="Notifications" data-i18n-arialabel="nav.notifications">
+                    <i data-lucide="bell" class="w-4 h-4"></i>
+                    <span id="nav-notification-badge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center" style="background: var(--state-error); color: #fff; border: 1.5px solid var(--color-primary); display: none;">3</span>
+                </a>
+                <div class="nav-user-wrap relative hidden sm:block" id="nav-user-wrap">
+                    <button type="button" class="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors" style="color: var(--color-text-inverse); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer;" onmouseenter="document.getElementById('user-menu').classList.add('open')" onmouseleave="document.getElementById('user-menu').classList.remove('open')">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden" style="{% if current_user.avatar %}background-image: url('{{ current_user.avatar }}'); background-size: cover; background-position: center;{% else %}background: var(--color-accent); color: var(--color-text-inverse);{% endif %}">
+                            {% if not current_user.avatar %}{{ current_user.username[:1]|upper }}{% endif %}
+                        </div>
+                        <span class="text-sm font-medium max-w-[100px] truncate">{{ current_user.username }}</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4" style="opacity: 0.7;"></i>
+                    </button>
+                    <div id="user-menu" class="user-dropdown absolute right-0 top-full pt-2" style="display: none;">
+                        <div class="rounded-xl overflow-hidden w-60" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
+                            <div class="px-4 py-3" style="border-bottom: 1px solid var(--color-border-light); background: var(--color-bg);">
+                                <div class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">{{ current_user.username }}</div>
+                                <div class="text-xs mt-0.5 truncate" style="color: var(--color-text-tertiary);">{{ current_user.email }}</div>
+                            </div>
+                            <a href="/dashboard" class="user-menu-item flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--color-text-secondary); text-decoration: none;">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                                <span data-i18n="nav.dashboard">工作台</span>
+                            </a>
+                            <a href="/dashboard?tab=account" class="user-menu-item flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--color-text-secondary); text-decoration: none;">
+                                <i data-lucide="user-cog" class="w-4 h-4"></i>
+                                <span data-i18n="nav.account_settings">账户管理</span>
+                            </a>
+                            <a href="/dashboard?tab=settings" class="user-menu-item flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--color-text-secondary); text-decoration: none;">
+                                <i data-lucide="settings" class="w-4 h-4"></i>
+                                <span data-i18n="nav.preferences">个人设置</span>
+                            </a>
+                            <div style="border-top: 1px solid var(--color-border-light);"></div>
+                            <a href="/dashboard?tab=notifications" class="user-menu-item flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--color-text-secondary); text-decoration: none;">
+                                <i data-lucide="bell" class="w-4 h-4"></i>
+                                <span data-i18n="nav.notifications">消息通知</span>
+                            </a>
+                            <a href="/dashboard?tab=activity" class="user-menu-item flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--color-text-secondary); text-decoration: none;">
+                                <i data-lucide="history" class="w-4 h-4"></i>
+                                <span data-i18n="nav.activity_log">使用日志</span>
+                            </a>
+                            {% if current_user.role == 'admin' %}
+                            <a href="/admin" class="user-menu-item flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--color-text-secondary); text-decoration: none;">
+                                <i data-lucide="shield" class="w-4 h-4"></i>
+                                <span data-i18n="nav.admin">管理后台</span>
+                            </a>
+                            {% endif %}
+                            <div style="border-top: 1px solid var(--color-border-light);">
+                                <button onclick="handleLogout()" class="user-menu-item w-full flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--state-error); background: none; border: none; cursor: pointer;">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                                    <span data-i18n="nav.logout">退出登录</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% else %}
-                    <a href="/login" class="hidden sm:inline-flex text-sm px-4 py-2 rounded-lg font-medium" style="color: var(--color-text-inverse); text-decoration: none; border: 1px solid rgba(255,255,255,0.3);">登录</a>
-                    <a href="/login?tab=register" class="inline-flex text-sm px-4 py-2 rounded-lg font-semibold" style="color: var(--color-text-inverse); text-decoration: none; background: var(--color-accent);">注册</a>
+                <!-- Not logged in: Login/Register -->
+                <a href="/login" class="hidden sm:inline-flex text-sm px-4 py-2 rounded-lg font-medium" style="color: var(--color-text-inverse); text-decoration: none; border: 1px solid rgba(255,255,255,0.3);" data-i18n="nav.login">登录</a>
+                <a href="/login?tab=register" class="inline-flex text-sm px-4 py-2 rounded-lg font-semibold" style="color: var(--color-text-inverse); text-decoration: none; background: var(--color-accent);" data-i18n="nav.register">注册</a>
                 {% endif %}
                 <!-- Mobile hamburger -->
-                <button class="md:hidden" style="color: var(--color-text-inverse); background: none; border: none; cursor: pointer;" onclick="toggleMobileMenu()" aria-label="菜单">
+                <button class="md:hidden" style="color: var(--color-text-inverse); background: none; border: none; cursor: pointer;" onclick="toggleMobileMenu()" aria-label="Menu" data-i18n-arialabel="nav.menu">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
             </div>
         </nav>
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="mobile-menu flex-col md:hidden px-6 pb-4" style="background: var(--color-primary);">
-            <a href="/dashboard" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">工作台</a>
-            <a href="/analyze" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">智能分析</a>
-            <a href="/archive" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">合同档案</a>
-            <a href="/compare" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">合同对比</a>
-            <a href="/pricing" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">定价</a>
-            <a href="/about" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);">关于</a>
+            <a href="/dashboard" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.dashboard">工作台</a>
+            <a href="/analyze" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.analyze">智能分析</a>
+            <a href="/archive" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.archive">合同档案</a>
+            <a href="/compare" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.compare">合同对比</a>
+            <a href="/pricing" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.pricing">定价</a>
+            <a href="/about" class="block py-3 text-sm" style="color: var(--color-text-inverse); text-decoration: none; border-top: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.about">关于</a>
         </div>
     </header>
 
@@ -342,40 +400,40 @@
             <div class="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-10">
                 <div class="col-span-2 md:col-span-1">
                     <span class="text-lg font-semibold tracking-tight" style="color: var(--color-text-inverse); font-family: var(--font-display);">DocAI</span>
-                    <p class="mt-3 text-xs leading-relaxed" style="color: var(--color-text-inverse); opacity: 0.5;">AI 驱动的合同智能分析平台</p>
+                    <p class="mt-3 text-xs leading-relaxed" style="color: var(--color-text-inverse); opacity: 0.5;" data-i18n="footer.tagline">AI 驱动的合同智能分析平台</p>
                 </div>
                 <div>
-                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;">产品</h4>
+                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;" data-i18n="footer.products">产品</h4>
                     <ul class="mt-4 space-y-3" style="list-style: none; padding: 0; margin: 0;">
-                        <li><a href="/analyze" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">智能分析</a></li>
-                        <li><a href="/archive" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">合同档案</a></li>
-                        <li><a href="/compare" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">合同对比</a></li>
+                        <li><a href="/analyze" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;" data-i18n="nav.analyze">智能分析</a></li>
+                        <li><a href="/archive" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;" data-i18n="nav.archive">合同档案</a></li>
+                        <li><a href="/compare" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;" data-i18n="nav.compare">合同对比</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;">资源</h4>
+                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;" data-i18n="footer.resources">资源</h4>
                     <ul class="mt-4 space-y-3" style="list-style: none; padding: 0; margin: 0;">
-                        <li><a href="/pricing" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">定价方案</a></li>
-                        <li><a href="/about" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">关于我们</a></li>
+                        <li><a href="/pricing" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;" data-i18n="footer.pricing_plan">定价方案</a></li>
+                        <li><a href="/about" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;" data-i18n="footer.about_us">关于我们</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;">公司</h4>
+                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;" data-i18n="footer.company">公司</h4>
                     <ul class="mt-4 space-y-3" style="list-style: none; padding: 0; margin: 0;">
-                        <li><a href="/about" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">联系我们</a></li>
-                        <li><a href="/about" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">加入团队</a></li>
+                        <li><a href="/about" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;" data-i18n="footer.contact">联系我们</a></li>
+                        <li><a href="/about" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;" data-i18n="footer.careers">加入团队</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;">法律</h4>
+                    <h4 class="text-xs font-semibold uppercase" style="color: var(--color-text-inverse); opacity: 0.7; letter-spacing: 0.08em;" data-i18n="footer.legal">法律</h4>
                     <ul class="mt-4 space-y-3" style="list-style: none; padding: 0; margin: 0;">
-                        <li><a href="#" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">隐私政策</a></li>
-                        <li><a href="#" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;">服务条款</a></li>
+                        <li><a href="#" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;" data-i18n="footer.privacy">隐私政策</a></li>
+                        <li><a href="#" class="text-sm" style="color: var(--color-text-inverse); opacity: 0.5; text-decoration: none;" data-i18n="footer.terms">服务条款</a></li>
                     </ul>
                 </div>
             </div>
             <div class="mt-12 pt-8" style="border-top: 1px solid rgba(255,255,255,0.1);">
-                <p class="text-xs text-center" style="color: var(--color-text-inverse); opacity: 0.5;">&copy; 2026 DocAI. All rights reserved.</p>
+                <p class="text-xs text-center" style="color: var(--color-text-inverse); opacity: 0.5;" data-i18n="footer.copyright">&copy; 2026 DocAI. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -384,49 +442,49 @@
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-content w-full max-w-md mx-4 p-8">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-semibold" style="color: var(--color-text-primary);">账号</h2>
-                <button onclick="closeAuthModal()" style="background: none; border: none; cursor: pointer; color: var(--color-text-tertiary);" aria-label="关闭">
+                <h2 class="text-xl font-semibold" style="color: var(--color-text-primary);" data-i18n="auth.account">账号</h2>
+                <button onclick="closeAuthModal()" style="background: none; border: none; cursor: pointer; color: var(--color-text-tertiary);" aria-label="Close" data-i18n-arialabel="auth.close">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             <!-- Tabs -->
             <div class="flex border-b mb-6" style="border-color: var(--color-border-light);">
-                <button id="auth-login-tab" class="flex-1 py-3 text-sm font-medium text-center border-b-2" style="border-color: var(--color-accent); color: var(--color-accent); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" onclick="switchAuthTab('login')">登录</button>
-                <button id="auth-register-tab" class="flex-1 py-3 text-sm font-medium text-center border-b-2" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" onclick="switchAuthTab('register')">注册</button>
+                <button id="auth-login-tab" class="flex-1 py-3 text-sm font-medium text-center border-b-2" style="border-color: var(--color-accent); color: var(--color-accent); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" onclick="switchAuthTab('login')" data-i18n="auth.login_tab">登录</button>
+                <button id="auth-register-tab" class="flex-1 py-3 text-sm font-medium text-center border-b-2" style="border-color: transparent; color: var(--color-text-tertiary); background: none; border-top: none; border-left: none; border-right: none; cursor: pointer;" onclick="switchAuthTab('register')" data-i18n="auth.register_tab">注册</button>
             </div>
             <!-- Login Form -->
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">用户名</label>
-                    <input type="text" name="username" required placeholder="输入用户名" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.username">用户名</label>
+                    <input type="text" name="username" required placeholder="输入用户名" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.username_placeholder">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">密码</label>
-                    <input type="password" name="password" required placeholder="输入密码" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.password">密码</label>
+                    <input type="password" name="password" required placeholder="输入密码" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.password_placeholder">
                 </div>
                 <div id="login-error" class="text-sm hidden" style="color: var(--state-error);"></div>
-                <button type="submit" id="login-submit" class="w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;">登录</button>
+                <button type="submit" id="login-submit" class="w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;" data-i18n="auth.login_btn">登录</button>
             </form>
             <!-- Register Form -->
             <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 hidden">
                 <div>
-                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">用户名</label>
-                    <input type="text" name="username" required placeholder="2-80个字符" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.username">用户名</label>
+                    <input type="text" name="username" required placeholder="2-80个字符" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.username_hint">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">邮箱</label>
-                    <input type="email" name="email" required placeholder="your@email.com" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.email">邮箱</label>
+                    <input type="email" name="email" required placeholder="your@email.com" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.email_placeholder">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">密码</label>
-                    <input type="password" name="password" required placeholder="至少6个字符" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.password">密码</label>
+                    <input type="password" name="password" required placeholder="至少6个字符" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.password_hint">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">确认密码</label>
-                    <input type="password" name="confirm_password" required placeholder="再次输入密码" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'">
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.confirm_password">确认密码</label>
+                    <input type="password" name="confirm_password" required placeholder="再次输入密码" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.confirm_placeholder">
                 </div>
                 <div id="register-error" class="text-sm hidden" style="color: var(--state-error);"></div>
-                <button type="submit" id="register-submit" class="w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;">注册</button>
+                <button type="submit" id="register-submit" class="w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;" data-i18n="auth.register_btn">注册</button>
             </form>
         </div>
     </div>
@@ -683,6 +741,22 @@
             document.getElementById('mobile-menu').classList.toggle('open');
         }
 
+        function toggleUserMenu() {
+            var menu = document.getElementById('user-menu');
+            if (!menu) return;
+            menu.classList.toggle('open');
+        }
+
+        // User menu: keep open while hovering the menu itself
+        (function() {
+            document.addEventListener('DOMContentLoaded', function() {
+                var menu = document.getElementById('user-menu');
+                if (!menu) return;
+                menu.addEventListener('mouseenter', function() { menu.classList.add('open'); });
+                menu.addEventListener('mouseleave', function() { menu.classList.remove('open'); });
+            });
+        })();
+
         function toggleLang() {
             var newLang = (window.I18N && window.I18N.currentLang === 'zh') ? 'en' : 'zh';
             if (window.I18N) {
@@ -760,7 +834,31 @@
             if (typeof lucide !== 'undefined') lucide.createIcons();
             // Re-apply i18n (head script may have run before DOM was ready)
             if (typeof I18N !== 'undefined') I18N.applyAll();
+            // 加载通知未读数（登录态）
+            if (window.appState && window.appState.user) {
+                fetchUnreadCount();
+            }
         });
+
+        // 全局：获取通知未读数并更新红点
+        function fetchUnreadCount() {
+            var token = (typeof getToken === 'function') ? getToken() : '';
+            if (!token) return;
+            fetch('/api/notifications/unread-count', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                var count = data.unread_count || 0;
+                var navBadge = document.getElementById('nav-notification-badge');
+                if (navBadge) {
+                    if (count > 0) {
+                        navBadge.textContent = count > 99 ? '99+' : count;
+                        navBadge.style.display = '';
+                    } else {
+                        navBadge.style.display = 'none';
+                    }
+                }
+            }).catch(function() {});
+        }
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>

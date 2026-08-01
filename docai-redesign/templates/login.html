@@ -179,7 +179,9 @@
                 showToast(I18N.t('login.success_login'), 'success');
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
-                setTimeout(() => { window.location.href = '/analyze'; }, 500);
+                const params = new URLSearchParams(window.location.search);
+                const redirect = params.get('redirect') || '/analyze';
+                setTimeout(() => { window.location.href = redirect; }, 500);
             } catch (err) { errEl.textContent = I18N.t('login.error_network'); errEl.classList.remove('hidden'); }
             finally { btn.disabled = false; btn.textContent = I18N.t('login.btn_login'); }
         }
@@ -206,7 +208,9 @@
                 showToast(I18N.t('login.success_register'), 'success');
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
-                setTimeout(() => { window.location.href = '/analyze'; }, 500);
+                const params = new URLSearchParams(window.location.search);
+                const redirect = params.get('redirect') || '/analyze';
+                setTimeout(() => { window.location.href = redirect; }, 500);
             } catch (err) { errEl.textContent = I18N.t('login.error_network'); errEl.classList.remove('hidden'); }
             finally { btn.disabled = false; btn.textContent = I18N.t('login.btn_register'); }
         }

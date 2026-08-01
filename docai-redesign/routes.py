@@ -1,15 +1,26 @@
 import json
 import re
 import hashlib
+import os
+import uuid
 import requests as http_requests
 from datetime import datetime, date, timedelta
 from flask import (
-    Blueprint, request, jsonify, current_app, make_response, render_template
+    Blueprint, request, jsonify, current_app, make_response, render_template,
+    send_from_directory
 )
+from werkzeug.utils import secure_filename
 from sqlalchemy import or_, func
 
-from models import db, User, Analysis, RiskPreference, ContractCompare, Feedback, Conversation, UserQuota
+from models import db, User, Analysis, RiskPreference, ContractCompare, Feedback, Conversation, UserQuota, Notification, UserNotification
 from auth import create_token, get_current_user, admin_required
+from multilingual import (
+    detect_language,
+    build_analysis_prompt,
+    build_few_shot_messages,
+    get_review_stance_prompt,
+    get_plain_language_injection,
+)
 
 api_bp = Blueprint('api', __name__)
 
@@ -122,95 +133,8 @@ def _safe_parse_json(text):
 
 
 # ---------------------------------------------------------------------------
-# Mode-specific system prompts
+# Multilingual prompts are now managed in multilingual.py
 # ---------------------------------------------------------------------------
-
-REVIEW_STANCE_PROMPTS = {
-    'party_a': '\n\n审查立场：你代表甲方（合同中提供产品/服务/资金的一方）。请特别关注保护甲方权益的条款，如付款条件、交付标准、违约责任上限、知识产权归属、保密期限等。',
-    'party_b': '\n\n审查立场：你代表乙方（合同中接收产品/服务/资金的一方）。请特别关注保护乙方权益的条款，如付款期限、验收标准、违约金合理性、免责条款、竞业限制补偿、合同解除权等。',
-}
-
-PLAIN_LANGUAGE_INJECTION = """\n\n重要补充要求：在返回的 risk_items 中，每个风险条款额外增加一个 "plain_explanation" 字段，用通俗易懂的大白话解释该风险（不超过30字），让没有法律背景的人也能理解。同时在 suggestion 字段中给出具体的修改建议措辞。"""
-
-RISK_ANALYSIS_PROMPT = """你是一位资深合同审查律师，拥有 10 年以上的合同审查经验。你的任务是找出合同中的所有潜在风险点。
-
-{type_focus}{stance_prompt}{plain_lang_prompt}
-
-请以严格的 JSON 格式返回分析结果，不要包含任何其他文字说明。JSON 结构如下：
-{
-  "contract_type": "<合同类型，如 labor/rental/purchase/service/nda/loan/other>",
-  "score": <0-100 的整数，100=极安全，0=极高风险>,
-  "risk_level": "<high/medium/low>",
-  "one_line_summary": "<一句话总结该合同的核心风险，不超过 50 字>",
-  "risk_items": [
-    {
-      "clause_name": "<条款名称，如'违约金条款'、'保密期限'>",
-      "clause_location": "<条款所在位置，如'第三条第二款'>",
-      "risk_level": "<high/medium/low>",
-      "description": "<具体风险描述，2-3 句话，说明该条款为什么有问题>",
-      "plain_explanation": "<大白话解读，不超过30字，让普通人也能理解>",
-      "suggestion": "<修改建议，具体的操作性建议，如'建议将违约金上限设定为合同总额的20%'>",
-      "legal_basis": "<相关法律依据，如'《民法典》第585条'>"
-    }
-  ],
-  "suggestions": ["<总体改进建议1>", "<总体改进建议2>"],
-  "key_obligations": [
-    {"party": "<甲方/乙方>", "obligation": "<核心义务>"},
-    {"party": "<甲方/乙方>", "obligation": "<核心义务>"}
-  ]
-}
-
-评分标准：
-- 90-100：合同条款完善，风险很低
-- 70-89：有少量低风险条款，需要轻微调整
-- 50-69：存在中等风险条款，建议修改
-- 30-49：有较多高风险条款，建议重大修改
-- 0-29：合同存在严重问题，不建议签署
-
-分析要求：
-1. 至少找出 3 个风险条款，最多 10 个
-2. 每个风险条款必须给出具体的修改建议
-3. 优先关注显失公平的条款、违反法律强制性规定的条款、模糊不清的条款
-4. 如果合同中有空白待填项，标记为风险
-
-请确保返回有效的 JSON。"""
-
-SUMMARY_PROMPT = """你是一位专业的合同分析助手。请对以下合同文本进行全面的摘要分析。
-
-请以严格的 JSON 格式返回分析结果，不要包含任何其他文字说明。JSON 结构如下：
-{
-  "one_line_summary": "<一句话概括合同核心内容>",
-  "key_points": [
-    {"point": "<要点标题>", "detail": "<详细说明>"}
-  ],
-  "parties": [
-    {"name": "<甲方/乙方名称>", "role": "<角色描述>"}
-  ],
-  "important_dates": [
-    {"date": "<日期>", "event": "<事件描述>"}
-  ],
-  "obligations": [
-    {"party": "<义务方>", "obligation": "<义务内容>"}
-  ]
-}
-
-请确保返回有效的 JSON。"""
-
-PLAIN_LANGUAGE_PROMPT = """你是一位擅长将法律文书翻译为通俗语言的专家。请将以下合同文本翻译成普通人也能理解的通俗语言。
-
-请以严格的 JSON 格式返回分析结果，不要包含任何其他文字说明。JSON 结构如下：
-{
-  "one_line_summary": "<一句话通俗概括>",
-  "plain_explanation": "<完整的通俗语言版本>",
-  "key_terms": [
-    {"term": "<专业术语>", "plain_explanation": "<通俗解释>"}
-  ],
-  "things_to_watch": [
-    {"item": "<需要注意的事项>", "why_important": "<为什么重要>", "suggestion": "<建议>"}
-  ]
-}
-
-请确保返回有效的 JSON。"""
 
 COMPARE_PROMPT = """你是一位资深合同律师。请对比分析以下两份合同文本的差异，并从法律风险角度解读这些变更。
 
@@ -254,7 +178,7 @@ FOLLOWUP_PROMPT = """你是 DocAI 的合同分析助手。用户之前对一份�
 # Contract Type Detection
 # ---------------------------------------------------------------------------
 
-CONTRACT_TYPE_PROMPT = """请识别以下合同文本的类型。只返回一个 JSON，不要有其他文字：
+CONTRACT_TYPE_PROMPT_ZH = """请识别以下合同文本的类型。只返回一个 JSON，不要有其他文字：
 {"type": "<contract_type>", "confidence": <0.0-1.0>}
 
 合同类型可选值：
@@ -275,34 +199,83 @@ CONTRACT_TYPE_PROMPT = """请识别以下合同文本的类型。只返回一个
 {contract_text}
 """
 
+CONTRACT_TYPE_PROMPT_EN = """Identify the type of the following contract. Return only JSON, no other text:
+{"type": "<contract_type>", "confidence": <0.0-1.0>}
+
+Allowed contract types:
+- labor: employment agreement / labor contract
+- rental: lease / rental agreement
+- purchase: sale / purchase contract
+- service: service agreement / technical service contract
+- nda: non-disclosure agreement / confidentiality agreement
+- loan: loan / lending agreement
+- partnership: partnership / cooperation agreement
+- franchise: franchise agreement
+- agency: agency / representation agreement
+- construction: construction contract
+- insurance: insurance contract
+- other: other
+
+Contract text:
+{contract_text}
+"""
+
 CONTRACT_TYPE_FOCUS = {
     'labor': {
         'zh': '劳动合同专项审查',
-        'focus': '重点关注：试用期时长与工资、社保缴纳、竞业限制补偿、加班费计算、解除条件、违约金合法性、经济补偿金标准。注意《劳动合同法》对上述条款的强制性规定。',
+        'en': 'Employment Agreement Review',
+        'focus': {
+            'zh': '重点关注：试用期时长与工资、社保缴纳、竞业限制补偿、加班费计算、解除条件、违约金合法性、经济补偿金标准。注意《劳动合同法》对上述条款的强制性规定。',
+            'en': 'Focus on: probation period and pay, social insurance, non-compete compensation, overtime calculation, termination conditions, validity of penalties, and severance standards. Note mandatory rules under employment law.',
+        },
     },
     'rental': {
         'zh': '房屋租赁合同专项审查',
-        'focus': '重点关注：租期与违约金、押金退还条件、维修责任划分、转租限制、装修补偿、提前解约权、面积与用途约定。注意《民法典》关于租赁合同的规定。',
+        'en': 'Lease / Rental Agreement Review',
+        'focus': {
+            'zh': '重点关注：租期与违约金、押金退还条件、维修责任划分、转租限制、装修补偿、提前解约权、面积与用途约定。注意《民法典》关于租赁合同的规定。',
+            'en': 'Focus on: lease term and penalties, deposit refund conditions, maintenance responsibilities, subletting restrictions, renovation compensation, early termination rights, and area/use clauses.',
+        },
     },
     'purchase': {
         'zh': '买卖合同专项审查',
-        'focus': '重点关注：标的物描述、价格与支付方式、交付条件、质量保证期、验收标准、违约责任、所有权转移时机、风险承担。注意《民法典》买卖合同章节。',
+        'en': 'Sale / Purchase Contract Review',
+        'focus': {
+            'zh': '重点关注：标的物描述、价格与支付方式、交付条件、质量保证期、验收标准、违约责任、所有权转移时机、风险承担。注意《民法典》买卖合同章节。',
+            'en': 'Focus on: subject matter description, price and payment, delivery conditions, warranty period, acceptance criteria, breach remedies, title transfer timing, and risk allocation.',
+        },
     },
     'service': {
         'zh': '技术服务合同专项审查',
-        'focus': '重点关注：服务范围与边界、交付里程碑、验收标准、知识产权归属、保密条款、人员配置、付款节点、维护期与SLA、违约与解约。',
+        'en': 'Service Agreement Review',
+        'focus': {
+            'zh': '重点关注：服务范围与边界、交付里程碑、验收标准、知识产权归属、保密条款、人员配置、付款节点、维护期与SLA、违约与解约。',
+            'en': 'Focus on: scope and boundaries, deliverables/milestones, acceptance criteria, IP ownership, confidentiality, staffing, payment milestones, maintenance/SLA, termination and breach.',
+        },
     },
     'nda': {
         'zh': '保密协议专项审查',
-        'focus': '重点关注：保密范围界定、保密期限（是否过长）、例外条款、违约赔偿计算、竞业限制关联、信息返还/销毁义务、员工离职后的保密义务。',
+        'en': 'NDA / Confidentiality Review',
+        'focus': {
+            'zh': '重点关注：保密范围界定、保密期限（是否过长）、例外条款、违约赔偿计算、竞业限制关联、信息返还/销毁义务、员工离职后的保密义务。',
+            'en': 'Focus on: definition of confidential information, confidentiality period (overly long?), exceptions, damages calculation, non-compete linkage, information return/destruction, and post-employment obligations.',
+        },
     },
     'loan': {
         'zh': '借款合同专项审查',
-        'focus': '重点关注：借款利率（是否超过LPR 4倍/司法保护上限）、担保方式、还款计划、提前还款违约金、逾期罚息、抵押物处置、保证人责任范围。',
+        'en': 'Loan Agreement Review',
+        'focus': {
+            'zh': '重点关注：借款利率（是否超过LPR 4倍/司法保护上限）、担保方式、还款计划、提前还款违约金、逾期罚息、抵押物处置、保证人责任范围。',
+            'en': 'Focus on: interest rate (usury limits), security/collateral, repayment schedule, prepayment penalties, default interest, collateral disposal, and guarantor scope.',
+        },
     },
     'other': {
         'zh': '合同通用审查',
-        'focus': '请按照通用合同审查标准进行分析。',
+        'en': 'General Contract Review',
+        'focus': {
+            'zh': '请按照通用合同审查标准进行分析。',
+            'en': 'Analyze according to general contract review standards.',
+        },
     },
 }
 
@@ -354,12 +327,18 @@ def _robust_json_parse(text):
         return None
 
 
-def _detect_contract_type(contract_text, api_key):
+def _detect_contract_type(contract_text, api_key, language='zh'):
     """Detect contract type using a lightweight AI call."""
     truncated = contract_text[:3000] if len(contract_text) > 3000 else contract_text
+    prompt_template = CONTRACT_TYPE_PROMPT_ZH if language == 'zh' else CONTRACT_TYPE_PROMPT_EN
+    system_msg = (
+        '你是一个合同类型分类器。只返回 JSON。'
+        if language == 'zh' else
+        'You are a contract type classifier. Return JSON only.'
+    )
     messages = [
-        {'role': 'system', 'content': '你是一个合同类型分类器。只返回 JSON。'},
-        {'role': 'user', 'content': CONTRACT_TYPE_PROMPT.format(contract_text=truncated)},
+        {'role': 'system', 'content': system_msg},
+        {'role': 'user', 'content': prompt_template.format(contract_text=truncated)},
     ]
     try:
         result = call_deepseek(messages, stream=False)
@@ -542,6 +521,71 @@ def logout():
     return resp
 
 
+# 头像存储目录
+AVATAR_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'assets', 'avatars'))
+AVATAR_ALLOWED = {'jpg', 'jpeg', 'png', 'webp'}
+AVATAR_MAX_SIZE = 2 * 1024 * 1024  # 2MB
+
+
+@api_bp.route('/api/auth/avatar', methods=['POST'])
+@get_current_user()
+def upload_avatar(current_user):
+    """上传/更新当前用户头像。"""
+    if 'avatar' not in request.files:
+        return jsonify({'error': '未选择文件'}), 400
+    file = request.files['avatar']
+    if not file or not file.filename:
+        return jsonify({'error': '未选择文件'}), 400
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in AVATAR_ALLOWED:
+        return jsonify({'error': '仅支持 JPG / PNG / WEBP 格式'}), 400
+    # 读取并校验大小
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > AVATAR_MAX_SIZE:
+        return jsonify({'error': '图片大小不能超过 2MB'}), 400
+    # 确保目录存在
+    os.makedirs(AVATAR_FOLDER, exist_ok=True)
+    # 删除旧头像文件（仅限本目录下的）
+    if current_user.avatar:
+        old_name = os.path.basename(current_user.avatar)
+        if old_name.startswith('avatar_'):
+            try:
+                old_path = os.path.join(AVATAR_FOLDER, old_name)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            except Exception:
+                pass
+    # 保存新头像
+    filename = f'avatar_{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}'
+    save_path = os.path.join(AVATAR_FOLDER, filename)
+    file.save(save_path)
+    # 更新数据库（存相对 URL）
+    avatar_url = f'/assets/avatars/{filename}'
+    current_user.avatar = avatar_url
+    db.session.commit()
+    return jsonify({'message': '头像更新成功', 'avatar': avatar_url, 'user': current_user.to_dict()})
+
+
+@api_bp.route('/api/auth/avatar', methods=['DELETE'])
+@get_current_user()
+def delete_avatar(current_user):
+    """删除当前用户头像，回退为首字母占位。"""
+    if current_user.avatar:
+        old_name = os.path.basename(current_user.avatar)
+        if old_name.startswith('avatar_'):
+            try:
+                old_path = os.path.join(AVATAR_FOLDER, old_name)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            except Exception:
+                pass
+        current_user.avatar = None
+        db.session.commit()
+    return jsonify({'message': '头像已移除', 'user': current_user.to_dict()})
+
+
 # ---------------------------------------------------------------------------
 # Analysis Routes
 # ---------------------------------------------------------------------------
@@ -588,11 +632,14 @@ def create_analysis(current_user):
             'cached': True,
         }), 200
 
+    # Detect contract language
+    language = detect_language(text)
+
     # Detect contract type (only for risk mode)
     contract_type = 'other'
     if mode == 'risk':
         api_key = current_app.config.get('DEEPSEEK_API_KEY', '')
-        contract_type, _ = _detect_contract_type(text, api_key)
+        contract_type, _ = _detect_contract_type(text, api_key, language=language)
 
     # Load user risk preferences for risk analysis mode
     user_prefs = []
@@ -602,23 +649,25 @@ def create_analysis(current_user):
             user_prefs = pref_obj.get_preferences_list()
 
     # Build prompt with type-specific focus for risk mode
-    system_prompt = _get_mode_prompt(mode)
     if mode == 'risk':
         type_info = CONTRACT_TYPE_FOCUS.get(contract_type, CONTRACT_TYPE_FOCUS['other'])
-        stance_prompt = REVIEW_STANCE_PROMPTS.get(review_stance, '')
-        plain_lang_prompt = PLAIN_LANGUAGE_INJECTION
-        system_prompt = system_prompt.format(
-            type_focus=f"\n{type_info['zh']}：{type_info['focus']}",
-            stance_prompt=stance_prompt,
-            plain_lang_prompt=plain_lang_prompt,
+        type_focus_str = f"\n{type_info.get(language, type_info['zh'])}：{type_info['focus'].get(language, type_info['focus']['zh'])}"
+        stance_prompt = get_review_stance_prompt(language, review_stance)
+        plain_lang_prompt = get_plain_language_injection(language)
+        system_prompt = build_analysis_prompt(
+            language, mode,
+            type_focus=type_focus_str,
+            stance=stance_prompt,
+            plain=plain_lang_prompt,
         )
         if user_prefs:
             system_prompt = _inject_preferences(system_prompt, user_prefs)
+    else:
+        system_prompt = build_analysis_prompt(language, mode)
 
-    messages = [
-        {'role': 'system', 'content': system_prompt},
-        {'role': 'user', 'content': text},
-    ]
+    messages = [{'role': 'system', 'content': system_prompt}]
+    messages.extend(build_few_shot_messages(language, mode))
+    messages.append({'role': 'user', 'content': text})
 
     try:
         ai_response = call_deepseek(messages)
@@ -685,6 +734,7 @@ def create_analysis(current_user):
         contract_text=masked_text,
         text_hash=text_hash,
         contract_type=contract_type,
+        language=language,
         analysis_mode=mode,
         result=result_json,
         score=score,
@@ -1000,24 +1050,33 @@ def stream_analysis(current_user):
             'cached': True,
         }), 200
 
+    # Detect contract language
+    language = detect_language(text)
+
     # Detect contract type (only for risk mode)
     contract_type = 'other'
     if mode == 'risk':
         api_key = current_app.config.get('DEEPSEEK_API_KEY', '')
-        contract_type, _ = _detect_contract_type(text, api_key)
+        contract_type, _ = _detect_contract_type(text, api_key, language=language)
 
     # Build prompt with type-specific focus for risk mode
-    system_prompt = _get_mode_prompt(mode)
     if mode == 'risk':
         type_info = CONTRACT_TYPE_FOCUS.get(contract_type, CONTRACT_TYPE_FOCUS['other'])
-        system_prompt = system_prompt.format(
-            type_focus=f"\n{type_info['zh']}：{type_info['focus']}"
+        type_focus_str = f"\n{type_info.get(language, type_info['zh'])}：{type_info['focus'].get(language, type_info['focus']['zh'])}"
+        stance_prompt = get_review_stance_prompt(language, '')
+        plain_lang_prompt = get_plain_language_injection(language)
+        system_prompt = build_analysis_prompt(
+            language, mode,
+            type_focus=type_focus_str,
+            stance=stance_prompt,
+            plain=plain_lang_prompt,
         )
+    else:
+        system_prompt = build_analysis_prompt(language, mode)
 
-    messages = [
-        {'role': 'system', 'content': system_prompt},
-        {'role': 'user', 'content': text},
-    ]
+    messages = [{'role': 'system', 'content': system_prompt}]
+    messages.extend(build_few_shot_messages(language, mode))
+    messages.append({'role': 'user', 'content': text})
 
     def generate():
         full_response = []
@@ -1082,6 +1141,7 @@ def stream_analysis(current_user):
                 contract_text=text,
                 text_hash=text_hash,
                 contract_type=contract_type,
+                language=language,
                 analysis_mode=mode,
                 result=result_json,
                 score=score,
@@ -1568,6 +1628,196 @@ def get_user_quota(current_user):
 
 
 # ---------------------------------------------------------------------------
+# Notification API
+# ---------------------------------------------------------------------------
+
+def _ensure_user_notif_state(notification_id, user_id):
+    """确保每个用户对每条通知都有状态记录（懒创建）。"""
+    state = UserNotification.query.filter_by(
+        notification_id=notification_id, user_id=user_id
+    ).first()
+    if not state:
+        state = UserNotification(
+            notification_id=notification_id,
+            user_id=user_id,
+            is_read=False,
+        )
+        db.session.add(state)
+        db.session.commit()
+    return state
+
+
+def _format_time_ago(dt, lang='zh'):
+    """格式化相对时间。"""
+    if not dt:
+        return ''
+    now = datetime.utcnow()
+    diff = now - dt
+    seconds = int(diff.total_seconds())
+    if lang == 'en':
+        if seconds < 60:
+            return 'Just now'
+        if seconds < 3600:
+            return f'{seconds // 60}m ago'
+        if seconds < 86400:
+            return f'{seconds // 3600}h ago'
+        if seconds < 2592000:
+            return f'{seconds // 86400}d ago'
+        return dt.strftime('%Y-%m-%d')
+    else:
+        if seconds < 60:
+            return '刚刚'
+        if seconds < 3600:
+            return f'{seconds // 60} 分钟前'
+        if seconds < 86400:
+            return f'{seconds // 3600} 小时前'
+        if seconds < 172800:
+            return '昨天'
+        if seconds < 2592000:
+            return f'{seconds // 86400} 天前'
+        return dt.strftime('%Y-%m-%d')
+
+
+@api_bp.route('/api/notifications', methods=['GET'])
+@get_current_user()
+def list_notifications(current_user):
+    """获取当前用户的通知列表（含已读状态），支持 tab 筛选。"""
+    tab = request.args.get('tab', 'all')
+    lang = request.args.get('lang', 'zh')
+
+    # 查询所有未被当前用户软删除的通知
+    query = Notification.query.order_by(Notification.created_at.desc())
+    notifications = query.all()
+
+    result = []
+    for n in notifications:
+        state = _ensure_user_notif_state(n.id, current_user.id)
+        if state.deleted:
+            continue
+        item = n.to_dict(current_user.id)
+        item['time_ago'] = _format_time_ago(n.created_at, lang)
+        # tab 筛选
+        if tab == 'unread' and item['read']:
+            continue
+        if tab == 'announce' and n.notif_type != 'system':
+            continue
+        if tab == 'alert' and n.notif_type != 'alert':
+            continue
+        result.append(item)
+
+    unread_count = UserNotification.query.filter_by(
+        user_id=current_user.id, is_read=False, deleted=False
+    ).count()
+    # 对没有状态记录的通知，也算未读
+    total_unread = 0
+    for n in notifications:
+        state = UserNotification.query.filter_by(
+            notification_id=n.id, user_id=current_user.id
+        ).first()
+        if not state or (not state.is_read and not state.deleted):
+            total_unread += 1
+
+    return jsonify({
+        'notifications': result,
+        'unread_count': total_unread,
+        'total': len(result),
+    })
+
+
+@api_bp.route('/api/notifications/unread-count', methods=['GET'])
+@get_current_user()
+def unread_count(current_user):
+    """获取未读通知数量（用于红点展示）。"""
+    notifications = Notification.query.all()
+    count = 0
+    for n in notifications:
+        state = UserNotification.query.filter_by(
+            notification_id=n.id, user_id=current_user.id
+        ).first()
+        if not state or (not state.is_read and not state.deleted):
+            count += 1
+    return jsonify({'unread_count': count})
+
+
+@api_bp.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
+@get_current_user()
+def mark_notification_read(current_user, notif_id):
+    """标记单条通知为已读。"""
+    state = _ensure_user_notif_state(notif_id, current_user.id)
+    state.is_read = True
+    state.read_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'message': 'ok', 'read': True})
+
+
+@api_bp.route('/api/notifications/read-all', methods=['POST'])
+@get_current_user()
+def mark_all_notifications_read(current_user):
+    """标记所有通知为已读。"""
+    notifications = Notification.query.all()
+    for n in notifications:
+        state = _ensure_user_notif_state(n.id, current_user.id)
+        if not state.is_read:
+            state.is_read = True
+            state.read_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'message': 'ok'})
+
+
+@api_bp.route('/api/notifications/<int:notif_id>', methods=['DELETE'])
+@get_current_user()
+def delete_notification(current_user, notif_id):
+    """软删除：当前用户隐藏该通知。"""
+    state = _ensure_user_notif_state(notif_id, current_user.id)
+    state.deleted = True
+    db.session.commit()
+    return jsonify({'message': 'ok'})
+
+
+@api_bp.route('/api/notifications/clear-all', methods=['DELETE'])
+@get_current_user()
+def clear_all_notifications(current_user):
+    """清空当前用户的所有通知（软删除）。"""
+    notifications = Notification.query.all()
+    for n in notifications:
+        state = _ensure_user_notif_state(n.id, current_user.id)
+        state.deleted = True
+    db.session.commit()
+    return jsonify({'message': 'ok'})
+
+
+@api_bp.route('/api/admin/notifications/broadcast', methods=['POST'])
+@get_current_user()
+def broadcast_notification(current_user):
+    """管理员广播通知：向所有用户发送一条通知。"""
+    if current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    if not title:
+        return jsonify({'error': '标题不能为空'}), 400
+    summary = (data.get('summary') or '').strip()
+    notif_type = data.get('notif_type', 'system')
+    icon = data.get('icon')
+    link = data.get('link')
+
+    notif = Notification(
+        title=title,
+        summary=summary,
+        notif_type=notif_type,
+        icon=icon,
+        link=link,
+    )
+    db.session.add(notif)
+    db.session.commit()
+    # 所有用户的通知状态会在首次查询时懒创建
+    return jsonify({
+        'message': '通知已广播给所有用户',
+        'notification': notif.to_dict(),
+    })
+
+
+# ---------------------------------------------------------------------------
 # User Dashboard API
 # ---------------------------------------------------------------------------
 
@@ -1817,31 +2067,41 @@ def escape_html(text):
 
 @api_bp.route('/')
 def page_index():
-    return render_template('index.html', current_user=None)
+    return render_template('index.html', active_nav='home')
 
 @api_bp.route('/dashboard')
 def page_dashboard():
-    return render_template('dashboard.html', current_user=None)
+    # 未登录用户访问个人主页时，显示登录引导页
+    from flask import request
+    token = request.cookies.get('token')
+    if not token:
+        return render_template('login_required.html', active_nav='dashboard')
+    try:
+        from auth import decode_token
+        user = decode_token(token)
+    except Exception:
+        return render_template('login_required.html', active_nav='dashboard')
+    return render_template('dashboard.html', active_nav='dashboard')
 
 @api_bp.route('/analyze')
 def page_analyze():
-    return render_template('analyze.html', current_user=None)
+    return render_template('analyze.html', active_nav='analyze')
 
 @api_bp.route('/archive')
 def page_archive():
-    return render_template('archive.html', current_user=None)
+    return render_template('archive.html', active_nav='archive')
 
 @api_bp.route('/compare')
 def page_compare():
-    return render_template('compare.html', current_user=None)
+    return render_template('compare.html', active_nav='compare')
 
 @api_bp.route('/pricing')
 def page_pricing():
-    return render_template('pricing.html', current_user=None)
+    return render_template('pricing.html', active_nav='pricing')
 
 @api_bp.route('/about')
 def page_about():
-    return render_template('about.html', current_user=None)
+    return render_template('about.html', active_nav='about')
 
 @api_bp.route('/login')
 def page_login():
@@ -1849,8 +2109,8 @@ def page_login():
 
 @api_bp.route('/admin')
 def page_admin():
-    return render_template('admin.html', current_user=None)
+    return render_template('admin.html', active_nav='admin')
 
 @api_bp.route('/detail/<int:analysis_id>')
 def page_detail(analysis_id):
-    return render_template('detail.html', analysis_id=analysis_id, current_user=None)
+    return render_template('detail.html', analysis_id=analysis_id)
