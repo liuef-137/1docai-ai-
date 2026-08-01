@@ -1,0 +1,120 @@
+timestamp,message
+2026-07-21T15:06:58Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:06:47Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:06:46Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Started: Started container docai-redesign
+2026-07-21T15:06:46Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Created: Created container: docai-redesign
+2026-07-21T15:06:46Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 417ms (417ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:06:45Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:06:30Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:06:16Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:06:03Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:05:52Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:05:37Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:05:25Z,[2026-07-21 15:05:25 +0000] [6] [ERROR] Reason: App failed to load.
+2026-07-21T15:05:25Z,[2026-07-21 15:05:25 +0000] [6] [ERROR] Shutting down: Master
+2026-07-21T15:05:25Z,[2026-07-21 15:05:25 +0000] [6] [ERROR] Worker (pid:7) exited with code 4.
+2026-07-21T15:05:25Z,[2026-07-21 15:05:25 +0000] [7] [INFO] Worker exiting (pid: 7)
+2026-07-21T15:05:25Z,Failed to find attribute 'app' in 'app'.
+2026-07-21T15:05:25Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:05:24Z,[2026-07-21 15:05:24 +0000] [6] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+2026-07-21T15:05:24Z,[2026-07-21 15:05:24 +0000] [7] [INFO] Booting worker with pid: 7
+2026-07-21T15:05:24Z,[2026-07-21 15:05:24 +0000] [6] [INFO] Using worker: sync
+2026-07-21T15:05:24Z,[2026-07-21 15:05:24 +0000] [6] [INFO] Listening at: http://0.0.0.0:8080 (6)
+2026-07-21T15:05:24Z,[2026-07-21 15:05:24 +0000] [6] [INFO] Starting gunicorn 26.0.0
+2026-07-21T15:05:24Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Started: Started container docai-redesign
+2026-07-21T15:05:24Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Created: Created container: docai-redesign
+2026-07-21T15:05:24Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 378ms (378ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:05:23Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:05:08Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:04:55Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:04:42Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:04:29Z,[2026-07-21 15:04:29 +0000] [7] [ERROR] Reason: App failed to load.
+2026-07-21T15:04:29Z,[2026-07-21 15:04:29 +0000] [7] [ERROR] Shutting down: Master
+2026-07-21T15:04:29Z,[2026-07-21 15:04:29 +0000] [7] [ERROR] Worker (pid:8) exited with code 4.
+2026-07-21T15:04:29Z,[2026-07-21 15:04:29 +0000] [8] [INFO] Worker exiting (pid: 8)
+2026-07-21T15:04:29Z,Failed to find attribute 'app' in 'app'.
+2026-07-21T15:04:29Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:04:28Z,[2026-07-21 15:04:28 +0000] [7] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+2026-07-21T15:04:28Z,[2026-07-21 15:04:28 +0000] [8] [INFO] Booting worker with pid: 8
+2026-07-21T15:04:28Z,[2026-07-21 15:04:28 +0000] [7] [INFO] Using worker: sync
+2026-07-21T15:04:28Z,[2026-07-21 15:04:28 +0000] [7] [INFO] Listening at: http://0.0.0.0:8080 (7)
+2026-07-21T15:04:28Z,[2026-07-21 15:04:28 +0000] [7] [INFO] Starting gunicorn 26.0.0
+2026-07-21T15:04:28Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Started: Started container docai-redesign
+2026-07-21T15:04:28Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Created: Created container: docai-redesign
+2026-07-21T15:04:28Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 405ms (405ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:04:27Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:04:15Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:04:02Z,[2026-07-21 15:04:02 +0000] [7] [ERROR] Reason: App failed to load.
+2026-07-21T15:04:02Z,[2026-07-21 15:04:02 +0000] [7] [ERROR] Shutting down: Master
+2026-07-21T15:04:02Z,[2026-07-21 15:04:02 +0000] [7] [ERROR] Worker (pid:8) exited with code 4.
+2026-07-21T15:04:02Z,[2026-07-21 15:04:02 +0000] [8] [INFO] Worker exiting (pid: 8)
+2026-07-21T15:04:02Z,Failed to find attribute 'app' in 'app'.
+2026-07-21T15:04:02Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:04:01Z,[2026-07-21 15:04:01 +0000] [7] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+2026-07-21T15:04:01Z,[2026-07-21 15:04:01 +0000] [8] [INFO] Booting worker with pid: 8
+2026-07-21T15:04:01Z,[2026-07-21 15:04:01 +0000] [7] [INFO] Using worker: sync
+2026-07-21T15:04:01Z,[2026-07-21 15:04:01 +0000] [7] [INFO] Listening at: http://0.0.0.0:8080 (7)
+2026-07-21T15:04:01Z,[2026-07-21 15:04:01 +0000] [7] [INFO] Starting gunicorn 26.0.0
+2026-07-21T15:04:01Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 375ms (375ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:04:01Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Started: Started container docai-redesign
+2026-07-21T15:04:01Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Created: Created container: docai-redesign
+2026-07-21T15:04:00Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:03:48Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d_environment-6a5e3136b0b7a4abeb4e61a8(c506692e-7ebe-4b76-b435-20955a5868ad)
+2026-07-21T15:03:46Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Started: Started container docai-redesign
+2026-07-21T15:03:46Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Created: Created container: docai-redesign
+2026-07-21T15:03:46Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 397ms (397ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:03:46Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:03:44Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Started: Started container docai-redesign
+2026-07-21T15:03:44Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Created: Created container: docai-redesign
+2026-07-21T15:03:44Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 398ms (398ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:03:43Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-87f657479-2xl7d - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:03:35Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:03:24Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:03:23Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Started: Started container docai-redesign
+2026-07-21T15:03:23Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Created: Created container: docai-redesign
+2026-07-21T15:03:23Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 438ms (438ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:03:22Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:03:08Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:02:55Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:02:44Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:02:33Z,[2026-07-21 15:02:33 +0000] [7] [ERROR] Reason: App failed to load.
+2026-07-21T15:02:33Z,[2026-07-21 15:02:33 +0000] [7] [ERROR] Shutting down: Master
+2026-07-21T15:02:33Z,[2026-07-21 15:02:33 +0000] [7] [ERROR] Worker (pid:8) exited with code 4.
+2026-07-21T15:02:33Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:02:32Z,[2026-07-21 15:02:32 +0000] [8] [INFO] Worker exiting (pid: 8)
+2026-07-21T15:02:32Z,Failed to find attribute 'app' in 'app'.
+2026-07-21T15:02:32Z,[2026-07-21 15:02:32 +0000] [7] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+2026-07-21T15:02:32Z,[2026-07-21 15:02:32 +0000] [8] [INFO] Booting worker with pid: 8
+2026-07-21T15:02:32Z,[2026-07-21 15:02:32 +0000] [7] [INFO] Using worker: sync
+2026-07-21T15:02:32Z,[2026-07-21 15:02:32 +0000] [7] [INFO] Listening at: http://0.0.0.0:8080 (7)
+2026-07-21T15:02:32Z,[2026-07-21 15:02:32 +0000] [7] [INFO] Starting gunicorn 26.0.0
+2026-07-21T15:02:32Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Started: Started container docai-redesign
+2026-07-21T15:02:32Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Created: Created container: docai-redesign
+2026-07-21T15:02:32Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 413ms (413ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:02:31Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:02:19Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:02:07Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:02:06Z,[2026-07-21 15:02:06 +0000] [7] [ERROR] Reason: App failed to load.
+2026-07-21T15:02:06Z,[2026-07-21 15:02:06 +0000] [7] [ERROR] Shutting down: Master
+2026-07-21T15:02:06Z,[2026-07-21 15:02:06 +0000] [7] [ERROR] Worker (pid:8) exited with code 4.
+2026-07-21T15:02:06Z,[2026-07-21 15:02:06 +0000] [8] [INFO] Worker exiting (pid: 8)
+2026-07-21T15:02:06Z,Failed to find attribute 'app' in 'app'.
+2026-07-21T15:02:05Z,[2026-07-21 15:02:05 +0000] [7] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+2026-07-21T15:02:05Z,[2026-07-21 15:02:05 +0000] [8] [INFO] Booting worker with pid: 8
+2026-07-21T15:02:05Z,[2026-07-21 15:02:05 +0000] [7] [INFO] Using worker: sync
+2026-07-21T15:02:05Z,[2026-07-21 15:02:05 +0000] [7] [INFO] Listening at: http://0.0.0.0:8080 (7)
+2026-07-21T15:02:05Z,[2026-07-21 15:02:05 +0000] [7] [INFO] Starting gunicorn 26.0.0
+2026-07-21T15:02:05Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Started: Started container docai-redesign
+2026-07-21T15:02:05Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Created: Created container: docai-redesign
+2026-07-21T15:02:05Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 375ms (375ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:02:04Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:01:49Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:01:48Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - BackOff: Back-off restarting failed container docai-redesign in pod service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t_environment-6a5e3136b0b7a4abeb4e61a8(1d4a0d8b-282b-462e-a197-2359f70e7b85)
+2026-07-21T15:01:46Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Started: Started container docai-redesign
+2026-07-21T15:01:46Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Created: Created container: docai-redesign
+2026-07-21T15:01:46Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 359ms (362ms including waiting). Image size: 433019273 bytes."
+2026-07-21T15:01:46Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""
+2026-07-21T15:01:44Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Started: Started container docai-redesign
+2026-07-21T15:01:44Z,[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Created: Created container: docai-redesign
+2026-07-21T15:01:44Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulled: Successfully pulled image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"" in 50.297s (50.297s including waiting). Image size: 433019273 bytes."
+2026-07-21T15:00:53Z,"[Zeabur] Pod/service-6a5f88b6536b84a1337c9b13-798bfb4c99-f485t - Pulling: Pulling image ""registry-oci.zeabur.cloud/e-6a5e3136b0b7a4abeb4e61a8/s-6a5f88b6536b84a1337c9b13:d-6a5f88b7b33bf4df98a5a00e"""

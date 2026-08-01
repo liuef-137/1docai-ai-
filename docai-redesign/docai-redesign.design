@@ -9,7 +9,14 @@
       "canvasData": {
         "x": 0,
         "y": 0,
-        "group": 0
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-0d4c0a29",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/index.html",
@@ -45,7 +52,14 @@
       "canvasData": {
         "x": 620,
         "y": 0,
-        "group": 0
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-c641b35f",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/analyze.html",
@@ -72,7 +86,14 @@
       "canvasData": {
         "x": 0,
         "y": 800,
-        "group": 0
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-1481a1d3",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/pricing.html",
@@ -98,7 +119,14 @@
       "canvasData": {
         "x": 0,
         "y": 3816,
-        "group": 0
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-e07ba17c",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/about.html",
@@ -120,7 +148,14 @@
       "canvasData": {
         "x": 0,
         "y": 1480,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-30b7ab88",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/index-v2.html",
@@ -166,7 +201,14 @@
       "canvasData": {
         "x": 620,
         "y": 1480,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-45c4ae8f",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/analyze-v2.html",
@@ -203,7 +245,14 @@
       "canvasData": {
         "x": 620,
         "y": 3816,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-7eb58023",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/archive.html",
@@ -240,7 +289,14 @@
       "canvasData": {
         "x": 1240,
         "y": 3816,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-6ff5954c",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/compare.html",
@@ -277,7 +333,14 @@
       "canvasData": {
         "x": 0,
         "y": 2813,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-bc7caf01",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/pricing-v2.html",
@@ -318,7 +381,14 @@
       "canvasData": {
         "x": 0,
         "y": 1857,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-70ebd655",
+          "measuredAt": 1785590149959
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/about-v2.html",

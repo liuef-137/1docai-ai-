@@ -129,6 +129,49 @@ def _create_app():
             'colors_and_type.css'
         )
 
+    # -----------------------------------------------------------------------
+    # Page routes (serve Jinja2 templates for the SPA-like frontend)
+    # -----------------------------------------------------------------------
+    @app.route('/')
+    def index():
+        return render_template('index.html', active_nav='home')
+
+    @app.route('/dashboard')
+    def dashboard():
+        return render_template('dashboard.html', active_nav='dashboard')
+
+    @app.route('/analyze')
+    def analyze_page():
+        return render_template('analyze.html', active_nav='analyze')
+
+    @app.route('/archive')
+    def archive_page():
+        return render_template('archive.html', active_nav='archive')
+
+    @app.route('/compare')
+    def compare_page():
+        return render_template('compare.html', active_nav='compare')
+
+    @app.route('/pricing')
+    def pricing_page():
+        return render_template('pricing.html', active_nav='pricing')
+
+    @app.route('/about')
+    def about_page():
+        return render_template('about.html', active_nav='about')
+
+    @app.route('/login')
+    def login_page():
+        return render_template('login.html', active_nav=None)
+
+    @app.route('/admin')
+    def admin_page():
+        return render_template('admin.html', active_nav='admin')
+
+    @app.route('/detail/<int:analysis_id>')
+    def detail_page(analysis_id):
+        return render_template('detail.html', analysis_id=analysis_id, active_nav='archive')
+
     with app.app_context():
         db.create_all()
         # Auto-migrate: add new columns if they don't exist (SQLite compatible)
