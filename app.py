@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, jsonify
+from flask import Flask, render_template, send_from_directory, jsonify, request
 from config import Config
 from models import db, User
 from routes import api_bp
@@ -96,12 +96,24 @@ def _auto_migrate(db):
     conn.close()
 
 
+def _ensure_sqlite_parent(db):
+    """Ensure the SQLite parent directory exists before SQLAlchemy opens it."""
+    db_uri = db.engine.url.database if db.engine.url.drivername == 'sqlite' else None
+    if not db_uri:
+        return
+    db_path = os.path.abspath(db_uri)
+    db_dir = os.path.dirname(db_path)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+
+
 def _create_app():
+    base_dir = os.path.abspath(os.path.dirname(__file__))
     app = Flask(
         __name__,
-        static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '..')),
+        static_folder=base_dir,
         static_url_path='',
-        template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates')),
+        template_folder=os.path.join(base_dir, 'templates'),
     )
     app.config.from_object(Config)
 
@@ -149,6 +161,13 @@ def _create_app():
         }
         return {'app_state': app_state, 'current_user': user, 'i18n_data': json.dumps(I18N_DATA)}
 
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(error):
+        app.logger.exception('Unhandled error: %s', error)
+        if request.path.startswith('/api/'):
+            return jsonify({'error': f'服务器内部错误: {str(error)}'}), 500
+        raise error
+
     # i18n.js endpoint
     @app.route('/i18n.js')
     def serve_i18n_js():
@@ -158,14 +177,14 @@ def _create_app():
     @app.route('/assets/<path:filename>')
     def serve_assets(filename):
         return send_from_directory(
-            os.path.join(os.path.dirname(__file__), '..', 'assets'),
+            os.path.join(base_dir, 'assets'),
             filename
         )
 
     @app.route('/colors_and_type.css')
     def serve_brand_css():
         return send_from_directory(
-            os.path.join(os.path.dirname(__file__), '..'),
+            base_dir,
             'colors_and_type.css'
         )
 
@@ -213,6 +232,7 @@ def _create_app():
         return render_template('detail.html', analysis_id=analysis_id, active_nav='archive')
 
     with app.app_context():
+        _ensure_sqlite_parent(db)
         _backup_sqlite_database(db)
         db.create_all()
         # Auto-migrate: add new columns if they don't exist (SQLite compatible)

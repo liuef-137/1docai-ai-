@@ -819,7 +819,7 @@
                 });
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
 
-                const data = await resp.json();
+                const data = await readApiResponse(resp);
                 if (!resp.ok) {
                     clearInterval(progressTimer);
                     showToast(data.error || I18N.t('js.toast_analysis_failed'), 'error');
@@ -1078,6 +1078,16 @@
         // Scroll to results
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    async function readApiResponse(resp) {
+        const text = await resp.text();
+        if (!text) return {};
+        try {
+            return JSON.parse(text);
+        } catch (err) {
+            return { error: text.slice(0, 300) };
+        }
     }
 
     // Animate counter from start to end
