@@ -1,1 +1,10 @@
-docai-redesign/docai新/
+__pycache__/
+*.pyc
+*.db
+.env
+uploads/
+backups/
+*.log
+.DS_Store
+node_modules/
+.venv/
