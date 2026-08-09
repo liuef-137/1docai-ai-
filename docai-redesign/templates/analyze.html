@@ -2,6 +2,7 @@
 {% block title %}DocAI - 智能分析{% endblock %}
 
 {% block extra_head %}
+<script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
     .upload-zone.drag-over {
         border-color: var(--color-accent) !important;
@@ -150,9 +151,12 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="mt-6 flex items-center justify-center gap-4">
+        <div class="mt-6 flex items-center justify-center gap-4 flex-wrap">
             <button id="btn-upload" onclick="handleUploadClick()" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-primary); cursor: pointer; transition: background 150ms;" onmouseenter="this.style.background='var(--color-primary-tint-50)'" onmouseleave="this.style.background='var(--color-surface)'">
                 <i data-lucide="upload" class="w-4 h-4 mr-2"></i><span data-i18n="analyze.btn_upload">上传文件</span>
+            </button>
+            <button id="btn-scan" onclick="openCameraScan()" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-border); cursor: pointer; transition: background 150ms;" onmouseenter="this.style.borderColor='var(--color-accent)'; this.style.color='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'; this.style.color='var(--color-primary)'">
+                <i data-lucide="camera" class="w-4 h-4 mr-2"></i><span data-i18n="analyze.btn_scan">拍照扫描</span>
             </button>
             <button id="btn-analyze" onclick="handleAnalyze()" class="inline-flex items-center justify-center whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer; transition: background 150ms;" onmouseenter="if(!this.disabled)this.style.background='var(--color-accent-light)'" onmouseleave="if(!this.disabled)this.style.background='var(--color-accent)'">
                 <i data-lucide="search" class="w-4 h-4 mr-2"></i><span data-i18n="analyze.btn_analyze">开始分析</span>
@@ -203,6 +207,53 @@
         </div>
     </div>
 </section>
+
+<!-- Camera Scan Modal -->
+<div id="scan-modal" class="modal-overlay">
+    <div class="modal-content w-full max-w-3xl mx-4 p-6 lg:p-8">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-xl font-semibold" style="color: var(--color-text-primary);" data-i18n="analyze.scan_modal_title">拍照扫描合同</h2>
+                <p class="text-sm mt-1" style="color: var(--color-text-secondary);" data-i18n="analyze.scan_modal_desc">打开摄像头，对准合同页面拍照，识别后会自动填入文本框。</p>
+            </div>
+            <button onclick="closeCameraScan()" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-5">
+            <div class="space-y-3">
+                <div class="rounded-xl overflow-hidden" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border);">
+                    <video id="scan-video" autoplay playsinline class="w-full block" style="aspect-ratio: 4 / 3; object-fit: cover; background: #0f172a;"></video>
+                    <canvas id="scan-canvas" class="hidden"></canvas>
+                </div>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <button id="scan-start-btn" type="button" onclick="startCameraScan()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;">
+                        <i data-lucide="play" class="w-4 h-4"></i><span data-i18n="analyze.scan_start">开启摄像头</span>
+                    </button>
+                    <button id="scan-capture-btn" type="button" onclick="captureScanFrame()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold" style="background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-primary); cursor: pointer;" disabled>
+                        <i data-lucide="scan-line" class="w-4 h-4"></i><span data-i18n="analyze.scan_capture">拍照识别</span>
+                    </button>
+                    <button id="scan-retake-btn" type="button" onclick="startCameraScan(true)" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold" style="background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); cursor: pointer;" disabled>
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i><span data-i18n="analyze.scan_retake">重拍</span>
+                    </button>
+                </div>
+                <div id="scan-status" class="text-sm" style="color: var(--color-text-tertiary);" data-i18n="analyze.scan_permission_hint">需要浏览器摄像头权限，建议在光线充足时使用。</div>
+            </div>
+            <div class="space-y-3">
+                <div class="rounded-xl p-4" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border);">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-sm font-semibold" style="color: var(--color-text-primary);" data-i18n="analyze.scan_result_title">识别结果</div>
+                        <button id="scan-use-btn" type="button" onclick="useScanResult()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;" disabled>
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i><span data-i18n="analyze.scan_use_text">使用文本</span>
+                        </button>
+                    </div>
+                    <textarea id="scan-result" class="w-full h-64 resize-none rounded-lg px-3 py-2 text-sm outline-none" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border);" placeholder=""></textarea>
+                </div>
+                <p class="text-xs leading-relaxed" style="color: var(--color-text-tertiary);" data-i18n="analyze.scan_support_hint">扫描结果可能存在识别误差，提交分析前请先核对金额、日期和主体名称。</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Analysis Results (hidden initially) -->
 <section id="results-section" class="py-16 lg:py-20 hidden" style="background: var(--color-surface);">
@@ -434,6 +485,8 @@
     let lastAnalysisId = null;
     let chatSending = false;
     let reviewStance = '';
+    let scanStream = null;
+    let scanActive = false;
     const MAX_LEN = 10000;
     const WARN_THRESHOLD = 8000;
     const GAUGE_CIRCUMFERENCE = 2 * Math.PI * 52; // ~326.73
@@ -446,6 +499,14 @@
     const progressArea = document.getElementById('progress-area');
     const progressBar = document.getElementById('progress-bar');
     const progressLabel = document.getElementById('progress-label');
+    const scanModal = document.getElementById('scan-modal');
+    const scanVideo = document.getElementById('scan-video');
+    const scanCanvas = document.getElementById('scan-canvas');
+    const scanResult = document.getElementById('scan-result');
+    const scanStatus = document.getElementById('scan-status');
+    const scanCaptureBtn = document.getElementById('scan-capture-btn');
+    const scanRetakeBtn = document.getElementById('scan-retake-btn');
+    const scanUseBtn = document.getElementById('scan-use-btn');
 
     // Character counter
     textarea.addEventListener('input', function() {
@@ -508,6 +569,104 @@
         requireAuth(() => {
             fileInput.click();
         });
+    };
+
+    window.openCameraScan = function() {
+        requireAuth(() => {
+            scanModal.classList.add('active');
+            scanResult.value = '';
+            scanUseBtn.disabled = true;
+            scanCaptureBtn.disabled = true;
+            scanRetakeBtn.disabled = true;
+            scanStatus.textContent = I18N.t('analyze.scan_permission_hint');
+            window.startCameraScan();
+        });
+    };
+
+    window.closeCameraScan = function() {
+        scanModal.classList.remove('active');
+        stopCameraScan();
+    };
+
+    window.startCameraScan = async function(restart) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            scanStatus.textContent = I18N.t('analyze.scan_no_camera');
+            return;
+        }
+        try {
+            stopCameraScan();
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' },
+                audio: false
+            });
+            scanStream = stream;
+            scanVideo.srcObject = stream;
+            scanActive = true;
+            scanCaptureBtn.disabled = false;
+            scanRetakeBtn.disabled = false;
+            scanStatus.textContent = restart ? I18N.t('analyze.scan_ready_retake') : I18N.t('analyze.scan_ready');
+        } catch (err) {
+            scanStatus.textContent = I18N.t('analyze.scan_permission_denied');
+        }
+    };
+
+    function stopCameraScan() {
+        if (scanStream) {
+            scanStream.getTracks().forEach(track => track.stop());
+            scanStream = null;
+        }
+        scanActive = false;
+        scanVideo.srcObject = null;
+    }
+
+    window.captureScanFrame = async function() {
+        if (!scanActive || !scanVideo.videoWidth) {
+            scanStatus.textContent = I18N.t('analyze.scan_no_frame');
+            return;
+        }
+
+        scanCanvas.width = scanVideo.videoWidth;
+        scanCanvas.height = scanVideo.videoHeight;
+        const ctx = scanCanvas.getContext('2d');
+        ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+        const imageDataUrl = scanCanvas.toDataURL('image/png');
+
+        scanStatus.textContent = I18N.t('analyze.scan_ocring');
+        scanUseBtn.disabled = true;
+
+        try {
+            if (!window.Tesseract) {
+                throw new Error('Tesseract unavailable');
+            }
+            const result = await Tesseract.recognize(imageDataUrl, 'chi_sim+eng', {
+                logger: m => {
+                    if (m.status) {
+                        scanStatus.textContent = m.status + (m.progress ? ' ' + Math.round(m.progress * 100) + '%' : '');
+                    }
+                }
+            });
+            const text = (result && result.data && result.data.text) ? result.data.text.trim() : '';
+            scanResult.value = text;
+            scanUseBtn.disabled = !text;
+            scanStatus.textContent = text ? I18N.t('analyze.scan_done') : I18N.t('analyze.scan_empty');
+        } catch (err) {
+            scanStatus.textContent = I18N.t('analyze.scan_failed');
+            scanResult.value = '';
+            scanUseBtn.disabled = true;
+        }
+    };
+
+    window.useScanResult = function() {
+        const text = scanResult.value.trim();
+        if (!text) {
+            showToast(I18N.t('analyze.scan_empty'), 'warning');
+            return;
+        }
+        textarea.value = text;
+        textarea.dispatchEvent(new Event('input'));
+        closeCameraScan();
+        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast(I18N.t('analyze.scan_used'), 'success');
     };
 
     // Load sample contract

@@ -25,7 +25,7 @@ def _backup_sqlite_database(db, keep=20):
     backup_dir = os.path.join(os.path.dirname(db_path), 'backups')
     os.makedirs(backup_dir, exist_ok=True)
 
-    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S_%f')
     backup_path = os.path.join(backup_dir, f'{os.path.basename(db_path)}.{timestamp}.bak')
 
     try:
@@ -246,10 +246,9 @@ def _create_app():
     return app
 
 
+app = create_app()
+
+
 if __name__ == '__main__':
-    app = create_app()
     port = int(os.environ.get('PORT', 7777))
     app.run(host='0.0.0.0', port=port, debug=True)
-
-# Gunicorn entry point: gunicorn will use "app:app"
-app = create_app()

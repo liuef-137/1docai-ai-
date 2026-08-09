@@ -72,9 +72,9 @@ git push -u origin main
 |--------|-----|
 | **Name** | `docai`（会变成 `docai.onrender.com`） |
 | **Runtime** | `Python 3` |
-| **Root Directory** | `server` |
+| **Root Directory** | 留空或填 `.` |
 | **Build Command** | `pip install -r requirements.txt` |
-| **Start Command** | `gunicorn "app:create_app()" --bind 0.0.0.0:$PORT` |
+| **Start Command** | `gunicorn "wsgi:application" --bind 0.0.0.0:$PORT` |
 | **Instance Type** | `Free` |
 
 4. 点击 **Advanced**，添加环境变量：
@@ -147,10 +147,10 @@ git push -u origin main
 ## 常见问题
 
 **Q: 部署失败 "Module not found"**
-A: 检查 Root Directory 是否设为 `server`，Build Command 是否正确。
+A: 检查 Root Directory 是否为项目根目录，Build Command 是否正确。
 
 **Q: 访问网站显示 502**
-A: 查看 Render 的 Logs，通常是 Start Command 配置错误。确认为 `gunicorn "app:create_app()" --bind 0.0.0.0:$PORT`
+A: 查看 Render 的 Logs，通常是 Start Command 配置错误。确认为 `gunicorn "wsgi:application" --bind 0.0.0.0:$PORT`
 
 **Q: AI 分析报错**
 A: 检查环境变量 `DEEPSEEK_API_KEY` 是否正确设置。
