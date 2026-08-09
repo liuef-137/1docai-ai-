@@ -3,6 +3,7 @@ __pycache__/
 *.db
 .env
 uploads/
+backups/
 *.log
 .DS_Store
 node_modules/

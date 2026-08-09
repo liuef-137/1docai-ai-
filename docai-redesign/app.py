@@ -4,11 +4,51 @@ from models import db, User
 from routes import api_bp
 from auth import decode_token
 from i18n_translations import I18N_DATA
-import os, json
+import os, json, shutil
+from datetime import datetime
 
 
 def create_app():
     return _create_app()
+
+
+def _backup_sqlite_database(db, keep=20):
+    """Create a timestamped SQLite backup before migrations touch user data."""
+    db_uri = db.engine.url.database if db.engine.url.drivername == 'sqlite' else None
+    if not db_uri:
+        return
+
+    db_path = os.path.abspath(db_uri)
+    if not os.path.exists(db_path):
+        return
+
+    backup_dir = os.path.join(os.path.dirname(db_path), 'backups')
+    os.makedirs(backup_dir, exist_ok=True)
+
+    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    backup_path = os.path.join(backup_dir, f'{os.path.basename(db_path)}.{timestamp}.bak')
+
+    try:
+        shutil.copy2(db_path, backup_path)
+        print(f'[DocAI Backup] SQLite database backed up to {backup_path}')
+    except Exception as e:
+        print(f'[DocAI Backup] Failed to back up SQLite database: {e}')
+        return
+
+    try:
+        backups = sorted(
+            [
+                os.path.join(backup_dir, name)
+                for name in os.listdir(backup_dir)
+                if name.startswith(os.path.basename(db_path) + '.') and name.endswith('.bak')
+            ],
+            key=os.path.getmtime,
+            reverse=True,
+        )
+        for old_backup in backups[keep:]:
+            os.remove(old_backup)
+    except Exception as e:
+        print(f'[DocAI Backup] Failed to prune old backups: {e}')
 
 
 def _auto_migrate(db):
@@ -173,6 +213,7 @@ def _create_app():
         return render_template('detail.html', analysis_id=analysis_id, active_nav='archive')
 
     with app.app_context():
+        _backup_sqlite_database(db)
         db.create_all()
         # Auto-migrate: add new columns if they don't exist (SQLite compatible)
         _auto_migrate(db)
