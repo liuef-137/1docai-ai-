@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title_i18n %}page.home_title{% endblock %}
 {% block title %}DocAI - 智能合同分析{% endblock %}
 
 {% block extra_head %}
@@ -146,15 +147,15 @@
                             <div class="space-y-2">
                                 <div class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background: var(--color-bg-secondary);">
                                     <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: var(--risk-medium);"></div>
-                                    <span class="text-xs" style="color: var(--color-text-secondary);">赔偿金额无上限条款</span>
+                                    <span class="text-xs" style="color: var(--color-text-secondary);" data-i18n="home.preview_risk_unlimited_liability">赔偿金额无上限条款</span>
                                 </div>
                                 <div class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background: var(--color-bg-secondary);">
                                     <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: var(--risk-low);"></div>
-                                    <span class="text-xs" style="color: var(--color-text-secondary);">管辖法院约定模糊</span>
+                                    <span class="text-xs" style="color: var(--color-text-secondary);" data-i18n="home.preview_risk_unclear_court">管辖法院约定模糊</span>
                                 </div>
                                 <div class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background: var(--color-bg-secondary);">
                                     <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: var(--risk-high);"></div>
-                                    <span class="text-xs" style="color: var(--color-text-secondary);">单方面解除合同权</span>
+                                    <span class="text-xs" style="color: var(--color-text-secondary);" data-i18n="home.preview_risk_unilateral_termination">单方面解除合同权</span>
                                 </div>
                             </div>
                         </div>

@@ -290,6 +290,44 @@
 
     // ---- Stats ----
     var statsData = null;
+    function tr(key, fallback) {
+        if (window.I18N && typeof window.I18N.t === 'function') {
+            return window.I18N.t(key);
+        }
+        return fallback || key;
+    }
+
+    function noDataHtml() {
+        return '<div class="text-center py-4" style="color:var(--color-text-tertiary);font-size:13px;">' + tr('dash.no_data', '暂无数据') + '</div>';
+    }
+
+    function feedbackTypeMap() {
+        return {
+            bug: { label: tr('admin.type_bug', 'Bug'), color: 'var(--state-error)' },
+            feature: { label: tr('admin.type_feature', '功能建议'), color: 'var(--state-info)' },
+            improvement: { label: tr('admin.type_improvement', '改进建议'), color: 'var(--state-warning)' },
+            praise: { label: tr('admin.type_praise', '表扬'), color: 'var(--state-success)' }
+        };
+    }
+
+    function contractTypeLabel(type) {
+        var labels = {
+            labor: tr('contract.type_labor', '劳动合同'),
+            rental: tr('contract.type_rental', '房屋租赁'),
+            purchase: tr('contract.type_purchase', '买卖合同'),
+            service: tr('contract.type_service', '服务合同'),
+            nda: tr('contract.type_nda', '保密协议'),
+            loan: tr('contract.type_loan', '借款合同'),
+            partnership: tr('contract.type_partnership', '合伙协议'),
+            franchise: tr('contract.type_franchise', '加盟合同'),
+            agency: tr('contract.type_agency', '委托合同'),
+            construction: tr('contract.type_construction', '建设工程'),
+            insurance: tr('contract.type_insurance', '保险合同'),
+            other: tr('contract.type_other', '其他')
+        };
+        return labels[type] || type;
+    }
+
     function loadStats() {
         apiFetch('/api/admin/stats').then(function(r) {
             if (!r.ok) return r.json().then(function(d) { showToast(d.error || 'Load stats failed', 'error'); });
@@ -319,12 +357,7 @@
 
             renderFeedbackTrendChart(data.daily_feedback_trend || []);
             renderAnalysisTrendChart(data.daily_analysis_trend || []);
-            renderDistributionBars('dist-feedback-type', data.feedback_type_dist || {}, {
-                bug: { label: 'Bug', color: 'var(--state-error)' },
-                feature: { label: 'Feature', color: 'var(--state-info)' },
-                improvement: { label: 'Improve', color: 'var(--state-warning)' },
-                praise: { label: 'Praise', color: 'var(--state-success)' }
-            });
+            renderDistributionBars('dist-feedback-type', data.feedback_type_dist || {}, feedbackTypeMap());
             renderRatingDist(data.feedback_rating_dist || {});
             renderStatusDist(data.feedback_status_dist || {});
 
@@ -437,7 +470,7 @@
         el.innerHTML = '';
         var total = 0;
         for (var k in dist) total += dist[k];
-        if (total === 0) { el.innerHTML = '<div class="text-center py-4" style="color:var(--color-text-tertiary);font-size:13px;">No data</div>'; return; }
+        if (total === 0) { el.innerHTML = noDataHtml(); return; }
         for (var key in dist) {
             var m = mapping[key] || { label: key, color: 'var(--color-text-tertiary)' };
             var pct = Math.round(dist[key] / total * 100);
@@ -459,17 +492,11 @@
         var el = document.getElementById('dist-contract-type');
         if (!el) return;
         el.innerHTML = '';
-        var typeLabels = {
-            labor: '劳动合同', rental: '房屋租赁', purchase: '买卖合同',
-            service: '服务合同', nda: '保密协议', loan: '借款合同',
-            partnership: '合伙协议', franchise: '加盟合同', agency: '委托合同',
-            construction: '建设工程', insurance: '保险合同', other: '其他'
-        };
         var cycleColors = ['var(--color-primary)', 'var(--color-accent)', 'var(--state-info)', 'var(--state-warning)'];
         var mapping = {};
         var colorIdx = 0;
         for (var key in dist) {
-            mapping[key] = { label: typeLabels[key] || key, color: cycleColors[colorIdx % cycleColors.length] };
+            mapping[key] = { label: contractTypeLabel(key), color: cycleColors[colorIdx % cycleColors.length] };
             colorIdx++;
         }
         renderDistributionBars('dist-contract-type', dist, mapping);
@@ -490,7 +517,7 @@
         var total = 0;
         for (var k in dist) total += dist[k];
         if (total === 0) {
-            el.innerHTML = '<div class="text-center py-4" style="color:var(--color-text-tertiary);font-size:13px;">No data</div>';
+            el.innerHTML = noDataHtml();
             return;
         }
         // Group scores into ranges
@@ -526,7 +553,7 @@
         el.innerHTML = '';
         var total = 0;
         for (var k in dist) total += dist[k];
-        if (total === 0) { el.innerHTML = '<div class="text-center py-4" style="color:var(--color-text-tertiary);font-size:13px;">No data</div>'; return; }
+        if (total === 0) { el.innerHTML = noDataHtml(); return; }
         var colors = { '1': '#D45050', '2': '#E8A33D', '3': '#E8A33D', '4': '#2D9D78', '5': '#2D9D78' };
         for (var i = 5; i >= 1; i--) {
             var c = dist[String(i)] || 0;

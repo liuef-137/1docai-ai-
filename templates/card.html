@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="{{ 'en' if lang == 'en' else 'zh-CN' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DocAI 分析卡片</title>
+<title>{{ 'DocAI Analysis Card' if lang == 'en' else 'DocAI 分析卡片' }}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -104,7 +104,7 @@
 <body>
 <div class="card">
   <div class="card-header">
-    <div class="brand" data-i18n="card.brand">DocAI - 智能合同分析</div>
+    <div class="brand">{{ 'DocAI - Smart Contract Analysis' if lang == 'en' else 'DocAI - 智能合同分析' }}</div>
     <div class="mode">{{ mode_label }}</div>
     <div class="date">{{ analysis.created_at.strftime('%Y-%m-%d %H:%M') if analysis.created_at else '' }}</div>
   </div>
@@ -115,7 +115,7 @@
         {{ analysis.score if analysis.score is not none else '--' }}
       </div>
       <div class="risk-info">
-        <h3 data-i18n="card.risk_score">风险评分</h3>
+        <h3>{{ 'Risk Score' if lang == 'en' else '风险评分' }}</h3>
         <span class="risk-label {{ rl }}">{{ risk_level_label }}</span>
       </div>
     </div>
@@ -123,11 +123,11 @@
     <div class="summary">{{ analysis.one_line_summary }}</div>
     {% endif %}
     {% if analysis.filename %}
-    <div style="font-size:13px;color:#888;">文件: {{ analysis.filename }}</div>
+    <div style="font-size:13px;color:#888;">{{ 'File: ' if lang == 'en' else '文件: ' }}{{ analysis.filename }}</div>
     {% endif %}
   </div>
-  <div class="card-footer" data-i18n="card.powered">
-    Powered by DocAI &middot; 仅供参考，不构成法律意见
+  <div class="card-footer">
+    {{ 'Powered by DocAI · For reference only, not legal advice' if lang == 'en' else 'Powered by DocAI · 仅供参考，不构成法律意见' }}
   </div>
 </div>
 </body>

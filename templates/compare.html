@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title_i18n %}page.compare_title{% endblock %}
 {% block title %}DocAI - 合同对比{% endblock %}
 
 {% block content %}
@@ -73,7 +74,7 @@
                     </div>
                 </div>
                 <div>
-                    <h3 class="text-sm font-semibold mb-1" style="color: var(--color-text-primary);">整体评估</h3>
+                    <h3 class="text-sm font-semibold mb-1" style="color: var(--color-text-primary);" data-i18n="compare.ai_assessment">整体评估</h3>
                     <p id="cmp-assessment-summary" class="text-sm" style="color: var(--color-text-secondary);"></p>
                 </div>
             </div>
@@ -100,6 +101,9 @@
 {% block extra_scripts %}
 <script>
 (function() {
+    var lastCompareResult = null;
+    var compareSampleLoaded = false;
+
     function escapeHtml(str) {
         if (!str) return '';
         const div = document.createElement('div');
@@ -215,7 +219,7 @@
             try {
                 var resp = await apiFetch('/api/compare', {
                     method: 'POST',
-                    body: JSON.stringify({ original_text: original, modified_text: modified })
+                    body: JSON.stringify({ original_text: original, modified_text: modified, language: I18N.currentLang || 'zh' })
                 });
                 var data = await resp.json();
                 if (!resp.ok) { showToast(data.error || I18N.t('js.toast_analysis_failed'), 'error'); return; }
@@ -239,6 +243,7 @@
     };
 
     function renderCompareResults(compare) {
+        lastCompareResult = compare;
         var result = compare.diff_result ? JSON.parse(compare.diff_result) : null;
         var changes = result ? result.changes : [];
 
@@ -341,12 +346,22 @@
             var labor = SampleContracts.get('labor');
             var service = SampleContracts.get('service');
             if (labor && service) {
+                compareSampleLoaded = true;
                 document.getElementById('original-text').value = labor.text;
                 document.getElementById('modified-text').value = service.text;
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             }
         }
     };
+
+    window.addEventListener('docai:languageChanged', function() {
+        if (compareSampleLoaded) {
+            loadCompareSample();
+        }
+        if (lastCompareResult) {
+            renderCompareResults(lastCompareResult);
+        }
+    });
 })();
 </script>
 {% endblock %}

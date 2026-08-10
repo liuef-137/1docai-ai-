@@ -13,6 +13,7 @@
             if (saved && I18N_DATA[saved]) {
                 I18N.currentLang = saved;
             }
+            document.documentElement.lang = I18N.currentLang === 'zh' ? 'zh-CN' : 'en';
             I18N.applyAll();
         },
 
@@ -34,6 +35,7 @@
             localStorage.setItem('docai_lang', lang);
             I18N.applyAll();
             document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            window.dispatchEvent(new CustomEvent('docai:languageChanged', { detail: { lang: lang } }));
         },
 
         applyAll: function() {
@@ -50,6 +52,31 @@
                 var key = el.getAttribute('data-i18n-placeholder');
                 if (I18N_DATA[lang] && I18N_DATA[lang][key]) {
                     el.setAttribute('placeholder', I18N_DATA[lang][key]);
+                }
+            });
+            // Apply translated attributes
+            document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n-title');
+                if (I18N_DATA[lang] && I18N_DATA[lang][key]) {
+                    el.setAttribute('title', I18N_DATA[lang][key]);
+                }
+            });
+            document.querySelectorAll('[data-i18n-aria-label]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n-aria-label');
+                if (I18N_DATA[lang] && I18N_DATA[lang][key]) {
+                    el.setAttribute('aria-label', I18N_DATA[lang][key]);
+                }
+            });
+            document.querySelectorAll('[data-i18n-arialabel]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n-arialabel');
+                if (I18N_DATA[lang] && I18N_DATA[lang][key]) {
+                    el.setAttribute('aria-label', I18N_DATA[lang][key]);
+                }
+            });
+            document.querySelectorAll('[data-i18n-value]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n-value');
+                if (I18N_DATA[lang] && I18N_DATA[lang][key]) {
+                    el.value = I18N_DATA[lang][key];
                 }
             });
             // Update lang toggle button text

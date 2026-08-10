@@ -163,6 +163,33 @@ COMPARE_PROMPT = """你是一位资深合同律师。请对比分析以下两份
 
 请确保返回有效的 JSON。"""
 
+COMPARE_PROMPT_EN = """You are a senior contract lawyer. Compare the following two contract texts and explain the legal risk impact of the changes.
+
+Original contract:
+{original_text}
+
+Modified contract:
+{modified_text}
+
+Return strictly valid JSON and no extra text. Use this structure:
+{
+  "changes": [
+    {
+      "type": "<added/modified/deleted>",
+      "location": "<where the change appears>",
+      "original": "<original content>",
+      "modified": "<modified content>",
+      "impact": "<legal impact analysis>",
+      "risk_level": "<high/medium/low/none>",
+      "suggestion": "<suggestion>"
+    }
+  ],
+  "overall_assessment": "<overall assessment>",
+  "risk_summary": "<risk summary>"
+}
+
+All values intended for users must be written in English. Ensure the response is valid JSON."""
+
 FOLLOWUP_PROMPT = """你是 DocAI 的合同分析助手。用户之前对一份合同进行了分析，现在想继续追问。
 
 请根据之前的分析结果和用户的追问，给出专业、清晰、通俗易懂的回答。
@@ -173,6 +200,17 @@ FOLLOWUP_PROMPT = """你是 DocAI 的合同分析助手。用户之前对一份�
 3. 用通俗语言解释专业法律概念
 4. 如果追问与当前分析无关，请礼貌地引导回合同分析话题
 5. 回答控制在 500 字以内，重点突出"""
+
+FOLLOWUP_PROMPT_EN = """You are DocAI's contract analysis assistant. The user previously analyzed a contract and now has a follow-up question.
+
+Answer based on the previous analysis and the user's question. Be professional, clear, and easy to understand.
+
+Rules:
+1. Be specific and refer to concrete clauses and prior analysis when relevant.
+2. If the user asks for legal advice, state that the answer is AI analysis for reference only and not legal advice.
+3. Explain legal concepts in plain English.
+4. If the question is unrelated to the current contract analysis, politely guide the user back to contract analysis.
+5. Keep the answer within 500 words and focus on the key points."""
 
 # ---------------------------------------------------------------------------
 # Contract Type Detection
@@ -896,6 +934,9 @@ def create_compare(current_user):
     data = request.get_json(silent=True) or {}
     original_text = (data.get('original_text') or '').strip()
     modified_text = (data.get('modified_text') or '').strip()
+    language = data.get('language') or detect_language(original_text + '\n' + modified_text)
+    if language not in ('zh', 'en'):
+        language = 'zh'
 
     if not original_text or not modified_text:
         return jsonify({'error': '原始合同和修改后合同文本都不能为空'}), 400
@@ -911,13 +952,14 @@ def create_compare(current_user):
         }), 400
 
     # Call DeepSeek for comparison analysis
-    system_prompt = COMPARE_PROMPT.format(
+    prompt_template = COMPARE_PROMPT_EN if language == 'en' else COMPARE_PROMPT
+    system_prompt = prompt_template.format(
         original_text=original_text,
         modified_text=modified_text,
     )
     messages = [
         {'role': 'system', 'content': system_prompt},
-        {'role': 'user', 'content': f'请对比分析以上两份合同的差异。'},
+        {'role': 'user', 'content': 'Compare the differences between the two contracts above.' if language == 'en' else '请对比分析以上两份合同的差异。'},
     ]
 
     try:
@@ -993,15 +1035,26 @@ def get_card(current_user, analysis_id):
     if not analysis:
         return jsonify({'error': '分析记录不存在'}), 404
 
+    lang = request.args.get('lang') or getattr(analysis, 'language', None) or 'zh'
+    if lang not in ('zh', 'en'):
+        lang = 'zh'
+
     # Render a summary card as HTML
-    risk_level_map = {'high': '高风险', 'medium': '中风险', 'low': '低风险'}
-    risk_level_label = risk_level_map.get(analysis.risk_level, '未知')
-    mode_map = {'risk': '风险分析', 'summary': '合同摘要', 'plain': '通俗解读'}
+    risk_level_map = {
+        'zh': {'high': '高风险', 'medium': '中风险', 'low': '低风险', 'unknown': '未知'},
+        'en': {'high': 'High Risk', 'medium': 'Medium Risk', 'low': 'Low Risk', 'unknown': 'Unknown'},
+    }[lang]
+    risk_level_label = risk_level_map.get(analysis.risk_level, risk_level_map['unknown'])
+    mode_map = {
+        'zh': {'risk': '风险分析', 'summary': '合同摘要', 'plain': '通俗解读'},
+        'en': {'risk': 'Risk Analysis', 'summary': 'Summary', 'plain': 'Plain Language'},
+    }[lang]
     mode_label = mode_map.get(analysis.analysis_mode, analysis.analysis_mode)
 
     card_html = render_template('card.html', analysis=analysis,
                                  risk_level_label=risk_level_label,
-                                 mode_label=mode_label)
+                                 mode_label=mode_label,
+                                 lang=lang)
     return card_html, 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 
@@ -1198,6 +1251,9 @@ def analysis_followup(current_user, analysis_id):
 
     data = request.get_json(silent=True) or {}
     question = (data.get('question') or '').strip()
+    language = data.get('language') or analysis.language or 'zh'
+    if language not in ('zh', 'en'):
+        language = 'zh'
     if not question:
         return jsonify({'error': '请输入追问内容'}), 400
 
@@ -1217,16 +1273,24 @@ def analysis_followup(current_user, analysis_id):
     db.session.commit()
 
     # Build context from previous analysis
-    context_parts = [
-        f"分析模式: {analysis.analysis_mode}",
-        f"评分: {analysis.score}" if analysis.score else None,
-        f"风险等级: {analysis.risk_level}" if analysis.risk_level else None,
-        f"一句话总结: {analysis.one_line_summary}" if analysis.one_line_summary else None,
-    ]
+    if language == 'en':
+        context_parts = [
+            f"Analysis mode: {analysis.analysis_mode}",
+            f"Score: {analysis.score}" if analysis.score else None,
+            f"Risk level: {analysis.risk_level}" if analysis.risk_level else None,
+            f"One-line summary: {analysis.one_line_summary}" if analysis.one_line_summary else None,
+        ]
+    else:
+        context_parts = [
+            f"分析模式: {analysis.analysis_mode}",
+            f"评分: {analysis.score}" if analysis.score else None,
+            f"风险等级: {analysis.risk_level}" if analysis.risk_level else None,
+            f"一句话总结: {analysis.one_line_summary}" if analysis.one_line_summary else None,
+        ]
     if analysis.risk_items:
         try:
             risk_items = json.loads(analysis.risk_items)
-            context_parts.append("风险条款:")
+            context_parts.append("Risk clauses:" if language == 'en' else "风险条款:")
             for item in risk_items[:5]:
                 if isinstance(item, dict):
                     context_parts.append(f"  - {item.get('clause_name', '')}: {item.get('description', '')}")
@@ -1236,7 +1300,8 @@ def analysis_followup(current_user, analysis_id):
         try:
             suggestions = json.loads(analysis.suggestions)
             if suggestions:
-                context_parts.append("改进建议: " + '、'.join(str(s) for s in suggestions[:5]))
+                sep = ', ' if language == 'en' else '、'
+                context_parts.append(("Suggestions: " if language == 'en' else "改进建议: ") + sep.join(str(s) for s in suggestions[:5]))
         except (json.JSONDecodeError, TypeError):
             pass
 
@@ -1245,11 +1310,11 @@ def analysis_followup(current_user, analysis_id):
     # Truncate contract text to save tokens
     contract_text = analysis.contract_text or ''
     if len(contract_text) > 3000:
-        contract_text = contract_text[:3000] + '...(已截断)'
+        contract_text = contract_text[:3000] + ('...(truncated)' if language == 'en' else '...(已截断)')
 
     messages = [
-        {'role': 'system', 'content': FOLLOWUP_PROMPT},
-        {'role': 'assistant', 'content': f'以下是之前的合同分析结果：\n\n{context}\n\n原始合同文本：\n{contract_text}'},
+        {'role': 'system', 'content': FOLLOWUP_PROMPT_EN if language == 'en' else FOLLOWUP_PROMPT},
+        {'role': 'assistant', 'content': (f'Here is the previous contract analysis:\n\n{context}\n\nOriginal contract text:\n{contract_text}' if language == 'en' else f'以下是之前的合同分析结果：\n\n{context}\n\n原始合同文本：\n{contract_text}')},
         {'role': 'user', 'content': question},
     ]
 
@@ -1678,6 +1743,30 @@ def _format_time_ago(dt, lang='zh'):
         return dt.strftime('%Y-%m-%d')
 
 
+def _localize_notification(item, lang='zh'):
+    if lang != 'en':
+        return item
+    translations = {
+        '欢迎使用 DocAI': {
+            'title': 'Welcome to DocAI',
+            'summary': 'Your DocAI smart contract analysis workspace is ready. Start your first contract analysis.',
+        },
+        '新功能上线：合同对比': {
+            'title': 'New Feature: Contract Comparison',
+            'summary': 'Contract comparison now supports smart two-document review. Try difference detection and risk assessment.',
+        },
+        '系统维护通知': {
+            'title': 'Scheduled Maintenance',
+            'summary': 'The system will undergo routine maintenance this Sunday from 2:00 to 4:00 AM. Service may be briefly interrupted.',
+        },
+    }
+    mapped = translations.get(item.get('title'))
+    if mapped:
+        item = dict(item)
+        item.update(mapped)
+    return item
+
+
 @api_bp.route('/api/notifications', methods=['GET'])
 @get_current_user()
 def list_notifications(current_user):
@@ -1703,7 +1792,7 @@ def list_notifications(current_user):
             continue
         if tab == 'alert' and n.notif_type != 'alert':
             continue
-        result.append(item)
+        result.append(_localize_notification(item, lang))
 
     unread_count = UserNotification.query.filter_by(
         user_id=current_user.id, is_read=False, deleted=False

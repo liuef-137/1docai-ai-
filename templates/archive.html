@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title_i18n %}page.archive_title{% endblock %}
 {% block title %}DocAI - 合同档案{% endblock %}
 
 {% block content %}
@@ -90,6 +91,7 @@
     let currentPage = 1;
     let currentFilter = '';
     let totalPages = 1;
+    let currentDetailId = null;
 
     const searchInput = document.getElementById('search-input');
     let searchTimer;
@@ -160,7 +162,8 @@
         const riskColors = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
 
         items.forEach(item => {
-            const date = item.created_at ? new Date(item.created_at).toLocaleDateString('zh-CN') : '-';
+            const locale = I18N.currentLang === 'en' ? 'en-US' : 'zh-CN';
+            const date = item.created_at ? new Date(item.created_at).toLocaleDateString(locale) : '-';
             const scoreColor = (item.score != null)
                 ? (item.score >= 80 ? 'var(--risk-low)' : item.score >= 60 ? 'var(--risk-medium)' : 'var(--risk-high)')
                 : 'var(--color-text-tertiary)';
@@ -197,6 +200,7 @@
     }
 
     window.viewDetail = function(id) {
+        currentDetailId = id;
         apiFetch('/api/analysis/' + id).then(r => r.json()).then(data => {
             if (!data.analysis) { showToast(I18N.t('js.archive_not_found'), 'error'); return; }
             const a = data.analysis;
@@ -206,11 +210,13 @@
             html += '<div class="flex items-center gap-3 flex-wrap">';
             if (a.filename) html += '<span class="text-sm" style="color: var(--color-text-secondary);"><strong>' + I18N.t('detail.file_label') + '</strong>' + escapeHtml(a.filename) + '</span>';
             html += '<span class="text-sm" style="color: var(--color-text-secondary);"><strong>' + I18N.t('detail.mode_label') + '</strong>' + (modeLabels[a.analysis_mode] || a.analysis_mode) + '</span>';
-            if (a.created_at) html += '<span class="text-sm" style="color: var(--color-text-tertiary);">' + new Date(a.created_at).toLocaleString('zh-CN') + '</span>';
+            const locale = I18N.currentLang === 'en' ? 'en-US' : 'zh-CN';
+            const colon = I18N.currentLang === 'en' ? ': ' : '：';
+            if (a.created_at) html += '<span class="text-sm" style="color: var(--color-text-tertiary);">' + new Date(a.created_at).toLocaleString(locale) + '</span>';
             html += '</div>';
 
             if (a.one_line_summary) {
-                html += '<div class="p-4 rounded-lg" style="background: var(--color-bg-secondary);"><h3 class="text-xs font-semibold uppercase mb-2" style="color: var(--color-text-tertiary); letter-spacing: 0.08em;">总结</h3><p class="text-sm leading-relaxed" style="color: var(--color-text-primary);">' + escapeHtml(a.one_line_summary) + '</p></div>';
+                html += '<div class="p-4 rounded-lg" style="background: var(--color-bg-secondary);"><h3 class="text-xs font-semibold uppercase mb-2" style="color: var(--color-text-tertiary); letter-spacing: 0.08em;">' + I18N.t('archive.summary_label') + '</h3><p class="text-sm leading-relaxed" style="color: var(--color-text-primary);">' + escapeHtml(a.one_line_summary) + '</p></div>';
             }
 
             if (a.score != null) {
@@ -225,7 +231,7 @@
                     const rl = { high: I18N.t('js.risk_high'), medium: I18N.t('js.risk_medium'), low: I18N.t('js.risk_low') };
                     const c = rc[ri.risk_level] || 'var(--color-text-tertiary)';
                     html += '<div class="border rounded-lg p-4 border-l-4" style="border-color: var(--color-border-light); border-left-color: ' + c + ';"><div class="flex items-start justify-between gap-3"><div><h4 class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(ri.clause_name) + '</h4><p class="mt-1 text-sm" style="color: var(--color-text-secondary);">' + escapeHtml(ri.description) + '</p>';
-                    if (ri.suggestion) html += '<p class="mt-1 text-sm" style="color: var(--color-accent);"><strong>' + I18N.t('analyze.suggestions') + '：</strong>' + escapeHtml(ri.suggestion) + '</p>';
+                    if (ri.suggestion) html += '<p class="mt-1 text-sm" style="color: var(--color-accent);"><strong>' + I18N.t('analyze.suggestions') + colon + '</strong>' + escapeHtml(ri.suggestion) + '</p>';
                     html += '</div><span class="text-xs font-medium px-2 py-1 rounded-md shrink-0" style="color: ' + c + '; background: ' + c + '14;">' + (rl[ri.risk_level] || ri.risk_level) + '</span></div></div>';
                 });
             }
@@ -246,6 +252,7 @@
 
     window.closeDetailModal = function() {
         document.getElementById('detail-modal').classList.remove('active');
+        currentDetailId = null;
     };
 
     document.getElementById('detail-modal').addEventListener('click', function(e) {
@@ -254,11 +261,20 @@
 
     window.deleteRecord = function(id) {
         if (!confirm(I18N.t('js.archive_delete_confirm'))) return;
-        apiFetch('/api/analysis/' + id, { method: 'DELETE' }).then(r => r.json()).then(data => {
-            if (r.ok) { showToast(I18N.t('js.archive_deleted'), 'success'); loadArchive(); }
-            else showToast(data.error || I18N.t('js.archive_delete_failed'), 'error');
+        apiFetch('/api/analysis/' + id, { method: 'DELETE' }).then(resp => {
+            return resp.json().then(data => ({ ok: resp.ok, data: data }));
+        }).then(result => {
+            if (result.ok) { showToast(I18N.t('js.archive_deleted'), 'success'); loadArchive(); }
+            else showToast(result.data.error || I18N.t('js.archive_delete_failed'), 'error');
         }).catch(() => showToast(I18N.t('js.toast_network_error'), 'error'));
     };
+
+    window.addEventListener('docai:languageChanged', function() {
+        loadArchive();
+        if (currentDetailId) {
+            viewDetail(currentDetailId);
+        }
+    });
 
     function escapeHtml(str) {
         if (!str) return '';

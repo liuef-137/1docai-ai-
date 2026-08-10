@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title_i18n %}page.dashboard_title{% endblock %}
 {% block title %}DocAI - 个人中心{% endblock %}
 
 {% block extra_head %}
@@ -988,12 +989,12 @@
                     </div>
                     <div class="form-field">
                         <label class="form-label" data-i18n="dash.account_company">公司</label>
-                        <input type="text" class="form-input" value="未来科技有限公司">
+                        <input type="text" class="form-input" value="未来科技有限公司" data-i18n-value="dash.account_company_value">
                     </div>
                 </div>
                 <div class="form-field">
                     <label class="form-label" data-i18n="dash.account_position">职位</label>
-                    <input type="text" class="form-input" value="法务经理">
+                    <input type="text" class="form-input" value="法务经理" data-i18n-value="dash.account_position_value">
                 </div>
                 <div style="margin-top: 8px;">
                     <button class="btn-primary" onclick="showToast(I18N.t('dash.account_save_success') || '保存成功', 'success')">
@@ -1012,7 +1013,7 @@
                 <div class="form-field">
                     <label class="form-label" data-i18n="dash.account_current_pwd">当前密码</label>
                     <div class="form-input-wrap">
-                        <input type="password" class="form-input" id="pwd-current" placeholder="输入当前密码">
+                        <input type="password" class="form-input" id="pwd-current" placeholder="输入当前密码" data-i18n-placeholder="dash.account_current_pwd_placeholder">
                         <button type="button" class="form-input-icon" onclick="togglePwd('pwd-current', this)">
                             <i data-lucide="eye"></i>
                         </button>
@@ -1021,7 +1022,7 @@
                 <div class="form-field">
                     <label class="form-label" data-i18n="dash.account_new_pwd">新密码</label>
                     <div class="form-input-wrap">
-                        <input type="password" class="form-input" id="pwd-new" placeholder="至少 8 个字符" oninput="updatePwdStrength(this.value)">
+                        <input type="password" class="form-input" id="pwd-new" placeholder="至少 8 个字符" data-i18n-placeholder="dash.account_new_pwd_placeholder" oninput="updatePwdStrength(this.value)">
                         <button type="button" class="form-input-icon" onclick="togglePwd('pwd-new', this)">
                             <i data-lucide="eye"></i>
                         </button>
@@ -1036,7 +1037,7 @@
                 <div class="form-field">
                     <label class="form-label" data-i18n="dash.account_confirm_pwd">确认新密码</label>
                     <div class="form-input-wrap">
-                        <input type="password" class="form-input" id="pwd-confirm" placeholder="再次输入新密码">
+                        <input type="password" class="form-input" id="pwd-confirm" placeholder="再次输入新密码" data-i18n-placeholder="dash.account_confirm_pwd_placeholder">
                         <button type="button" class="form-input-icon" onclick="togglePwd('pwd-confirm', this)">
                             <i data-lucide="eye"></i>
                         </button>
@@ -1116,7 +1117,7 @@
                                     <span data-i18n="dash.activity_act_analysis">分析了合同</span>
                                     <span class="timeline-badge timeline-badge-success" data-i18n="dash.activity_result_success">成功</span>
                                 </div>
-                                <div class="timeline-meta">劳动合同_v2.pdf · <span data-i18n="dash.activity_meta_browser">Chrome · macOS</span></div>
+                                <div class="timeline-meta"><span data-i18n="dash.activity_file_labor">劳动合同_v2.pdf</span> · <span data-i18n="dash.activity_meta_browser">Chrome · macOS</span></div>
                             </div>
                         </div>
                         <div class="timeline-entry" data-type="login">
@@ -1145,7 +1146,7 @@
                                     <span data-i18n="dash.activity_act_export">导出了分析报告</span>
                                     <span class="timeline-badge timeline-badge-success" data-i18n="dash.activity_result_success">成功</span>
                                 </div>
-                                <div class="timeline-meta">房屋租赁合同.pdf · 2.4 MB</div>
+                                <div class="timeline-meta" data-i18n="dash.activity_file_rental">房屋租赁合同.pdf · 2.4 MB</div>
                             </div>
                         </div>
                         <div class="timeline-entry" data-type="analysis">
@@ -1156,7 +1157,7 @@
                                     <span data-i18n="dash.activity_act_analysis">分析了合同</span>
                                     <span class="timeline-badge timeline-badge-fail" data-i18n="dash.activity_result_fail">失败</span>
                                 </div>
-                                <div class="timeline-meta">服务协议.docx · <span data-i18n="dash.activity_fail_reason">文件格式不支持</span></div>
+                                <div class="timeline-meta"><span data-i18n="dash.activity_file_service">服务协议.docx</span> · <span data-i18n="dash.activity_fail_reason">文件格式不支持</span></div>
                             </div>
                         </div>
                         <div class="timeline-entry" data-type="settings">
@@ -1195,7 +1196,7 @@
                                     <span data-i18n="dash.activity_act_analysis">分析了合同</span>
                                     <span class="timeline-badge timeline-badge-success" data-i18n="dash.activity_result_success">成功</span>
                                 </div>
-                                <div class="timeline-meta">保密协议.pdf</div>
+                                <div class="timeline-meta" data-i18n="dash.activity_file_nda">保密协议.pdf</div>
                             </div>
                         </div>
                         <div class="timeline-entry" data-type="logout">
@@ -1465,7 +1466,7 @@
     // 初始化侧边栏用户信息
     function initSidebarUser() {
         var user = (window.appState && window.appState.user) || {};
-        var username = user.username || '用户';
+        var username = user.username || 'User';
         var email = user.email || 'user@example.com';
         var avatarUrl = user.avatar || '';
         var sidebarUsername = document.getElementById('sidebar-username');
@@ -1812,32 +1813,31 @@
     }
 
     // ============ 数据看板逻辑（保留原有） ============
-    var TYPE_LABELS = {
-        labor: '劳动合同', rental: '房屋租赁', purchase: '买卖合同',
-        service: '服务合同', nda: '保密协议', loan: '借款合同',
-        partnership: '合伙协议', franchise: '加盟合同', agency: '委托合同',
-        construction: '建设工程', insurance: '保险合同', other: '其他'
-    };
+    function getTypeLabel(type) {
+        var key = 'type.' + type;
+        var label = I18N.t(key);
+        return label === key ? type : label;
+    }
 
-    var RISK_MAP = {
-        high: { label: I18N.t('risk.high'), color: 'var(--risk-high)' },
-        medium: { label: I18N.t('risk.medium'), color: 'var(--risk-medium)' },
-        low: { label: I18N.t('risk.low'), color: 'var(--risk-low)' }
-    };
+    function getRiskMap() {
+        return {
+            high: { label: I18N.t('risk.high'), color: 'var(--risk-high)' },
+            medium: { label: I18N.t('risk.medium'), color: 'var(--risk-medium)' },
+            low: { label: I18N.t('risk.low'), color: 'var(--risk-low)' }
+        };
+    }
 
     function formatDate(dateStr) {
         var d = new Date(dateStr);
-        var month = d.getMonth() + 1;
-        var day = d.getDate();
-        var hours = String(d.getHours()).padStart(2, '0');
-        var mins = String(d.getMinutes()).padStart(2, '0');
-        return month + '月' + day + '日 ' + hours + ':' + mins;
+        if (isNaN(d.getTime())) return '--';
+        var locale = I18N.currentLang === 'en' ? 'en-US' : 'zh-CN';
+        return d.toLocaleString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
 
     function getTodayDisplay() {
         var d = new Date();
-        var weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-        return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日 周' + weekdays[d.getDay()];
+        var locale = I18N.currentLang === 'en' ? 'en-US' : 'zh-CN';
+        return d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
     }
 
     function drawBarChart(canvasId, labels, values, color) {
@@ -1928,19 +1928,19 @@
             return;
         }
         var html = '';
+        var riskMap = getRiskMap();
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
             var riskLevel = item.risk_level || 'low';
-            var riskInfo = RISK_MAP[riskLevel] || RISK_MAP.low;
+            var riskInfo = riskMap[riskLevel] || riskMap.low;
             var badgeClass = 'badge-' + riskLevel;
             var scoreText = item.score != null ? item.score.toFixed(1) : '--';
-            var modeText = item.mode || 'standard';
-            var modeI18nKey = 'mode.' + modeText;
-            var modeDisplay = I18N.t(modeI18nKey);
-            if (modeDisplay === modeI18nKey) modeDisplay = modeText;
+            var modeText = item.analysis_mode || item.mode || 'risk';
+            var modeLabels = { risk: I18N.t('js.mode_risk'), summary: I18N.t('js.mode_summary'), plain: I18N.t('js.mode_plain') };
+            var modeDisplay = modeLabels[modeText] || modeText;
 
             html += '<div class="analysis-item">' +
-                '<div class="filename" title="' + escapeHtml(item.filename || '') + '">' + escapeHtml(item.filename || '未知文件') + '</div>' +
+                '<div class="filename" title="' + escapeHtml(item.filename || '') + '">' + escapeHtml(item.filename || I18N.t('js.unknown_file')) + '</div>' +
                 '<span class="badge badge-mode">' + escapeHtml(modeDisplay) + '</span>' +
                 '<span class="badge ' + badgeClass + '">' + scoreText + '</span>' +
                 '<span class="text-xs" style="color: var(--color-text-tertiary); white-space: nowrap;">' + formatDate(item.created_at || item.timestamp || '') + '</span>' +
@@ -1965,11 +1965,12 @@
             return;
         }
         var order = ['high', 'medium', 'low'];
+        var riskMap = getRiskMap();
         for (var i = 0; i < order.length; i++) {
             var key = order[i];
             var count = dist[key] || 0;
             var pct = total > 0 ? Math.round(count / total * 100) : 0;
-            var info = RISK_MAP[key];
+            var info = riskMap[key];
             html += '<div>' +
                 '<div class="flex items-center justify-between mb-1">' +
                     '<span class="hbar-label">' + info.label + '</span>' +
@@ -2009,7 +2010,7 @@
             if (dist[key] === 0) continue;
             var count = dist[key];
             var pct = total > 0 ? Math.round(count / total * 100) : 0;
-            var label = TYPE_LABELS[key] || key;
+            var label = getTypeLabel(key);
             var color = typeColors[key] || 'var(--color-text-tertiary)';
             html += '<div>' +
                 '<div class="flex items-center justify-between mb-1">' +
@@ -2182,6 +2183,13 @@
 
         // 重新初始化图标
         if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+
+    window.addEventListener('docai:languageChanged', function() {
+        initSidebarUser();
+        updatePwdStrength(document.getElementById('pwd-new') ? document.getElementById('pwd-new').value : '');
+        loadDashboard();
+        loadNotifications();
     });
 
 })();

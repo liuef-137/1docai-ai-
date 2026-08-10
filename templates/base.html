@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}DocAI - 智能合同分析{% endblock %}</title>
+    <title data-i18n="{% block title_i18n %}page.home_title{% endblock %}">{% block title %}DocAI - 智能合同分析{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="/sample_contracts.js"></script>
@@ -23,6 +23,7 @@
             init: function() {
                 var saved = localStorage.getItem('docai_lang');
                 if (saved && I18N_DATA[saved]) { I18N.currentLang = saved; }
+                document.documentElement.lang = I18N.currentLang === 'zh' ? 'zh-CN' : 'en';
                 I18N.applyAll();
             },
             t: function(key) {
@@ -37,6 +38,7 @@
                 localStorage.setItem('docai_lang', lang);
                 I18N.applyAll();
                 document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+                window.dispatchEvent(new CustomEvent('docai:languageChanged', { detail: { lang: lang } }));
             },
             applyAll: function() {
                 var lang = I18N.currentLang;
@@ -47,6 +49,22 @@
                 document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
                     var key = el.getAttribute('data-i18n-placeholder');
                     if (I18N_DATA[lang] && I18N_DATA[lang][key]) el.setAttribute('placeholder', I18N_DATA[lang][key]);
+                });
+                document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+                    var key = el.getAttribute('data-i18n-title');
+                    if (I18N_DATA[lang] && I18N_DATA[lang][key]) el.setAttribute('title', I18N_DATA[lang][key]);
+                });
+                document.querySelectorAll('[data-i18n-aria-label]').forEach(function(el) {
+                    var key = el.getAttribute('data-i18n-aria-label');
+                    if (I18N_DATA[lang] && I18N_DATA[lang][key]) el.setAttribute('aria-label', I18N_DATA[lang][key]);
+                });
+                document.querySelectorAll('[data-i18n-arialabel]').forEach(function(el) {
+                    var key = el.getAttribute('data-i18n-arialabel');
+                    if (I18N_DATA[lang] && I18N_DATA[lang][key]) el.setAttribute('aria-label', I18N_DATA[lang][key]);
+                });
+                document.querySelectorAll('[data-i18n-value]').forEach(function(el) {
+                    var key = el.getAttribute('data-i18n-value');
+                    if (I18N_DATA[lang] && I18N_DATA[lang][key]) el.value = I18N_DATA[lang][key];
                 });
                 var toggleBtn = document.getElementById('lang-toggle-btn');
                 if (toggleBtn) toggleBtn.textContent = lang === 'zh' ? 'EN' : '中文';

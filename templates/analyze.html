@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title_i18n %}page.analyze_title{% endblock %}
 {% block title %}DocAI - 智能分析{% endblock %}
 
 {% block extra_head %}
@@ -100,7 +101,7 @@
     <div class="mx-auto max-w-3xl px-6 lg:px-8">
 
         <!-- Upload Zone -->
-        <div id="upload-zone" class="border-2 border-dashed rounded-lg p-8 sm:p-12 flex flex-col items-center text-center cursor-pointer" style="border-color: var(--color-border); transition: border-color 150ms, background 150ms;" onclick="document.getElementById('file-input').click()" role="button" tabindex="0" aria-label="上传合同文件">
+        <div id="upload-zone" class="border-2 border-dashed rounded-lg p-8 sm:p-12 flex flex-col items-center text-center cursor-pointer" style="border-color: var(--color-border); transition: border-color 150ms, background 150ms;" onclick="document.getElementById('file-input').click()" role="button" tabindex="0" aria-label="上传合同文件" data-i18n-aria-label="analyze.upload_title">
             <input type="file" id="file-input" accept=".pdf,.docx,.txt,.csv" class="hidden">
             <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-accent-tint-50);">
                 <i data-lucide="upload-cloud" class="w-6 h-6" style="color: var(--color-accent);"></i>
@@ -141,7 +142,7 @@
 
         <!-- Textarea with character counter -->
         <div class="relative">
-            <textarea id="contract-text" class="w-full h-32 resize-none rounded-lg px-4 py-3 text-sm outline-none pr-28" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" data-i18n-placeholder="analyze.textarea_placeholder" placeholder="直接粘贴合同文本..." maxlength="10000" aria-label="合同文本输入" onfocus="this.style.borderColor='var(--color-accent)'; this.style.boxShadow='0 0 0 3px var(--color-accent-tint-100)'" onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none'"></textarea>
+            <textarea id="contract-text" class="w-full h-32 resize-none rounded-lg px-4 py-3 text-sm outline-none pr-28" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" data-i18n-placeholder="analyze.textarea_placeholder" placeholder="直接粘贴合同文本..." maxlength="10000" aria-label="合同文本输入" data-i18n-aria-label="analyze.textarea_placeholder" onfocus="this.style.borderColor='var(--color-accent)'; this.style.boxShadow='0 0 0 3px var(--color-accent-tint-100)'" onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none'"></textarea>
             <span id="char-counter" class="char-counter absolute top-3 right-3 text-xs pointer-events-none select-none" style="color: var(--color-text-tertiary); font-variant-numeric: tabular-nums;"><span data-i18n="analyze.char_count">0 / 10000 字</span></span>
         </div>
         <!-- Warning when over limit -->
@@ -350,7 +351,7 @@
                         <h2 class="text-xs font-semibold uppercase mb-3" data-i18n="analyze.one_line_label" style="color: var(--color-text-tertiary); letter-spacing: 0.08em;">一句话总结</h2>
                         <p id="summary-text" class="text-base leading-relaxed" style="color: var(--color-text-primary);"></p>
                     </div>
-                    <button class="copy-btn shrink-0 mt-1" style="color: var(--color-text-tertiary); background: none; border: none;" aria-label="复制总结" title="复制" onclick="copyText(document.getElementById('summary-text').textContent)">
+                    <button class="copy-btn shrink-0 mt-1" style="color: var(--color-text-tertiary); background: none; border: none;" data-i18n-aria-label="js.copy" data-i18n-title="js.copy" aria-label="复制" title="复制" onclick="copyText(document.getElementById('summary-text').textContent)">
                         <i data-lucide="clipboard" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -363,7 +364,7 @@
                         <i data-lucide="shield-alert" class="w-4 h-4" style="color: var(--state-warning);"></i>
                     </div>
                     <div class="min-w-0">
-                        <p class="text-sm font-semibold" style="color: var(--color-text-primary); word-break: keep-all;">检测到触碰你的风控红线</p>
+                        <p class="text-sm font-semibold" style="color: var(--color-text-primary); word-break: keep-all;" data-i18n="analyze.pref_redline">检测到触碰你的风控红线</p>
                         <p id="pref-alert-text" class="mt-2 text-sm leading-relaxed" style="color: var(--color-text-secondary);"></p>
                     </div>
                 </div>
@@ -483,8 +484,11 @@
     let currentFilename = '';
     let preferences = [];
     let lastAnalysisId = null;
+    let lastRenderedAnalysis = null;
+    let lastRenderedElapsed = null;
     let chatSending = false;
     let reviewStance = '';
+    let loadedSampleId = '';
     let scanStream = null;
     let scanActive = false;
     const MAX_LEN = 10000;
@@ -508,10 +512,9 @@
     const scanRetakeBtn = document.getElementById('scan-retake-btn');
     const scanUseBtn = document.getElementById('scan-use-btn');
 
-    // Character counter
-    textarea.addEventListener('input', function() {
+    function updateCharCounter() {
         const len = textarea.value.length;
-        counter.textContent = len + ' / ' + MAX_LEN + ' 字';
+        counter.textContent = len + ' / ' + MAX_LEN + ' ' + I18N.t('js.char_unit');
         counter.classList.remove('warn', 'error');
         charWarning.classList.add('hidden');
         if (len >= MAX_LEN) {
@@ -530,6 +533,11 @@
             btnAnalyze.style.opacity = '1';
             btnAnalyze.style.cursor = 'pointer';
         }
+    }
+
+    // Character counter
+    textarea.addEventListener('input', function() {
+        updateCharCounter();
     });
 
     // File upload handling
@@ -550,7 +558,7 @@
         currentFilename = file.name;
         const ext = file.name.split('.').pop().toLowerCase();
         if (ext === 'pdf' || ext === 'docx') {
-            showToast('PDF/DOCX 解析功能开发中，请粘贴文本', 'warning');
+            showToast(I18N.t('js.toast_file_parse_pending'), 'warning');
             return;
         }
         if (ext === 'txt' || ext === 'csv') {
@@ -673,12 +681,25 @@
     window.loadSample = function(id) {
         var sample = SampleContracts.get(id);
         if (!sample) return;
+        loadedSampleId = id;
         textarea.value = sample.text;
         textarea.dispatchEvent(new Event('input'));
         // Scroll to textarea
         textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
         if (typeof lucide !== 'undefined') lucide.createIcons();
     };
+
+    window.addEventListener('docai:languageChanged', function() {
+        updateCharCounter();
+        if (loadedSampleId) {
+            var sample = SampleContracts.get(loadedSampleId);
+            if (sample) textarea.value = sample.text;
+            updateCharCounter();
+        }
+        if (lastRenderedAnalysis) {
+            renderResults(lastRenderedAnalysis, lastRenderedElapsed);
+        }
+    });
 
     // Mode switching
     window.switchMode = function(mode) {
@@ -867,6 +888,8 @@
     };
 
     function renderResults(analysis, elapsed) {
+        lastRenderedAnalysis = analysis;
+        lastRenderedElapsed = elapsed;
         const result = analysis.result ? JSON.parse(analysis.result) : null;
 
         // One-line summary
@@ -879,7 +902,7 @@
         if (currentMode === 'risk' && preferences.length > 0 && analysis.one_line_summary) {
             document.getElementById('pref-alert-text').innerHTML = preferences.map(p =>
                 '<strong>' + escapeHtml(p) + '</strong>'
-            ).join('、') + ' — 请关注分析结果中是否触碰这些红线。';
+            ).join(I18N.t('js.list_separator')) + I18N.t('js.pref_alert_suffix');
             document.getElementById('pref-alert').classList.remove('hidden');
         }
 
@@ -992,7 +1015,7 @@
                     list.innerHTML += '<li class="flex items-start gap-3">' +
                         '<span class="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold mt-0.5" style="background: var(--color-accent-tint-50); color: var(--color-accent);">' + (i + 1) + '</span>' +
                         '<div class="flex-1 min-w-0"><span class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">' + escapeHtml(s) + '</span></div>' +
-                        '<button class="copy-btn shrink-0 mt-0.5" style="color: var(--color-text-tertiary); background: none; border: none;" onclick="copyText(\'' + escapeJs(s) + '\')" title="复制">' +
+                        '<button class="copy-btn shrink-0 mt-0.5" style="color: var(--color-text-tertiary); background: none; border: none;" onclick="copyText(\'' + escapeJs(s) + '\')" title="' + I18N.t('js.copy') + '" aria-label="' + I18N.t('js.copy') + '">' +
                         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>' +
                         '</button></li>';
                 });
@@ -1009,7 +1032,7 @@
                 if (riskDist.low > 0) badges.innerHTML += '<span class="inline-flex items-center text-xs font-medium px-2 py-1 rounded" style="color: var(--risk-low); background: rgba(45,157,120,0.2);">' + I18N.t('js.risk_low') + ' x' + riskDist.low + '</span>';
                 document.getElementById('share-date').textContent = new Date().toISOString().slice(0, 10);
                 if (analysis.id) {
-                    document.getElementById('share-link').href = '/api/card/' + analysis.id;
+                    document.getElementById('share-link').href = '/api/card/' + analysis.id + '?lang=' + encodeURIComponent(I18N.currentLang || 'zh');
                     document.getElementById('share-card').classList.remove('hidden');
                 }
             }
@@ -1055,8 +1078,8 @@
             (result.things_to_watch || []).forEach(tw => {
                 wList.innerHTML += '<li class="risk-card border rounded-lg p-4 sm:p-5 border-l-4" style="border-color: var(--color-border-light); border-left-color: var(--state-warning);">' +
                     '<h3 class="text-sm font-semibold" style="color: var(--color-text-primary);">' + escapeHtml(tw.item) + '</h3>' +
-                    '<p class="mt-1 text-sm" style="color: var(--color-text-secondary);"><strong>为什么重要：</strong>' + escapeHtml(tw.why_important) + '</p>' +
-                    '<p class="mt-1 text-sm" style="color: var(--color-text-secondary);"><strong>建议：</strong>' + escapeHtml(tw.suggestion) + '</p></li>';
+                    '<p class="mt-1 text-sm" style="color: var(--color-text-secondary);"><strong>' + I18N.t('js.why_important') + '</strong>' + escapeHtml(tw.why_important) + '</p>' +
+                    '<p class="mt-1 text-sm" style="color: var(--color-text-secondary);"><strong>' + I18N.t('js.suggestion_label') + ': </strong>' + escapeHtml(tw.suggestion) + '</p></li>';
             });
             if (result.things_to_watch && result.things_to_watch.length > 0) {
                 document.getElementById('watch-card').classList.remove('hidden');
@@ -1126,7 +1149,7 @@
         }
         if (suggestion) {
             bodyContent += '<div class="mt-3 p-3 rounded-md" style="background: var(--color-bg-secondary);">' +
-                '<p class="text-xs font-semibold mb-1" style="color: var(--color-accent);">建议</p>' +
+                '<p class="text-xs font-semibold mb-1" style="color: var(--color-accent);">' + I18N.t('js.suggestion_label') + '</p>' +
                 '<p class="text-sm" style="color: var(--color-text-secondary);">' + escapeHtml(suggestion) + '</p></div>';
         }
 
@@ -1177,7 +1200,7 @@
         fetch('/api/analysis/' + lastAnalysisId + '/followup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question: question })
+            body: JSON.stringify({ question: question, language: I18N.currentLang || 'zh' })
         }).then(response => {
             if (!response.ok) {
                 throw new Error('Followup request failed: ' + response.status);
