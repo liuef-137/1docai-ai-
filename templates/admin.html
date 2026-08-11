@@ -110,6 +110,40 @@
             </div>
         </div>
 
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6 mb-10">
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);" data-i18n="admin.metric_new_users">新增用户</div>
+                <div id="stat-new-users" class="text-3xl font-bold" style="color: var(--color-primary); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+                <div class="text-xs mt-2" style="color: var(--color-text-tertiary);" data-i18n="admin.metric_new_users_desc">近 7 天注册用户</div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);" data-i18n="admin.metric_open_feedback">待处理反馈</div>
+                <div id="stat-open-feedback" class="text-3xl font-bold" style="color: var(--state-error); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+                <div class="text-xs mt-2" style="color: var(--color-text-tertiary);" data-i18n="admin.metric_open_feedback_desc">待处理 + 处理中</div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);" data-i18n="admin.metric_avatar_rate">头像覆盖率</div>
+                <div id="stat-avatar-rate" class="text-3xl font-bold" style="color: var(--color-accent); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+                <div class="text-xs mt-2" style="color: var(--color-text-tertiary);"><span id="stat-avatar-count">0</span> / <span id="stat-avatar-total">0</span></div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <div class="text-sm font-medium mb-2" style="color: var(--color-text-tertiary);" data-i18n="admin.metric_release_notifs">版本通知</div>
+                <div id="stat-release-notifs" class="text-3xl font-bold" style="color: var(--state-warning); font-family: var(--font-display); font-variant-numeric: tabular-nums;">--</div>
+                <div class="text-xs mt-2" style="color: var(--color-text-tertiary);"><span data-i18n="admin.metric_total_notifs_desc">累计系统通知</span> <span id="stat-total-notifs">0</span></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h3 class="text-sm font-semibold mb-4" style="color: var(--color-text-secondary);" data-i18n="admin.user_role_dist">用户角色分布</h3>
+                <div id="dist-user-role" class="space-y-3"></div>
+            </div>
+            <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+                <h3 class="text-sm font-semibold mb-4" style="color: var(--color-text-secondary);" data-i18n="admin.feedback_status_title">反馈处理状态</h3>
+                <div id="dist-feedback-status-admin" class="space-y-3"></div>
+            </div>
+        </div>
+
         <!-- Charts Row 1 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div class="rounded-xl p-6" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
@@ -154,6 +188,35 @@
             </div>
         </div>
 
+        <div class="rounded-xl p-6 mb-10" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm);">
+            <div class="flex items-center justify-between gap-4 mb-4 flex-wrap">
+                <div>
+                    <h3 class="text-sm font-semibold" style="color: var(--color-text-secondary);" data-i18n="admin.notif_title">系统通知同步</h3>
+                    <p class="text-xs mt-1" style="color: var(--color-text-tertiary);" data-i18n="admin.notif_subtitle">查看版本更新和公告是否已发出，以及用户是否已读。</p>
+                </div>
+                <button onclick="loadNotifications()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border); cursor: pointer;">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span data-i18n="admin.refresh">刷新数据</span>
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm" style="border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--color-bg-secondary);">
+                            <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.notif_col_title">标题</th>
+                            <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.notif_col_type">类型</th>
+                            <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.notif_col_read">已读</th>
+                            <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.notif_col_delivery">送达率</th>
+                            <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.notif_col_time">时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="notifications-tbody">
+                            <tr><td colspan="7" class="text-center py-8" style="color: var(--color-text-tertiary);">...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Tab Navigation -->
         <div class="flex border-b mb-6" style="border-color: var(--color-border);">
             <button onclick="switchTab('users')" id="tab-btn-users" class="admin-tab-btn px-5 py-3 text-sm font-medium" style="border: none; background: none; cursor: pointer; color: var(--color-primary); border-bottom: 2px solid var(--color-primary);" data-i18n="admin.tab_users">用户管理</button>
@@ -172,11 +235,13 @@
                                 <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_email">邮箱</th>
                                 <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_role">角色</th>
                                 <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_analyses">分析次数</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_invite_code">邀请码</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_referrals">邀请数</th>
                                 <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="admin.col_date">注册时间</th>
                             </tr>
                         </thead>
                         <tbody id="users-tbody">
-                            <tr><td colspan="5" class="text-center py-8" style="color: var(--color-text-tertiary);">...</td></tr>
+                            <tr><td colspan="7" class="text-center py-8" style="color: var(--color-text-tertiary);">...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -286,6 +351,7 @@
         loadStats();
         loadUsers();
         loadAnalyses();
+        loadNotifications();
     };
 
     // ---- Stats ----
@@ -307,6 +373,13 @@
             feature: { label: tr('admin.type_feature', '功能建议'), color: 'var(--state-info)' },
             improvement: { label: tr('admin.type_improvement', '改进建议'), color: 'var(--state-warning)' },
             praise: { label: tr('admin.type_praise', '表扬'), color: 'var(--state-success)' }
+        };
+    }
+
+    function userRoleMap() {
+        return {
+            admin: { label: tr('admin.role_admin', '管理员'), color: 'var(--color-primary)' },
+            user: { label: tr('admin.role_user', '普通用户'), color: 'var(--color-accent)' }
         };
     }
 
@@ -341,6 +414,13 @@
             document.getElementById('stat-rating').textContent = data.avg_rating || '0.0';
             document.getElementById('stat-nps').textContent = data.nps || 0;
             document.getElementById('stat-today').textContent = data.today_analyses || 0;
+            document.getElementById('stat-new-users').textContent = data.new_users_7d || 0;
+            document.getElementById('stat-open-feedback').textContent = data.open_feedback_count || 0;
+            document.getElementById('stat-avatar-rate').textContent = (data.avatar_set_rate != null ? data.avatar_set_rate : 0) + '%';
+            document.getElementById('stat-avatar-count').textContent = data.avatar_set_count || 0;
+            document.getElementById('stat-avatar-total').textContent = data.total_users || 0;
+            document.getElementById('stat-release-notifs').textContent = data.release_notifications || 0;
+            document.getElementById('stat-total-notifs').textContent = data.total_notifications || 0;
             var rd = data.risk_distribution || {};
             document.getElementById('risk-high').textContent = rd.high || 0;
             document.getElementById('risk-medium').textContent = rd.medium || 0;
@@ -360,12 +440,30 @@
             renderDistributionBars('dist-feedback-type', data.feedback_type_dist || {}, feedbackTypeMap());
             renderRatingDist(data.feedback_rating_dist || {});
             renderStatusDist(data.feedback_status_dist || {});
+            renderDistributionBars('dist-user-role', data.user_role_dist || {}, userRoleMap());
+            renderDistributionBars('dist-feedback-status-admin', data.feedback_status_dist || {}, {
+                pending: { label: tr('admin.status_pending', 'Pending'), color: 'var(--state-warning)' },
+                reviewing: { label: tr('admin.status_reviewing', 'Reviewing'), color: 'var(--state-info)' },
+                resolved: { label: tr('admin.status_resolved', 'Resolved'), color: 'var(--state-success)' },
+                dismissed: { label: tr('admin.status_dismissed', 'Dismissed'), color: 'var(--color-text-tertiary)' }
+            });
 
             // New charts
             renderRegistrationTrendChart(data.daily_registrations || []);
             renderContractTypeDist(data.contract_type_dist || {});
             renderScoreDist(data.score_distribution || {});
         }).catch(function() { showToast('Failed to load stats', 'error'); });
+    }
+
+    function notifTypeLabel(type) {
+        var labels = {
+            release: 'Release',
+            system: 'System',
+            alert: 'Alert',
+            business: 'Business',
+            team: 'Team'
+        };
+        return labels[type] || type;
     }
 
     // ---- Canvas Bar Chart ----
@@ -594,20 +692,23 @@
             var tbody = document.getElementById('users-tbody');
             tbody.innerHTML = '';
             if (!data.items || data.items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8" style="color:var(--color-text-tertiary);">No users</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8" style="color:var(--color-text-tertiary);">No users</td></tr>';
                 return;
             }
             data.items.forEach(function(u) {
-                var tr = document.createElement('tr');
-                tr.style.borderTop = '1px solid var(--color-border-light)';
+                var row = document.createElement('tr');
+                row.style.borderTop = '1px solid var(--color-border-light)';
                 var roleColor = u.role === 'admin' ? 'var(--color-accent)' : 'var(--color-text-tertiary)';
-                tr.innerHTML =
+                var roleLabel = u.role === 'admin' ? tr('admin.role_admin', 'Admin') : tr('admin.role_user', 'User');
+                row.innerHTML =
                     '<td class="px-5 py-4 font-medium" style="color:var(--color-text-primary);">' + escapeHtml(u.username) + '</td>' +
                     '<td class="px-5 py-4" style="color:var(--color-text-secondary);">' + escapeHtml(u.email) + '</td>' +
-                    '<td class="px-5 py-4 text-center"><span class="text-xs font-medium px-2 py-1 rounded-md" style="color:' + roleColor + ';background:' + roleColor + '14;">' + (u.role === 'admin' ? 'Admin' : 'User') + '</span></td>' +
+                    '<td class="px-5 py-4 text-center"><span class="text-xs font-medium px-2 py-1 rounded-md" style="color:' + roleColor + ';background:' + roleColor + '14;">' + roleLabel + '</span></td>' +
                     '<td class="px-5 py-4 text-center" style="color:var(--color-text-primary);font-variant-numeric:tabular-nums;">' + (u.analysis_count || 0) + '</td>' +
+                    '<td class="px-5 py-4 text-center" style="color:var(--color-text-primary);font-variant-numeric:tabular-nums;">' + escapeHtml(u.invite_code || '-') + '</td>' +
+                    '<td class="px-5 py-4 text-center" style="color:var(--color-text-primary);font-variant-numeric:tabular-nums;">' + (u.referral_count || 0) + '</td>' +
                     '<td class="px-5 py-4" style="color:var(--color-text-tertiary);">' + (u.created_at ? new Date(u.created_at).toLocaleDateString() : '-') + '</td>';
-                tbody.appendChild(tr);
+                tbody.appendChild(row);
             });
         }).catch(function() {});
     }
@@ -625,21 +726,51 @@
                 return;
             }
             data.items.forEach(function(a) {
-                var tr = document.createElement('tr');
-                tr.style.borderTop = '1px solid var(--color-border-light)';
+                var row = document.createElement('tr');
+                row.style.borderTop = '1px solid var(--color-border-light)';
                 var scoreColor = a.score != null ? (a.score >= 80 ? 'var(--risk-low)' : a.score >= 60 ? 'var(--risk-medium)' : 'var(--risk-high)') : 'var(--color-text-tertiary)';
                 var rl = a.risk_level || 'low';
                 var riskColors = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
                 var rc = riskColors[rl] || 'var(--color-text-tertiary)';
-                var modeLabels = { risk: 'Risk', summary: 'Summary', plain: 'Plain' };
-                tr.innerHTML =
+                var modeLabels = {
+                    risk: tr('admin.mode_risk', 'Risk'),
+                    summary: tr('admin.mode_summary', 'Summary'),
+                    plain: tr('admin.mode_plain', 'Plain')
+                };
+                row.innerHTML =
                     '<td class="px-5 py-4" style="color:var(--color-text-primary);">' + (a.user_id || '-') + '</td>' +
                     '<td class="px-5 py-4" style="color:var(--color-text-primary);">' + escapeHtml(a.filename || 'Pasted') + '</td>' +
                     '<td class="px-5 py-4 text-center text-xs" style="color:var(--color-text-secondary);">' + (modeLabels[a.analysis_mode] || a.analysis_mode) + '</td>' +
                     '<td class="px-5 py-4 text-center" style="color:' + scoreColor + ';font-variant-numeric:tabular-nums;font-weight:600;">' + (a.score != null ? a.score : '--') + '</td>' +
                     '<td class="px-5 py-4 text-center"><span class="text-xs font-medium px-2 py-1 rounded-md" style="color:' + rc + ';background:' + rc + '14;">' + rl + '</span></td>' +
                     '<td class="px-5 py-4" style="color:var(--color-text-tertiary);">' + (a.created_at ? new Date(a.created_at).toLocaleString() : '-') + '</td>';
-                tbody.appendChild(tr);
+                tbody.appendChild(row);
+            });
+        }).catch(function() {});
+    }
+
+    function loadNotifications() {
+        apiFetch('/api/admin/notifications').then(function(r) {
+            if (!r.ok) return;
+            return r.json();
+        }).then(function(data) {
+            var tbody = document.getElementById('notifications-tbody');
+            if (!tbody || !data) return;
+            tbody.innerHTML = '';
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8" style="color:var(--color-text-tertiary);">No notifications</td></tr>';
+                return;
+            }
+            data.items.forEach(function(n) {
+                var row = document.createElement('tr');
+                row.style.borderTop = '1px solid var(--color-border-light)';
+                row.innerHTML =
+                    '<td class="px-5 py-4 font-medium" style="color:var(--color-text-primary);">' + escapeHtml(n.title || '-') + '<div class="text-xs mt-1" style="color:var(--color-text-tertiary);">' + escapeHtml(n.summary || '') + '</div></td>' +
+                    '<td class="px-5 py-4 text-center"><span class="text-xs font-medium px-2 py-1 rounded-md" style="color:var(--color-accent);background:var(--color-accent-tint-50);">' + escapeHtml(notifTypeLabel(n.notif_type)) + '</span></td>' +
+                    '<td class="px-5 py-4 text-center" style="color:var(--color-text-primary);font-variant-numeric:tabular-nums;">' + (n.read_count || 0) + ' / ' + (data.total_users || 0) + '</td>' +
+                    '<td class="px-5 py-4 text-center" style="color:var(--color-text-primary);font-variant-numeric:tabular-nums;">' + (n.delivery_rate != null ? n.delivery_rate : 0) + '%</td>' +
+                    '<td class="px-5 py-4" style="color:var(--color-text-tertiary);">' + (n.created_at ? new Date(n.created_at).toLocaleString() : '-') + '</td>';
+                tbody.appendChild(row);
             });
         }).catch(function() {});
     }
@@ -663,18 +794,28 @@
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8" style="color:var(--color-text-tertiary);">No feedback</td></tr>';
                 return;
             }
-            var typeLabels = { bug: 'Bug', feature: 'Feature', improvement: 'Improve', praise: 'Praise' };
+            var typeLabels = {
+                bug: tr('admin.type_bug', 'Bug'),
+                feature: tr('admin.type_feature', 'Feature'),
+                improvement: tr('admin.type_improvement', 'Improve'),
+                praise: tr('admin.type_praise', 'Praise')
+            };
             var typeColors = { bug: 'var(--state-error)', feature: 'var(--state-info)', improvement: 'var(--state-warning)', praise: 'var(--state-success)' };
-            var statusLabels = { pending: 'Pending', reviewing: 'Reviewing', resolved: 'Resolved', dismissed: 'Dismissed' };
+            var statusLabels = {
+                pending: tr('admin.status_pending', 'Pending'),
+                reviewing: tr('admin.status_reviewing', 'Reviewing'),
+                resolved: tr('admin.status_resolved', 'Resolved'),
+                dismissed: tr('admin.status_dismissed', 'Dismissed')
+            };
             var statusColors = { pending: 'var(--state-warning)', reviewing: 'var(--state-info)', resolved: 'var(--state-success)', dismissed: 'var(--color-text-tertiary)' };
 
             data.items.forEach(function(f) {
-                var tr = document.createElement('tr');
-                tr.style.borderTop = '1px solid var(--color-border-light)';
+                var row = document.createElement('tr');
+                row.style.borderTop = '1px solid var(--color-border-light)';
                 var tc = typeColors[f.feedback_type] || 'var(--color-text-tertiary)';
                 var sc = statusColors[f.status] || 'var(--color-text-tertiary)';
                 var stars = f.rating ? '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating) : '-';
-                tr.innerHTML =
+                row.innerHTML =
                     '<td class="px-5 py-4" style="color:var(--color-text-tertiary);font-variant-numeric:tabular-nums;">' + f.id + '</td>' +
                     '<td class="px-5 py-4 font-medium" style="color:var(--color-text-primary);">' + escapeHtml(f.username || '-') + '</td>' +
                     '<td class="px-5 py-4" style="color:var(--color-text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHtml(f.title) + '">' + escapeHtml(f.title) + '</td>' +
@@ -686,7 +827,7 @@
                         '<button onclick="viewFeedbackDetail(' + f.id + ')" class="text-xs px-2 py-1 rounded" style="color:var(--state-info);background:var(--state-info)10;border:none;cursor:pointer;">View</button> ' +
                         '<button onclick="deleteFeedback(' + f.id + ')" class="text-xs px-2 py-1 rounded" style="color:var(--state-error);background:var(--state-error)10;border:none;cursor:pointer;">Del</button>' +
                     '</td>';
-                tbody.appendChild(tr);
+                tbody.appendChild(row);
             });
         }).catch(function() {});
     };
@@ -699,8 +840,18 @@
         }).then(function(f) {
             if (!f) return;
             var body = document.getElementById('fb-detail-body');
-            var typeLabels = { bug: 'Bug', feature: 'Feature', improvement: 'Improvement', praise: 'Praise' };
-            var statusLabels = { pending: 'Pending', reviewing: 'Reviewing', resolved: 'Resolved', dismissed: 'Dismissed' };
+            var typeLabels = {
+                bug: tr('admin.type_bug', 'Bug'),
+                feature: tr('admin.type_feature', 'Feature'),
+                improvement: tr('admin.type_improvement', 'Improvement'),
+                praise: tr('admin.type_praise', 'Praise')
+            };
+            var statusLabels = {
+                pending: tr('admin.status_pending', 'Pending'),
+                reviewing: tr('admin.status_reviewing', 'Reviewing'),
+                resolved: tr('admin.status_resolved', 'Resolved'),
+                dismissed: tr('admin.status_dismissed', 'Dismissed')
+            };
             var stars = f.rating ? '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating) : 'N/A';
             body.innerHTML =
                 '<div class="space-y-4">' +

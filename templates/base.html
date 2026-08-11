@@ -485,6 +485,7 @@
             </form>
             <!-- Register Form -->
             <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                <input type="hidden" name="referral_code" id="register-referral-code">
                 <div>
                     <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.username">用户名</label>
                     <input type="text" name="username" required placeholder="2-80个字符" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.username_hint">
@@ -511,9 +512,24 @@
     <div id="feedback-panel" class="slide-panel" style="padding: 24px; width: 380px;">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold" style="color: var(--color-text-primary); font-family: var(--font-display);" data-i18n="feedback.title">快速反馈</h3>
-            <button onclick="document.getElementById('feedback-panel').classList.remove('active'); document.getElementById('feedback-overlay').classList.remove('active');" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);">&times;</button>
+            <button onclick="closeFeedbackPanel()" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);">&times;</button>
         </div>
         <div class="space-y-3">
+            <div id="feedback-contact-card" class="hidden rounded-xl p-3" style="background: var(--color-primary-tint-50); border: 1px solid var(--color-primary-tint-100);">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background: var(--color-surface); color: var(--color-primary);">
+                        <i data-lucide="headphones" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm font-semibold" style="color: var(--color-text-primary);" data-i18n="feedback.contact_admin_title">联系管理员</div>
+                        <div class="text-xs mt-1 leading-relaxed" style="color: var(--color-text-secondary);" data-i18n="feedback.contact_admin_desc">提交后会进入管理员后台，请留下你的问题和联系方式。</div>
+                        <a id="feedback-contact-email" href="#" class="inline-flex items-center gap-1 mt-2 text-xs font-medium" style="color: var(--color-accent); text-decoration: none;">
+                            <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                            <span id="feedback-contact-email-text"></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
             <div class="flex gap-2 flex-wrap">
                 <button type="button" onclick="setGlobalFbType(this,'bug')" class="global-fb-type text-xs px-3 py-1.5 rounded-lg" style="background:var(--color-bg-secondary);color:var(--color-text-secondary);border:1px solid var(--color-border);cursor:pointer;" data-i18n="feedback.bug">Bug</button>
                 <button type="button" onclick="setGlobalFbType(this,'feature')" class="global-fb-type text-xs px-3 py-1.5 rounded-lg" style="background:var(--color-bg-secondary);color:var(--color-text-secondary);border:1px solid var(--color-border);cursor:pointer;" data-i18n="feedback.feature">功能建议</button>
@@ -521,16 +537,16 @@
                 <button type="button" onclick="setGlobalFbType(this,'praise')" class="global-fb-type text-xs px-3 py-1.5 rounded-lg" style="background:var(--color-bg-secondary);color:var(--color-text-secondary);border:1px solid var(--color-border);cursor:pointer;" data-i18n="feedback.praise">好评</button>
             </div>
             <select id="global-fb-category" class="text-sm px-3 py-2 rounded-lg outline-none w-full" style="background:var(--color-bg-secondary);color:var(--color-text-primary);border:1px solid var(--color-border);">
-                <option value="">-- Module --</option>
-                <option value="analysis">Smart Analysis</option>
-                <option value="archive">Contract Archive</option>
-                <option value="compare">Compare</option>
-                <option value="pricing">Pricing</option>
-                <option value="about">About</option>
-                <option value="auth">Auth / Login</option>
-                <option value="ui">UI / Design</option>
-                <option value="performance">Performance</option>
-                <option value="other">Other</option>
+                <option value="" data-i18n="feedback.category_all">全部模块</option>
+                <option value="analysis" data-i18n="feedback.module_analyze">智能分析</option>
+                <option value="archive" data-i18n="feedback.module_archive">合同档案</option>
+                <option value="compare" data-i18n="feedback.module_compare">合同对比</option>
+                <option value="pricing" data-i18n="feedback.module_pricing">定价页面</option>
+                <option value="about" data-i18n="feedback.module_about">关于页面</option>
+                <option value="auth" data-i18n="feedback.module_auth">登录注册</option>
+                <option value="ui" data-i18n="feedback.module_ui">界面体验</option>
+                <option value="performance" data-i18n="feedback.module_performance">性能问题</option>
+                <option value="other" data-i18n="feedback.module_other">其他</option>
             </select>
             <input type="text" id="global-fb-title" required placeholder="标题（简述问题或建议）" class="w-full px-3 py-2 rounded-lg text-sm outline-none" style="background:var(--color-bg-secondary);color:var(--color-text-primary);border:1px solid var(--color-border);" data-i18n-placeholder="feedback.title_placeholder">
             <textarea id="global-fb-content" required rows="3" placeholder="详细描述..." class="w-full px-3 py-2 rounded-lg text-sm outline-none resize-y" style="background:var(--color-bg-secondary);color:var(--color-text-primary);border:1px solid var(--color-border);" data-i18n-placeholder="feedback.content_placeholder"></textarea>
@@ -547,10 +563,10 @@
             <button onclick="submitGlobalFeedback()" id="global-fb-submit" class="w-full py-2.5 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;" data-i18n="feedback.submit">提交反馈</button>
         </div>
     </div>
-    <div id="feedback-overlay" class="slide-panel-overlay" onclick="document.getElementById('feedback-panel').classList.remove('active'); this.classList.remove('active');"></div>
+    <div id="feedback-overlay" class="slide-panel-overlay" onclick="closeFeedbackPanel()"></div>
 
     <!-- Feedback floating button -->
-    <button onclick="document.getElementById('feedback-panel').classList.add('active'); document.getElementById('feedback-overlay').classList.add('active');" class="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium shadow-lg" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer; transition: transform 150ms ease, box-shadow 150ms ease;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='translateY(0)'" data-i18n="feedback.submit" aria-label="Feedback">
+    <button onclick="openFeedbackPanel()" class="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium shadow-lg" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer; transition: transform 150ms ease, box-shadow 150ms ease;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='translateY(0)'" data-i18n="feedback.submit" aria-label="Feedback">
         <i data-lucide="message-circle" class="w-4 h-4"></i>
         <span data-i18n="feedback.submit">提交反馈</span>
     </button>
@@ -782,9 +798,51 @@
             }
         }
 
+        function syncRegisterReferralCode() {
+            var input = document.getElementById('register-referral-code');
+            if (!input) return;
+            var params = new URLSearchParams(window.location.search);
+            input.value = (params.get('ref') || params.get('invite') || '').trim().toUpperCase();
+        }
+
         // Feedback functions
         var globalFbType = 'bug';
         var globalFbRating = 0;
+
+        function closeFeedbackPanel() {
+            document.getElementById('feedback-panel').classList.remove('active');
+            document.getElementById('feedback-overlay').classList.remove('active');
+        }
+
+        function openFeedbackPanel(mode) {
+            var panel = document.getElementById('feedback-panel');
+            var overlay = document.getElementById('feedback-overlay');
+            var contactCard = document.getElementById('feedback-contact-card');
+            var emailLink = document.getElementById('feedback-contact-email');
+            var emailText = document.getElementById('feedback-contact-email-text');
+            var adminEmail = (window.appState && window.appState.adminContactEmail) || '';
+
+            if (contactCard) contactCard.classList.toggle('hidden', mode !== 'contact');
+            if (emailLink && emailText) {
+                emailText.textContent = adminEmail;
+                emailLink.href = adminEmail ? ('mailto:' + adminEmail) : '#';
+                emailLink.style.display = adminEmail ? 'inline-flex' : 'none';
+            }
+
+            if (mode === 'contact') {
+                var featureBtn = document.querySelector('.global-fb-type[onclick*="feature"]');
+                if (featureBtn) setGlobalFbType(featureBtn, 'feature');
+                var category = document.getElementById('global-fb-category');
+                if (category) category.value = 'other';
+                var titleInput = document.getElementById('global-fb-title');
+                if (titleInput && !titleInput.value.trim()) titleInput.value = I18N.t('feedback.contact_default_title');
+            }
+
+            panel.classList.add('active');
+            overlay.classList.add('active');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        window.openFeedbackPanel = openFeedbackPanel;
 
         function setGlobalFbType(btn, type) {
             globalFbType = type;
@@ -831,8 +889,7 @@
                 document.getElementById('global-fb-title').value = '';
                 document.getElementById('global-fb-content').value = '';
                 setGlobalFbRating(0);
-                document.getElementById('feedback-panel').classList.remove('active');
-                document.getElementById('feedback-overlay').classList.remove('active');
+                closeFeedbackPanel();
             } catch (err) {
                 showToast(I18N.t('js.toast_network_error'), 'error');
             } finally {
@@ -852,6 +909,7 @@
             if (typeof lucide !== 'undefined') lucide.createIcons();
             // Re-apply i18n (head script may have run before DOM was ready)
             if (typeof I18N !== 'undefined') I18N.applyAll();
+            syncRegisterReferralCode();
             // 加载通知未读数（登录态）
             if (window.appState && window.appState.user) {
                 fetchUnreadCount();

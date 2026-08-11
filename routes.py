@@ -487,6 +487,7 @@ def register():
     username = (data.get('username') or '').strip()
     email = (data.get('email') or '').strip()
     password = data.get('password') or ''
+    referral_code = (data.get('referral_code') or '').strip().upper()
 
     if not username or not email or not password:
         return jsonify({'error': '用户名、邮箱和密码不能为空'}), 400
@@ -509,9 +510,31 @@ def register():
     try:
         db.session.add(user)
         db.session.commit()
+        invite_prefix = current_app.config.get('REFERRAL_CODE_PREFIX', 'DCAI')
+        user.invite_code = f'{invite_prefix}{user.id:06d}'
+        db.session.commit()
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'注册失败: {str(e)}'}), 500
+
+    register_bonus = current_app.config.get('REGISTRATION_BONUS_CREDITS', 2)
+    try:
+        UserQuota.grant_login_bonus(user.id, register_bonus)
+    except Exception:
+        current_app.logger.exception('Failed to grant registration bonus for user %s', user.id)
+
+    if referral_code:
+        referrer = User.query.filter(func.upper(User.invite_code) == referral_code).first()
+        if referrer and referrer.id != user.id:
+            try:
+                user.referred_by_user_id = referrer.id
+                db.session.add(user)
+                db.session.commit()
+                referral_bonus = current_app.config.get('REFERRAL_BONUS_CREDITS', 3)
+                UserQuota.add_bonus_credits(referrer.id, referral_bonus)
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception('Failed to apply referral bonus for user %s', user.id)
 
     token = create_token(user.id)
     resp = make_response(jsonify({
@@ -537,6 +560,11 @@ def login():
         return jsonify({'error': '用户名或密码错误'}), 401
 
     token = create_token(user.id)
+    login_bonus = current_app.config.get('LOGIN_BONUS_CREDITS', 0)
+    try:
+        UserQuota.grant_login_bonus(user.id, login_bonus)
+    except Exception:
+        current_app.logger.exception('Failed to grant login bonus for user %s', user.id)
     resp = make_response(jsonify({
         'message': '登录成功',
         'token': token,
@@ -953,10 +981,7 @@ def create_compare(current_user):
 
     # Call DeepSeek for comparison analysis
     prompt_template = COMPARE_PROMPT_EN if language == 'en' else COMPARE_PROMPT
-    system_prompt = prompt_template.format(
-        original_text=original_text,
-        modified_text=modified_text,
-    )
+    system_prompt = prompt_template.replace('{original_text}', original_text).replace('{modified_text}', modified_text)
     messages = [
         {'role': 'system', 'content': system_prompt},
         {'role': 'user', 'content': 'Compare the differences between the two contracts above.' if language == 'en' else '请对比分析以上两份合同的差异。'},
@@ -1352,6 +1377,7 @@ def analysis_followup(current_user, analysis_id):
 def admin_stats(current_user):
     total_users = User.query.count()
     total_analyses = Analysis.query.count()
+    total_notifications = Notification.query.count()
 
     today_start = datetime.combine(date.today(), datetime.min.time())
     today_analyses = Analysis.query.filter(Analysis.created_at >= today_start).count()
@@ -1411,6 +1437,10 @@ def admin_stats(current_user):
         Feedback.status, func.count(Feedback.id)
     ).group_by(Feedback.status).all()
     feedback_status_dist = {st: count for st, count in status_dist}
+    pending_feedback_count = feedback_status_dist.get('pending', 0)
+    reviewing_feedback_count = feedback_status_dist.get('reviewing', 0)
+    resolved_feedback_count = feedback_status_dist.get('resolved', 0)
+    open_feedback_count = pending_feedback_count + reviewing_feedback_count
 
     # Rating distribution
     rating_dist = db.session.query(
@@ -1451,6 +1481,15 @@ def admin_stats(current_user):
     ).group_by(Analysis.analysis_mode).all()
     mode_distribution = {m: count for m, count in mode_dist}
 
+    # User structure
+    role_dist = db.session.query(
+        User.role, func.count(User.id)
+    ).group_by(User.role).all()
+    user_role_dist = {role: count for role, count in role_dist}
+    avatar_set_count = User.query.filter(User.avatar.isnot(None)).count()
+    avatar_set_rate = round((avatar_set_count / total_users * 100), 1) if total_users else 0
+    new_users_7d = sum(item['count'] for item in daily_registrations)
+
     return jsonify({
         'total_users': total_users,
         'total_analyses': total_analyses,
@@ -1465,11 +1504,21 @@ def admin_stats(current_user):
         'feedback_category_dist': feedback_category_dist,
         'feedback_status_dist': feedback_status_dist,
         'feedback_rating_dist': feedback_rating_dist,
+        'pending_feedback_count': pending_feedback_count,
+        'reviewing_feedback_count': reviewing_feedback_count,
+        'resolved_feedback_count': resolved_feedback_count,
+        'open_feedback_count': open_feedback_count,
         'contract_type_dist': contract_type_dist,
         'daily_registrations': daily_registrations,
+        'new_users_7d': new_users_7d,
         'score_distribution': score_distribution,
         'active_users_7d': active_users or 0,
         'mode_distribution': mode_distribution,
+        'user_role_dist': user_role_dist,
+        'avatar_set_count': avatar_set_count,
+        'avatar_set_rate': avatar_set_rate,
+        'total_notifications': total_notifications,
+        'release_notifications': Notification.query.filter_by(notif_type='release').count(),
     })
 
 
@@ -1491,6 +1540,7 @@ def admin_users(current_user):
     for user, count in pagination.items:
         user_dict = user.to_dict()
         user_dict['analysis_count'] = count
+        user_dict['referral_count'] = User.query.filter_by(referred_by_user_id=user.id).count()
         items.append(user_dict)
 
     return jsonify({
@@ -1670,25 +1720,41 @@ def admin_feedback_list(current_user):
 @get_current_user()
 def get_user_quota(current_user):
     """Get current user's remaining analysis quota for today."""
-    from models import UserQuota
     quota = UserQuota.get_today_quota(current_user.id)
-    daily_limit = 20
+    user = db.session.get(User, current_user.id)
+    analysis_limit = UserQuota.get_effective_limit(user, 'analysis')
+    compare_limit = UserQuota.get_effective_limit(user, 'compare')
+    followup_limit = UserQuota.get_effective_limit(user, 'followup')
+    analysis_remaining = max(0, analysis_limit - quota.analysis_count)
+    compare_remaining = max(0, compare_limit - quota.compare_count)
+    followup_remaining = max(0, followup_limit - quota.followup_count)
     return jsonify({
         'analysis': {
             'used': quota.analysis_count,
-            'remaining': max(0, daily_limit - quota.analysis_count),
-            'limit': daily_limit,
+            'remaining': analysis_remaining,
+            'limit': analysis_limit,
         },
         'compare': {
             'used': quota.compare_count,
-            'remaining': max(0, daily_limit - quota.compare_count),
-            'limit': daily_limit,
+            'remaining': compare_remaining,
+            'limit': compare_limit,
         },
         'followup': {
             'used': quota.followup_count,
-            'remaining': max(0, 50 - quota.followup_count),
-            'limit': 50,
+            'remaining': followup_remaining,
+            'limit': followup_limit,
         },
+        'analysis_used': quota.analysis_count,
+        'analysis_remaining': analysis_remaining,
+        'analysis_limit': analysis_limit,
+        'compare_used': quota.compare_count,
+        'compare_remaining': compare_remaining,
+        'compare_limit': compare_limit,
+        'followup_used': quota.followup_count,
+        'followup_remaining': followup_remaining,
+        'followup_limit': followup_limit,
+        'bonus_credits': quota.bonus_credits or 0,
+        'bonus_granted_date': quota.bonus_granted_date.isoformat() if quota.bonus_granted_date else None,
     })
 
 
@@ -1746,6 +1812,15 @@ def _format_time_ago(dt, lang='zh'):
 def _localize_notification(item, lang='zh'):
     if lang != 'en':
         return item
+    title = item.get('title') or ''
+    if title.startswith('版本更新：'):
+        version = title.split('：', 1)[1].strip()
+        item = dict(item)
+        item.update({
+            'title': f'Release Update: {version}' if version else 'Release Update',
+            'summary': 'This release includes a comparison page fix, version-wide notifications, and daily quota controls.',
+        })
+        return item
     translations = {
         '欢迎使用 DocAI': {
             'title': 'Welcome to DocAI',
@@ -1788,7 +1863,7 @@ def list_notifications(current_user):
         # tab 筛选
         if tab == 'unread' and item['read']:
             continue
-        if tab == 'announce' and n.notif_type != 'system':
+        if tab == 'announce' and n.notif_type not in ('system', 'release'):
             continue
         if tab == 'alert' and n.notif_type != 'alert':
             continue
@@ -1906,6 +1981,34 @@ def broadcast_notification(current_user):
     })
 
 
+@api_bp.route('/api/admin/notifications', methods=['GET'])
+@get_current_user()
+def admin_notifications(current_user):
+    """管理员查看系统通知与同步状态。"""
+    if current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+
+    total_users = User.query.count()
+    items = []
+    for n in Notification.query.order_by(Notification.created_at.desc()).limit(30).all():
+        read_count = UserNotification.query.filter_by(notification_id=n.id, is_read=True, deleted=False).count()
+        delivered_count = UserNotification.query.filter_by(notification_id=n.id, deleted=False).count()
+        unread_count = max(0, total_users - read_count)
+        items.append({
+            **n.to_dict(),
+            'read_count': read_count,
+            'delivered_count': delivered_count,
+            'unread_count': unread_count,
+            'delivery_rate': round((delivered_count / total_users * 100), 1) if total_users else 0,
+        })
+
+    return jsonify({
+        'items': items,
+        'total_users': total_users,
+        'total_notifications': len(items),
+    })
+
+
 # ---------------------------------------------------------------------------
 # User Dashboard API
 # ---------------------------------------------------------------------------
@@ -1918,7 +2021,12 @@ def user_dashboard(current_user):
 
     # Quota
     quota = UserQuota.get_today_quota(current_user.id)
-    daily_limit = 20
+    analysis_limit = UserQuota.get_effective_limit(current_user, 'analysis')
+    compare_limit = UserQuota.get_effective_limit(current_user, 'compare')
+    followup_limit = UserQuota.get_effective_limit(current_user, 'followup')
+    analysis_remaining = max(0, analysis_limit - quota.analysis_count)
+    compare_remaining = max(0, compare_limit - quota.compare_count)
+    followup_remaining = max(0, followup_limit - quota.followup_count)
 
     # Recent analyses (last 5)
     recent = Analysis.query.filter_by(user_id=current_user.id).order_by(
@@ -1968,15 +2076,38 @@ def user_dashboard(current_user):
         Analysis.risk_level == 'high'
     ).count()
 
+    referral_count = User.query.filter_by(referred_by_user_id=current_user.id).count()
+    invite_code = current_user.invite_code
+    if not invite_code:
+        invite_prefix = current_app.config.get('REFERRAL_CODE_PREFIX', 'DCAI')
+        invite_code = f'{invite_prefix}{current_user.id:06d}'
+        current_user.invite_code = invite_code
+        db.session.commit()
+    referral_url = f"{request.url_root.rstrip('/')}/login?ref={invite_code}"
+
     return jsonify({
         'quota': {
             'analysis_used': quota.analysis_count,
-            'analysis_remaining': max(0, daily_limit - quota.analysis_count),
-            'analysis_limit': daily_limit,
+            'analysis_remaining': analysis_remaining,
+            'analysis_limit': analysis_limit,
             'compare_used': quota.compare_count,
+            'compare_remaining': compare_remaining,
+            'compare_limit': compare_limit,
             'followup_used': quota.followup_count,
+            'followup_remaining': followup_remaining,
+            'followup_limit': followup_limit,
+            'bonus_credits': quota.bonus_credits or 0,
         },
+        'quota_used': quota.analysis_count,
+        'quota_remaining': analysis_remaining,
+        'quota_limit': analysis_limit,
         'recent_analyses': recent_items,
+        'referral': {
+            'invite_code': invite_code,
+            'invite_url': referral_url,
+            'referral_count': referral_count,
+            'referral_bonus': current_app.config.get('REFERRAL_BONUS_CREDITS', 3),
+        },
         'stats': {
             'total_analyses': total_analyses,
             'total_compares': total_compares,

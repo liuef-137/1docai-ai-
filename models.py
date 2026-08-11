@@ -16,9 +16,12 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default='user')  # 'admin' or 'user'
     avatar = db.Column(db.String(256), default=None)  # 头像图片 URL，无则用首字母占位
+    invite_code = db.Column(db.String(32), unique=True, index=True)
+    referred_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     analyses = db.relationship('Analysis', backref='user', lazy=True)
+    referrer = db.relationship('User', remote_side=[id], backref='referrals', lazy=True)
     preferences = db.relationship(
         'RiskPreference', backref='user', lazy=True, uselist=False
     )
@@ -36,6 +39,8 @@ class User(db.Model):
             'email': self.email,
             'role': self.role,
             'avatar': self.avatar,
+            'invite_code': self.invite_code,
+            'referred_by_user_id': self.referred_by_user_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -123,8 +128,33 @@ class UserQuota(db.Model):
     analysis_count = db.Column(db.Integer, default=0)
     compare_count = db.Column(db.Integer, default=0)
     followup_count = db.Column(db.Integer, default=0)
+    bonus_credits = db.Column(db.Integer, default=0)  # extra quota granted today
+    bonus_granted_date = db.Column(db.Date)
 
     __table_args__ = (db.UniqueConstraint('user_id', 'date', name='uq_user_date'),)
+
+    @classmethod
+    def get_base_limit(cls, user, action='analysis'):
+        if action == 'followup':
+            return 5
+        if user and getattr(user, 'role', None) == 'admin':
+            return 100
+        if action == 'compare':
+            return 2
+        return 3
+
+    @classmethod
+    def get_effective_limit(cls, user, action='analysis'):
+        if not user:
+            return cls.get_base_limit(None, action)
+        if not hasattr(user, 'id'):
+            user = db.session.get(User, user)
+        if not user:
+            return cls.get_base_limit(None, action)
+        base_limit = cls.get_base_limit(user, action)
+        quota = cls.get_today_quota(user.id)
+        bonus = (quota.bonus_credits or 0) if action in ('analysis', 'compare') else 0
+        return base_limit + bonus
 
     @classmethod
     def get_today_quota(cls, user_id):
@@ -140,11 +170,9 @@ class UserQuota(db.Model):
     @classmethod
     def check_and_increment(cls, user_id, action='analysis'):
         """Check quota limit and increment if allowed. Returns (allowed, remaining, daily_limit)."""
+        user = db.session.get(User, user_id)
         quota = cls.get_today_quota(user_id)
-
-        # Daily limits by role (would need User lookup, but quota has user_id)
-        # For now, use hardcoded limits: free=5, registered=20, admin=100
-        daily_limit = 20  # default for registered users
+        daily_limit = cls.get_effective_limit(user, action)
 
         if action == 'analysis':
             current = quota.analysis_count
@@ -152,7 +180,6 @@ class UserQuota(db.Model):
             current = quota.compare_count
         elif action == 'followup':
             current = quota.followup_count
-            daily_limit = 50  # followups are cheaper
         else:
             return False, 0, 0
 
@@ -171,12 +198,41 @@ class UserQuota(db.Model):
         remaining = daily_limit - current - 1
         return True, remaining, daily_limit
 
+    @classmethod
+    def grant_login_bonus(cls, user_id, bonus_credits=5):
+        """Grant a one-time daily login bonus quota."""
+        if bonus_credits <= 0:
+            return cls.get_today_quota(user_id)
+
+        today = date.today()
+        quota = cls.get_today_quota(user_id)
+        if quota.bonus_granted_date == today:
+            return quota
+
+        quota.bonus_credits = bonus_credits
+        quota.bonus_granted_date = today
+        db.session.commit()
+        return quota
+
+    @classmethod
+    def add_bonus_credits(cls, user_id, bonus_credits=0):
+        """Add extra quota credits to today's record."""
+        if bonus_credits <= 0:
+            return cls.get_today_quota(user_id)
+        quota = cls.get_today_quota(user_id)
+        quota.bonus_credits = (quota.bonus_credits or 0) + bonus_credits
+        quota.bonus_granted_date = date.today()
+        db.session.commit()
+        return quota
+
     def to_dict(self):
         return {
             'date': self.date.isoformat(),
             'analysis_count': self.analysis_count,
             'compare_count': self.compare_count,
             'followup_count': self.followup_count,
+            'bonus_credits': self.bonus_credits,
+            'bonus_granted_date': self.bonus_granted_date.isoformat() if self.bonus_granted_date else None,
         }
 
 
@@ -318,6 +374,7 @@ class Notification(db.Model):
             'alert': 'alert-triangle',
             'business': 'file-check',
             'team': 'users',
+            'release': 'rocket',
             'system': 'megaphone',
         }.get(self.notif_type, 'bell')
 

@@ -21,3 +21,14 @@ class Config:
 
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
+
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.1')
+    APP_RELEASE_SUMMARY = os.environ.get(
+        'APP_RELEASE_SUMMARY',
+        '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',
+    )
+    REGISTRATION_BONUS_CREDITS = int(os.environ.get('REGISTRATION_BONUS_CREDITS', 2))
+    LOGIN_BONUS_CREDITS = int(os.environ.get('LOGIN_BONUS_CREDITS', 0))
+    REFERRAL_BONUS_CREDITS = int(os.environ.get('REFERRAL_BONUS_CREDITS', 3))
+    REFERRAL_CODE_PREFIX = os.environ.get('REFERRAL_CODE_PREFIX', 'DCAI')
+    ADMIN_CONTACT_EMAIL = os.environ.get('ADMIN_CONTACT_EMAIL', 'admin@docai.com')

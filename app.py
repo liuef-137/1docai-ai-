@@ -82,6 +82,10 @@ def _auto_migrate(db):
         ("analysis", "contract_type", "VARCHAR(20)"),
         ("analysis", "language", "VARCHAR(10)"),
         ("user", "avatar", "VARCHAR(256)"),
+        ("user", "invite_code", "VARCHAR(32)"),
+        ("user", "referred_by_user_id", "INTEGER"),
+        ("user_quota", "bonus_credits", "INTEGER"),
+        ("user_quota", "bonus_granted_date", "DATE"),
     ]
     for table, col, col_type in migrations:
         cols = existing if table == 'analysis' else user_existing
@@ -151,6 +155,7 @@ def _create_app():
         app_state = {
             'token': token,
             'isLoggedIn': user is not None,
+            'adminContactEmail': app.config.get('ADMIN_CONTACT_EMAIL', 'admin@docai.com'),
             'user': {
                 'id': user.id,
                 'username': user.username,
@@ -250,18 +255,39 @@ def _create_app():
             db.session.commit()
             print('[DocAI] Default admin created: admin / admin123')
 
-        # Seed default notifications if table is empty
+        # Seed default notifications if table is empty, plus the current release note.
         from models import Notification
         if Notification.query.count() == 0:
+            release_version = app.config.get('APP_VERSION', '0.4.1')
+            release_summary = app.config.get(
+                'APP_RELEASE_SUMMARY',
+                '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',
+            )
             default_notifs = [
-                Notification(title='欢迎使用 DocAI', summary='DocAI 智能合同分析平台已为你准备就绪，开始你的第一次合同分析吧！', notif_type='system', icon='sparkles'),
-                Notification(title='新功能上线：合同对比', summary='合同对比功能现已支持双文档智能比对，立即体验差异检测与风险评估。', notif_type='system', icon='git-compare'),
-                Notification(title='系统维护通知', summary='系统将于本周日凌晨 2:00-4:00 进行例行维护升级，期间服务可能短暂中断。', notif_type='system', icon='megaphone'),
+                Notification(title=f'版本更新：{release_version}', summary=release_summary, notif_type='release', icon='rocket'),
+                Notification(title='新功能上线：合同对比', summary='合同对比功能现已支持双文档智能比对，立即体验差异检测与风险评估。', notif_type='release', icon='git-compare'),
+                Notification(title='系统维护通知', summary='系统将于本周日凌晨 2:00-4:00 进行例行维护升级，期间服务可能短暂中断。', notif_type='alert', icon='megaphone'),
             ]
             for n in default_notifs:
                 db.session.add(n)
             db.session.commit()
             print('[DocAI] Default notifications seeded')
+        else:
+            release_version = app.config.get('APP_VERSION', '0.4.1')
+            release_summary = app.config.get(
+                'APP_RELEASE_SUMMARY',
+                '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',
+            )
+            release_title = f'版本更新：{release_version}'
+            if not Notification.query.filter_by(title=release_title).first():
+                db.session.add(Notification(
+                    title=release_title,
+                    summary=release_summary,
+                    notif_type='release',
+                    icon='rocket',
+                ))
+                db.session.commit()
+                print(f'[DocAI] Release notification seeded for {release_version}')
 
     return app
 

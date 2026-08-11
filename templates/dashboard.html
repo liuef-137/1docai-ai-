@@ -604,6 +604,7 @@
     .notif-icon-business { background: var(--color-accent); }
     .notif-icon-alert { background: var(--state-error); }
     .notif-icon-team { background: var(--color-primary); }
+    .notif-icon-release { background: var(--state-warning); }
     .notif-body { flex: 1; min-width: 0; }
     .notif-title {
         font-size: 14px; font-weight: 600; color: var(--color-text-primary);
@@ -840,6 +841,78 @@
                     </div>
                 </div>
 
+                <div class="dash-card mb-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <h3 class="dash-card-title" style="margin-bottom: 6px;">
+                                <i data-lucide="wallet-cards"></i>
+                                <span data-i18n="dash.quota_center_title">额度中心</span>
+                            </h3>
+                            <p class="text-sm" style="color: var(--color-text-secondary);" data-i18n="dash.quota_center_desc">注册即送 2 次分析额度，每日额度用完后次日自动恢复。</p>
+                        </div>
+                        <a href="/pricing" class="quick-btn quick-btn-outline" style="width: fit-content;">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span data-i18n="dash.quota_get_more">获取更多额度</span>
+                        </a>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+                        <div class="rounded-lg p-4" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light);">
+                            <div class="text-xs font-medium" style="color: var(--color-text-tertiary);" data-i18n="dash.quota_analysis">合同分析</div>
+                            <div class="mt-2 text-xl font-bold" style="color: var(--color-primary);"><span id="quota-analysis-remaining">0</span> / <span id="quota-analysis-limit">0</span></div>
+                            <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);"><span data-i18n="dash.quota_used">已用</span> <span id="quota-analysis-used">0</span></div>
+                        </div>
+                        <div class="rounded-lg p-4" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light);">
+                            <div class="text-xs font-medium" style="color: var(--color-text-tertiary);" data-i18n="dash.quota_compare">合同对比</div>
+                            <div class="mt-2 text-xl font-bold" style="color: var(--color-accent);"><span id="quota-compare-remaining">0</span> / <span id="quota-compare-limit">0</span></div>
+                            <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);"><span data-i18n="dash.quota_used">已用</span> <span id="quota-compare-used">0</span></div>
+                        </div>
+                        <div class="rounded-lg p-4" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light);">
+                            <div class="text-xs font-medium" style="color: var(--color-text-tertiary);" data-i18n="dash.quota_followup">继续追问</div>
+                            <div class="mt-2 text-xl font-bold" style="color: var(--state-info);"><span id="quota-followup-remaining">0</span> / <span id="quota-followup-limit">0</span></div>
+                            <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);"><span data-i18n="dash.quota_register_bonus">注册赠送</span> <span id="quota-bonus">0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-card mb-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <h3 class="dash-card-title" style="margin-bottom: 6px;">
+                                <i data-lucide="share-2"></i>
+                                <span data-i18n="dash.referral_title">用户裂变活动</span>
+                            </h3>
+                            <p class="text-sm" style="color: var(--color-text-secondary);" data-i18n="dash.referral_desc">分享你的专属邀请链接，新用户注册后你和对方都会获得额度奖励。</p>
+                        </div>
+                        <div class="text-sm" style="color: var(--color-text-secondary);">
+                            <span data-i18n="dash.referral_reward">邀请奖励</span>：<span id="referral-reward">3</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-5">
+                        <div class="rounded-lg p-4" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light);">
+                            <div class="text-xs font-medium mb-2" style="color: var(--color-text-tertiary);" data-i18n="dash.referral_code">邀请码</div>
+                            <div class="flex items-center gap-2">
+                                <code id="referral-code" class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); word-break: break-all;">--</code>
+                                <button type="button" class="quick-btn quick-btn-outline" onclick="copyText(document.getElementById('referral-code').textContent)" style="padding: 8px 12px;">
+                                    <i data-lucide="copy" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="rounded-lg p-4" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light);">
+                            <div class="text-xs font-medium mb-2" style="color: var(--color-text-tertiary);" data-i18n="dash.referral_link">邀请链接</div>
+                            <div class="flex items-center gap-2">
+                                <input id="referral-link" type="text" readonly class="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style="background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border);" value="--">
+                                <button type="button" class="quick-btn quick-btn-outline" onclick="copyText(document.getElementById('referral-link').value)" style="padding: 8px 12px;">
+                                    <i data-lucide="copy" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2 text-xs" style="color: var(--color-text-tertiary);" data-i18n="dash.referral_hint">把链接发给客户或伙伴，注册后自动绑定。</div>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-sm" style="color: var(--color-text-secondary);">
+                        <span data-i18n="dash.referral_count">成功邀请</span>：<span id="referral-count">0</span>
+                    </div>
+                </div>
+
                 <!-- 快捷操作 -->
                 <div class="flex flex-wrap gap-3 mb-6">
                     <a href="/analyze" class="quick-btn quick-btn-primary">
@@ -854,6 +927,10 @@
                         <i data-lucide="archive" class="w-4 h-4"></i>
                         <span data-i18n="dash.quick_archive">查看档案</span>
                     </a>
+                    <button type="button" class="quick-btn quick-btn-outline" onclick="openFeedbackPanel('contact')" style="border: 1px solid var(--color-border);">
+                        <i data-lucide="headphones" class="w-4 h-4"></i>
+                        <span data-i18n="dash.contact_admin">联系管理员</span>
+                    </button>
                 </div>
 
                 <!-- 主内容网格 -->
@@ -1665,6 +1742,7 @@
             'alert': 'notif-icon-alert',
             'business': 'notif-icon-business',
             'team': 'notif-icon-team',
+            'release': 'notif-icon-release',
             'system': 'notif-icon-system',
         }[type] || 'notif-icon-system';
     }
@@ -1675,7 +1753,7 @@
         var filtered = notifDataCache.filter(function(item) {
             if (currentNotifTab === 'all') return true;
             if (currentNotifTab === 'unread') return !item.read;
-            if (currentNotifTab === 'announce') return item.notif_type === 'system';
+            if (currentNotifTab === 'announce') return item.notif_type === 'system' || item.notif_type === 'release';
             if (currentNotifTab === 'alert') return item.notif_type === 'alert';
             return true;
         });
@@ -2083,13 +2161,35 @@
 
                 if (content) content.classList.remove('hidden');
 
-                var quotaUsed = data.quota_used || 0;
-                var quotaLimit = data.quota_limit || 10;
+                var quota = data.quota || {};
+                var quotaUsed = data.quota_used != null ? data.quota_used : (quota.analysis_used || 0);
+                var quotaLimit = data.quota_limit != null ? data.quota_limit : (quota.analysis_limit || 10);
                 var quotaUsedEl = document.getElementById('kpi-quota-used');
                 var quotaLimitEl = document.getElementById('kpi-quota-limit');
                 if (quotaUsedEl) quotaUsedEl.textContent = quotaUsed;
                 if (quotaLimitEl) quotaLimitEl.textContent = quotaLimit;
                 updateQuotaRing(quotaUsed, quotaLimit);
+
+                function setText(id, value) {
+                    var el = document.getElementById(id);
+                    if (el) el.textContent = value;
+                }
+                setText('quota-analysis-used', quota.analysis_used || 0);
+                setText('quota-analysis-remaining', quota.analysis_remaining || 0);
+                setText('quota-analysis-limit', quota.analysis_limit || quotaLimit);
+                setText('quota-compare-used', quota.compare_used || 0);
+                setText('quota-compare-remaining', quota.compare_remaining || 0);
+                setText('quota-compare-limit', quota.compare_limit || 0);
+                setText('quota-followup-remaining', quota.followup_remaining || 0);
+                setText('quota-followup-limit', quota.followup_limit || 0);
+                setText('quota-bonus', quota.bonus_credits || 0);
+
+                var referral = data.referral || {};
+                setText('referral-code', referral.invite_code || '--');
+                var referralLinkEl = document.getElementById('referral-link');
+                if (referralLinkEl) referralLinkEl.value = referral.invite_url || '--';
+                setText('referral-count', referral.referral_count || 0);
+                setText('referral-reward', referral.referral_bonus || 3);
 
                 var totalCountEl = document.getElementById('kpi-total-count');
                 if (totalCountEl) totalCountEl.textContent = totalAnalyses;
