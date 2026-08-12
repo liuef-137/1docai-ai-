@@ -210,9 +210,9 @@
                             <th class="text-left px-5 py-3 font-semibold" style="color: var(--color-text-secondary); font-size: 12px;" data-i18n="admin.notif_col_time">时间</th>
                         </tr>
                     </thead>
-                    <tbody id="notifications-tbody">
-                            <tr><td colspan="7" class="text-center py-8" style="color: var(--color-text-tertiary);">...</td></tr>
-                    </tbody>
+                        <tbody id="notifications-tbody">
+                            <tr><td colspan="5" class="text-center py-8" style="color: var(--color-text-tertiary);">...</td></tr>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -353,6 +353,12 @@
         loadAnalyses();
         loadNotifications();
     };
+
+    function refreshVisibleTab() {
+        var activePanel = document.querySelector('.admin-tab-panel:not([style*="display: none"])');
+        if (!activePanel) return;
+        if (activePanel.id === 'tab-feedback') loadFeedbackList();
+    }
 
     // ---- Stats ----
     var statsData = null;
@@ -916,6 +922,21 @@
 
     // Init
     loadAllData();
+    setInterval(function() {
+        if (document.hidden) return;
+        loadStats();
+        loadUsers();
+        loadAnalyses();
+        loadNotifications();
+        refreshVisibleTab();
+    }, 30000);
+
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            loadAllData();
+            refreshVisibleTab();
+        }
+    });
 })();
 </script>
 {% endblock %}

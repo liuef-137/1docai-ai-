@@ -2120,6 +2120,49 @@ def user_dashboard(current_user):
     })
 
 
+@api_bp.route('/api/activity', methods=['GET'])
+@get_current_user()
+def user_activity(current_user):
+    """Return real account activity for the current user."""
+    items = []
+
+    if current_user.created_at:
+        items.append({
+            'type': 'register',
+            'status': 'success',
+            'action_key': 'dash.activity_act_register',
+            'meta': current_user.email,
+            'created_at': current_user.created_at.isoformat(),
+        })
+
+    analyses = Analysis.query.filter_by(user_id=current_user.id).order_by(
+        Analysis.created_at.desc()
+    ).limit(30).all()
+    for analysis in analyses:
+        items.append({
+            'type': 'analysis',
+            'status': 'success',
+            'action_key': 'dash.activity_act_analysis',
+            'meta': analysis.filename or ('Pasted text' if (analysis.language or 'zh') == 'en' else '粘贴文本'),
+            'created_at': analysis.created_at.isoformat() if analysis.created_at else None,
+        })
+
+    compares = ContractCompare.query.filter_by(user_id=current_user.id).order_by(
+        ContractCompare.created_at.desc()
+    ).limit(30).all()
+    for compare in compares:
+        items.append({
+            'type': 'compare',
+            'status': 'success',
+            'action_key': 'dash.activity_act_compare',
+            'meta': 'Contract comparison',
+            'created_at': compare.created_at.isoformat() if compare.created_at else None,
+        })
+
+    items.sort(key=lambda item: item.get('created_at') or '', reverse=True)
+    return jsonify({'items': items[:50], 'total': len(items)})
+
+
 # ---------------------------------------------------------------------------
 # PDF Export API
 # ---------------------------------------------------------------------------

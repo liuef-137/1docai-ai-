@@ -1173,121 +1173,15 @@
                     </select>
                     <select class="filter-select" id="activity-type-filter" onchange="filterActivity()">
                         <option value="all" data-i18n="dash.activity_type_all">全部类型</option>
-                        <option value="login" data-i18n="dash.activity_type_login">登录</option>
+                        <option value="register" data-i18n="dash.activity_type_register">注册</option>
                         <option value="analysis" data-i18n="dash.activity_type_analysis">分析</option>
-                        <option value="export" data-i18n="dash.activity_type_export">导出</option>
-                        <option value="settings" data-i18n="dash.activity_type_settings">设置</option>
+                        <option value="compare" data-i18n="dash.activity_type_compare">对比</option>
                     </select>
                 </div>
             </div>
 
             <div id="activity-list">
-                <!-- 今天 -->
-                <div class="timeline-group">
-                    <div class="timeline-group-title" data-i18n="dash.activity_group_today">今天</div>
-                    <div class="timeline">
-                        <div class="timeline-entry" data-type="analysis">
-                            <div class="timeline-node timeline-node-analysis"><i data-lucide="file-text"></i></div>
-                            <div class="timeline-time">14:32</div>
-                            <div class="timeline-body">
-                                <div class="timeline-action">
-                                    <span data-i18n="dash.activity_act_analysis">分析了合同</span>
-                                    <span class="timeline-badge timeline-badge-success" data-i18n="dash.activity_result_success">成功</span>
-                                </div>
-                                <div class="timeline-meta"><span data-i18n="dash.activity_file_labor">劳动合同_v2.pdf</span> · <span data-i18n="dash.activity_meta_browser">Chrome · macOS</span></div>
-                            </div>
-                        </div>
-                        <div class="timeline-entry" data-type="login">
-                            <div class="timeline-node timeline-node-login"><i data-lucide="log-in"></i></div>
-                            <div class="timeline-time">09:15</div>
-                            <div class="timeline-body">
-                                <div class="timeline-action">
-                                    <span data-i18n="dash.activity_act_login">登录账户</span>
-                                    <span class="timeline-badge timeline-badge-success" data-i18n="dash.activity_result_success">成功</span>
-                                </div>
-                                <div class="timeline-meta">IP: 192.168.1.100 · <span data-i18n="dash.activity_meta_browser">Chrome · macOS</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 昨天 -->
-                <div class="timeline-group">
-                    <div class="timeline-group-title" data-i18n="dash.activity_group_yesterday">昨天</div>
-                    <div class="timeline">
-                        <div class="timeline-entry" data-type="export">
-                            <div class="timeline-node timeline-node-export"><i data-lucide="download"></i></div>
-                            <div class="timeline-time">18:47</div>
-                            <div class="timeline-body">
-                                <div class="timeline-action">
-                                    <span data-i18n="dash.activity_act_export">导出了分析报告</span>
-                                    <span class="timeline-badge timeline-badge-success" data-i18n="dash.activity_result_success">成功</span>
-                                </div>
-                                <div class="timeline-meta" data-i18n="dash.activity_file_rental">房屋租赁合同.pdf · 2.4 MB</div>
-                            </div>
-                        </div>
-                        <div class="timeline-entry" data-type="analysis">
-                            <div class="timeline-node timeline-node-analysis"><i data-lucide="file-text"></i></div>
-                            <div class="timeline-time">16:20</div>
-                            <div class="timeline-body">
-                                <div class="timeline-action">
-                                    <span data-i18n="dash.activity_act_analysis">分析了合同</span>
-                                    <span class="timeline-badge timeline-badge-fail" data-i18n="dash.activity_result_fail">失败</span>
-                                </div>
-                                <div class="timeline-meta"><span data-i18n="dash.activity_file_service">服务协议.docx</span> · <span data-i18n="dash.activity_fail_reason">文件格式不支持</span></div>
-                            </div>
-                        </div>
-                        <div class="timeline-entry" data-type="settings">
-                            <div class="timeline-node timeline-node-settings"><i data-lucide="settings"></i></div>
-                            <div class="timeline-time">10:08</div>
-                            <div class="timeline-body">
-                                <div class="timeline-action">
-                                    <span data-i18n="dash.activity_act_settings">更新了个人设置</span>
-                                </div>
-                                <div class="timeline-meta"><span data-i18n="dash.activity_settings_detail">修改了通知偏好</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 更早 -->
-                <div class="timeline-group">
-                    <div class="timeline-group-title" data-i18n="dash.activity_group_earlier">更早</div>
-                    <div class="timeline">
-                        <div class="timeline-entry" data-type="login">
-                            <div class="timeline-node timeline-node-login"><i data-lucide="log-in"></i></div>
-                            <div class="timeline-time">07-24</div>
-                            <div class="timeline-body">
-                                <div class="timeline-action">
-                                    <span data-i18n="dash.activity_act_login">登录账户</span>
-                                    <span class="timeline-badge timeline-badge-success" data-i18n="dash.activity_result_success">成功</span>
-                                </div>
-                                <div class="timeline-meta">IP: 192.168.1.100 · Safari · iOS</div>
-                            </div>
-                        </div>
-                        <div class="timeline-entry" data-type="analysis">
-                            <div class="timeline-node timeline-node-analysis"><i data-lucide="file-text"></i></div>
-                            <div class="timeline-time">07-23</div>
-                            <div class="timeline-body">
-                                <div class="timeline-action">
-                                    <span data-i18n="dash.activity_act_analysis">分析了合同</span>
-                                    <span class="timeline-badge timeline-badge-success" data-i18n="dash.activity_result_success">成功</span>
-                                </div>
-                                <div class="timeline-meta" data-i18n="dash.activity_file_nda">保密协议.pdf</div>
-                            </div>
-                        </div>
-                        <div class="timeline-entry" data-type="logout">
-                            <div class="timeline-node timeline-node-logout"><i data-lucide="log-out"></i></div>
-                            <div class="timeline-time">07-22</div>
-                            <div class="timeline-body">
-                                <div class="timeline-action">
-                                    <span data-i18n="dash.activity_act_logout">退出登录</span>
-                                </div>
-                                <div class="timeline-meta"><span data-i18n="dash.activity_logout_detail">在所有设备上退出</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div class="text-center py-8" style="color: var(--color-text-tertiary); font-size: 13px;" data-i18n="dash.no_data">暂无数据</div>
             </div>
 
             <button class="load-more-btn" onclick="showToast(I18N.t('dash.activity_no_more') || '没有更多记录了', '')" data-i18n="dash.activity_load_more">加载更多</button>
@@ -1712,10 +1606,22 @@
     // ============ 使用日志筛选 ============
     window.filterActivity = function() {
         var typeFilter = document.getElementById('activity-type-filter').value;
+        var timeFilter = document.getElementById('activity-time-filter').value;
         var entries = document.querySelectorAll('.timeline-entry');
+        var now = new Date();
         entries.forEach(function(entry) {
             var type = entry.getAttribute('data-type');
+            var createdAt = entry.getAttribute('data-created-at') || '';
             var show = (typeFilter === 'all' || type === typeFilter);
+            if (show && timeFilter !== 'all' && createdAt) {
+                var dt = new Date(createdAt);
+                if (!isNaN(dt.getTime())) {
+                    var diffDays = Math.floor((now - dt) / (24 * 3600 * 1000));
+                    if (timeFilter === 'today') show = diffDays === 0;
+                    if (timeFilter === '7d') show = diffDays <= 6;
+                    if (timeFilter === '30d') show = diffDays <= 29;
+                }
+            }
             entry.style.display = show ? '' : 'none';
         });
         // 隐藏没有可见条目的分组
@@ -1725,6 +1631,88 @@
             group.style.display = visible.length > 0 ? '' : 'none';
         });
     };
+
+    var activityDataCache = [];
+
+    function formatActivityTime(dateStr) {
+        var d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '--';
+        var locale = I18N.currentLang === 'en' ? 'en-US' : 'zh-CN';
+        return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getActivityTypeLabel(type) {
+        var labels = {
+            register: I18N.t('dash.activity_act_register'),
+            analysis: I18N.t('dash.activity_act_analysis'),
+            compare: I18N.t('dash.activity_act_compare')
+        };
+        return labels[type] || type;
+    }
+
+    function renderActivityList(items) {
+        var el = document.getElementById('activity-list');
+        if (!el) return;
+        if (!items || items.length === 0) {
+            el.innerHTML = '<div class="text-center py-8" style="color: var(--color-text-tertiary); font-size: 13px;" data-i18n="dash.no_data">' + I18N.t('dash.no_data') + '</div>';
+            return;
+        }
+        var today = new Date();
+        var todayKey = today.toISOString().slice(0, 10);
+        var yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        var yesterdayKey = yesterday.toISOString().slice(0, 10);
+        var groupMap = { today: [], yesterday: [], earlier: [] };
+        items.forEach(function(item) {
+            var dateKey = (item.created_at || '').slice(0, 10);
+            var groupKey = dateKey === todayKey ? 'today' : dateKey === yesterdayKey ? 'yesterday' : 'earlier';
+            groupMap[groupKey].push(item);
+        });
+        var groupLabels = {
+            today: I18N.t('dash.activity_group_today'),
+            yesterday: I18N.t('dash.activity_group_yesterday'),
+            earlier: I18N.t('dash.activity_group_earlier')
+        };
+        var typeNodes = {
+            register: { cls: 'timeline-node-login', icon: 'user-plus' },
+            analysis: { cls: 'timeline-node-analysis', icon: 'file-text' },
+            compare: { cls: 'timeline-node-export', icon: 'git-compare-arrows' }
+        };
+        var html = '';
+        ['today', 'yesterday', 'earlier'].forEach(function(groupKey) {
+            var groupItems = groupMap[groupKey];
+            if (!groupItems.length) return;
+            html += '<div class="timeline-group" data-group="' + groupKey + '">' +
+                '<div class="timeline-group-title">' + escapeHtml(groupLabels[groupKey]) + '</div><div class="timeline">';
+            groupItems.forEach(function(item) {
+                var node = typeNodes[item.type] || typeNodes.analysis;
+                html += '<div class="timeline-entry" data-type="' + escapeHtml(item.type || '') + '" data-created-at="' + escapeHtml(item.created_at || '') + '">' +
+                    '<div class="timeline-node ' + node.cls + '"><i data-lucide="' + node.icon + '"></i></div>' +
+                    '<div class="timeline-time">' + escapeHtml(formatActivityTime(item.created_at)) + '</div>' +
+                    '<div class="timeline-body"><div class="timeline-action">' +
+                        '<span>' + escapeHtml(getActivityTypeLabel(item.type)) + '</span>' +
+                        '<span class="timeline-badge timeline-badge-success">' + escapeHtml(I18N.t('dash.activity_result_success')) + '</span>' +
+                    '</div><div class="timeline-meta">' + escapeHtml(item.meta || '') + '</div></div></div>';
+            });
+            html += '</div></div>';
+        });
+        el.innerHTML = html;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        filterActivity();
+    }
+
+    function loadActivity() {
+        var token = (typeof getToken === 'function') ? getToken() : '';
+        fetch('/api/activity', {
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        }).then(function(resp) { return resp.json(); }).then(function(data) {
+            activityDataCache = data.items || [];
+            renderActivityList(activityDataCache);
+        }).catch(function() {
+            activityDataCache = [];
+            renderActivityList([]);
+        });
+    }
 
     // ============ 通知 Tab 切换 ============
     var currentNotifTab = 'all';
@@ -2152,12 +2140,9 @@
                     return;
                 }
 
-                var totalAnalyses = data.total_analyses || 0;
+                var stats = data.stats || {};
+                var totalAnalyses = data.total_analyses != null ? data.total_analyses : (stats.total_analyses || 0);
                 var recentItems = data.recent_analyses || [];
-                if (totalAnalyses === 0 && (!recentItems || recentItems.length === 0)) {
-                    if (empty) empty.classList.remove('hidden');
-                    return;
-                }
 
                 if (content) content.classList.remove('hidden');
 
@@ -2194,7 +2179,7 @@
                 var totalCountEl = document.getElementById('kpi-total-count');
                 if (totalCountEl) totalCountEl.textContent = totalAnalyses;
 
-                var avgScore = data.avg_score;
+                var avgScore = data.avg_score != null ? data.avg_score : stats.avg_score;
                 var avgScoreEl = document.getElementById('kpi-avg-score');
                 if (avgScoreEl) {
                     if (avgScore != null && avgScore !== undefined) {
@@ -2211,7 +2196,7 @@
                     }
                 }
 
-                var riskDist = data.risk_distribution || {};
+                var riskDist = data.risk_distribution || stats.risk_distribution || {};
                 var highRiskCount = riskDist.high || 0;
                 var highRiskEl = document.getElementById('kpi-high-risk');
                 if (highRiskEl) highRiskEl.textContent = highRiskCount;
@@ -2223,13 +2208,15 @@
                 renderRecentAnalyses(recentItems);
                 renderRiskDist(riskDist);
 
-                var typeDist = data.type_distribution || {};
+                var typeDist = data.type_distribution || data.contract_type_distribution || stats.contract_type_distribution || {};
                 renderTypeDist(typeDist);
 
                 var guideCard = document.getElementById('guide-card');
                 if (guideCard && totalAnalyses < 3) {
                     guideCard.classList.remove('hidden');
                 }
+
+                if (empty) empty.classList.add('hidden');
 
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             })
@@ -2257,6 +2244,7 @@
 
         // 加载数据看板
         loadDashboard();
+        loadActivity();
 
         // 加载通知列表 + 未读计数
         loadNotifications();
@@ -2289,6 +2277,7 @@
         initSidebarUser();
         updatePwdStrength(document.getElementById('pwd-new') ? document.getElementById('pwd-new').value : '');
         loadDashboard();
+        loadActivity();
         loadNotifications();
     });
 
