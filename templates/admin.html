@@ -7,9 +7,10 @@
 
         <div class="flex items-center justify-between mb-8">
             <h1 class="text-2xl md:text-3xl font-bold tracking-tight" style="font-family: var(--font-display); color: var(--color-primary);" data-i18n="admin.title">管理后台</h1>
-            <button onclick="loadAllData()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style="background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); cursor: pointer;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            <button id="admin-refresh-btn" onclick="loadAllData(true)" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style="background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); cursor: pointer;">
+                <svg id="admin-refresh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
                 <span data-i18n="admin.refresh">刷新数据</span>
+                <span id="admin-last-refresh" class="text-xs" style="color: var(--color-text-tertiary);"></span>
             </button>
         </div>
 
@@ -320,7 +321,7 @@
 <div id="fb-detail-modal" class="modal-overlay">
     <div class="modal-content" style="width: 560px; max-width: 95vw; padding: 32px;">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold" style="color: var(--color-primary);" data-i18n="admin.fb_detail_title">反馈详情</h3>
+            <h3 id="admin-detail-title" class="text-lg font-semibold" style="color: var(--color-primary);" data-i18n="admin.fb_detail_title">反馈详情</h3>
             <button onclick="document.getElementById('fb-detail-modal').classList.remove('active')" style="background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);font-size:20px;">&times;</button>
         </div>
         <div id="fb-detail-body"></div>
@@ -331,6 +332,10 @@
 {% block extra_scripts %}
 <script>
 (function() {
+    var usersCache = [];
+    var analysesCache = [];
+    var notificationsCache = [];
+
     // ---- Tabs ----
     window.switchTab = function(tabName) {
         document.querySelectorAll('.admin-tab-panel').forEach(p => p.style.display = 'none');
@@ -343,21 +348,52 @@
         if (panel) panel.style.display = 'block';
         if (btn) { btn.style.color = 'var(--color-primary)'; btn.style.borderBottom = '2px solid var(--color-primary)'; }
 
+        if (tabName === 'users') loadUsers();
+        if (tabName === 'analyses') loadAnalyses();
         if (tabName === 'feedback') loadFeedbackList();
+        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
     // ---- Load All ----
-    window.loadAllData = function() {
+    window.loadAllData = function(showToastOnDone) {
+        setRefreshState(true);
         loadStats();
         loadUsers();
         loadAnalyses();
         loadNotifications();
+        refreshVisibleTab();
+        setTimeout(function() {
+            setRefreshState(false);
+            if (showToastOnDone) showToast(tr('admin.refresh_done', '数据已刷新'), 'success');
+        }, 450);
     };
 
     function refreshVisibleTab() {
         var activePanel = document.querySelector('.admin-tab-panel:not([style*="display: none"])');
         if (!activePanel) return;
         if (activePanel.id === 'tab-feedback') loadFeedbackList();
+    }
+
+    function setRefreshState(isLoading) {
+        var icon = document.getElementById('admin-refresh-icon');
+        var btn = document.getElementById('admin-refresh-btn');
+        var timeEl = document.getElementById('admin-last-refresh');
+        if (icon) icon.style.transform = isLoading ? 'rotate(180deg)' : 'rotate(0deg)';
+        if (btn) btn.style.opacity = isLoading ? '0.75' : '1';
+        if (!isLoading && timeEl) timeEl.textContent = new Date().toLocaleTimeString();
+    }
+
+    function openAdminDetail(title, html) {
+        var titleEl = document.getElementById('admin-detail-title');
+        var body = document.getElementById('fb-detail-body');
+        if (titleEl) titleEl.textContent = title;
+        if (body) body.innerHTML = html;
+        document.getElementById('fb-detail-modal').classList.add('active');
+    }
+
+    function detailRow(label, value) {
+        var text = value == null || value === '' ? '-' : String(value);
+        return '<div><span class="text-xs font-medium" style="color:var(--color-text-tertiary);">' + escapeHtml(label) + '</span><div class="text-sm mt-1" style="color:var(--color-text-primary);white-space:pre-wrap;word-break:break-word;">' + escapeHtml(text) + '</div></div>';
     }
 
     // ---- Stats ----
@@ -701,9 +737,12 @@
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8" style="color:var(--color-text-tertiary);">No users</td></tr>';
                 return;
             }
+            usersCache = data.items || [];
             data.items.forEach(function(u) {
                 var row = document.createElement('tr');
+                row.style.cursor = 'pointer';
                 row.style.borderTop = '1px solid var(--color-border-light)';
+                row.onclick = function() { viewUserDetail(u.id); };
                 var roleColor = u.role === 'admin' ? 'var(--color-accent)' : 'var(--color-text-tertiary)';
                 var roleLabel = u.role === 'admin' ? tr('admin.role_admin', 'Admin') : tr('admin.role_user', 'User');
                 row.innerHTML =
@@ -731,9 +770,12 @@
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8" style="color:var(--color-text-tertiary);">No analyses</td></tr>';
                 return;
             }
+            analysesCache = data.items || [];
             data.items.forEach(function(a) {
                 var row = document.createElement('tr');
+                row.style.cursor = 'pointer';
                 row.style.borderTop = '1px solid var(--color-border-light)';
+                row.onclick = function() { viewAnalysisDetail(a.id); };
                 var scoreColor = a.score != null ? (a.score >= 80 ? 'var(--risk-low)' : a.score >= 60 ? 'var(--risk-medium)' : 'var(--risk-high)') : 'var(--color-text-tertiary)';
                 var rl = a.risk_level || 'low';
                 var riskColors = { high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
@@ -767,9 +809,12 @@
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8" style="color:var(--color-text-tertiary);">No notifications</td></tr>';
                 return;
             }
+            notificationsCache = data.items || [];
             data.items.forEach(function(n) {
                 var row = document.createElement('tr');
+                row.style.cursor = 'pointer';
                 row.style.borderTop = '1px solid var(--color-border-light)';
+                row.onclick = function() { viewNotificationDetail(n.id); };
                 row.innerHTML =
                     '<td class="px-5 py-4 font-medium" style="color:var(--color-text-primary);">' + escapeHtml(n.title || '-') + '<div class="text-xs mt-1" style="color:var(--color-text-tertiary);">' + escapeHtml(n.summary || '') + '</div></td>' +
                     '<td class="px-5 py-4 text-center"><span class="text-xs font-medium px-2 py-1 rounded-md" style="color:var(--color-accent);background:var(--color-accent-tint-50);">' + escapeHtml(notifTypeLabel(n.notif_type)) + '</span></td>' +
@@ -780,6 +825,54 @@
             });
         }).catch(function() {});
     }
+
+    window.viewUserDetail = function(userId) {
+        var u = usersCache.find(function(item) { return item.id === userId; });
+        if (!u) return;
+        openAdminDetail(tr('admin.user_detail_title', '用户详情'),
+            '<div class="space-y-4">' +
+                detailRow(tr('admin.col_username', '用户名'), u.username) +
+                detailRow(tr('admin.col_email', '邮箱'), u.email) +
+                detailRow(tr('admin.col_role', '角色'), u.role === 'admin' ? tr('admin.role_admin', '管理员') : tr('admin.role_user', '普通用户')) +
+                detailRow(tr('admin.col_analyses', '分析次数'), u.analysis_count || 0) +
+                detailRow(tr('admin.col_invite_code', '邀请码'), u.invite_code || '-') +
+                detailRow(tr('admin.col_referrals', '邀请数'), u.referral_count || 0) +
+                detailRow(tr('admin.col_date', '注册时间'), u.created_at ? new Date(u.created_at).toLocaleString() : '-') +
+            '</div>'
+        );
+    };
+
+    window.viewAnalysisDetail = function(analysisId) {
+        var a = analysesCache.find(function(item) { return item.id === analysisId; });
+        if (!a) return;
+        openAdminDetail(tr('admin.analysis_detail_title', '分析详情'),
+            '<div class="space-y-4">' +
+                detailRow('ID', a.id) +
+                detailRow(tr('admin.col_user', '用户'), a.user_id) +
+                detailRow(tr('admin.col_filename', '文件名'), a.filename || 'Pasted') +
+                detailRow(tr('admin.col_mode', '模式'), a.analysis_mode) +
+                detailRow(tr('admin.col_score', '评分'), a.score) +
+                detailRow(tr('admin.col_risk', '风险'), a.risk_level) +
+                detailRow(tr('admin.col_time', '时间'), a.created_at ? new Date(a.created_at).toLocaleString() : '-') +
+                detailRow(tr('admin.analysis_summary', '摘要'), a.one_line_summary || '-') +
+            '</div>'
+        );
+    };
+
+    window.viewNotificationDetail = function(notificationId) {
+        var n = notificationsCache.find(function(item) { return item.id === notificationId; });
+        if (!n) return;
+        openAdminDetail(tr('admin.notification_detail_title', '通知详情'),
+            '<div class="space-y-4">' +
+                detailRow(tr('admin.notif_col_title', '标题'), n.title) +
+                detailRow(tr('admin.notif_col_type', '类型'), notifTypeLabel(n.notif_type)) +
+                detailRow(tr('admin.notif_col_read', '已读'), (n.read_count || 0) + ' / ' + ((n.read_count || 0) + (n.unread_count || 0))) +
+                detailRow(tr('admin.notif_col_delivery', '送达率'), (n.delivery_rate != null ? n.delivery_rate : 0) + '%') +
+                detailRow(tr('admin.notif_col_time', '时间'), n.created_at ? new Date(n.created_at).toLocaleString() : '-') +
+                detailRow('Summary', n.summary || '-') +
+            '</div>'
+        );
+    };
 
     // ---- Feedback Table ----
     window.loadFeedbackList = function() {
@@ -843,9 +936,12 @@
         apiFetch('/api/feedback/' + fbId).then(function(r) {
             if (!r.ok) return;
             return r.json();
-        }).then(function(f) {
+        }).then(function(payload) {
+            var f = payload && (payload.feedback || payload);
             if (!f) return;
             var body = document.getElementById('fb-detail-body');
+            var titleEl = document.getElementById('admin-detail-title');
+            if (titleEl) titleEl.textContent = tr('admin.fb_detail_title', '反馈详情');
             var typeLabels = {
                 bug: tr('admin.type_bug', 'Bug'),
                 feature: tr('admin.type_feature', 'Feature'),
@@ -920,7 +1016,23 @@
         return div.innerHTML;
     }
 
+    function bindMetricCards() {
+        [
+            ['stat-users', 'users'],
+            ['stat-analyses', 'analyses'],
+            ['stat-feedback', 'feedback'],
+            ['stat-open-feedback', 'feedback']
+        ].forEach(function(pair) {
+            var metric = document.getElementById(pair[0]);
+            var card = metric ? metric.closest('.rounded-xl') : null;
+            if (!card) return;
+            card.style.cursor = 'pointer';
+            card.onclick = function() { switchTab(pair[1]); };
+        });
+    }
+
     // Init
+    bindMetricCards();
     loadAllData();
     setInterval(function() {
         if (document.hidden) return;
