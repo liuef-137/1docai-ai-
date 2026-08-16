@@ -79,6 +79,8 @@
     })();
     </script>
     <style>
+        .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: 0; color: var(--color-text-tertiary); cursor: pointer; border-radius: 6px; }
+        .password-toggle:hover, .password-toggle:focus-visible { color: var(--color-accent); background: var(--color-accent-tint-50); outline: none; }
         :root {
             --color-primary: #1B365D;
             --color-primary-light: #2A4A7F;
@@ -241,7 +243,7 @@
         }
 
         /* Nav user hover dropdown */
-        #user-menu { transition: opacity 160ms ease, transform 160ms ease; opacity: 0; transform: translateY(-4px); pointer-events: none; }
+        #user-menu { display: none; transition: opacity 160ms ease, transform 160ms ease; opacity: 0; transform: translateY(-4px); pointer-events: none; }
         #user-menu.open { display: block; opacity: 1; transform: translateY(0); pointer-events: auto; }
         .user-menu-item { transition: background 120ms ease; }
         .user-menu-item:hover { background: var(--color-bg-secondary); }
@@ -336,14 +338,14 @@
                     <span id="nav-notification-badge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center" style="background: var(--state-error); color: #fff; border: 1.5px solid var(--color-primary); display: none;">3</span>
                 </a>
                 <div class="nav-user-wrap relative hidden sm:block" id="nav-user-wrap">
-                    <button type="button" class="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors" style="color: var(--color-text-inverse); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer;" onmouseenter="document.getElementById('user-menu').classList.add('open')" onmouseleave="document.getElementById('user-menu').classList.remove('open')">
+                    <button type="button" id="user-menu-trigger" aria-expanded="false" class="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors" style="color: var(--color-text-inverse); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer;" onclick="toggleUserMenu(event)">
                         <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden" style="{% if current_user.avatar %}background-image: url('{{ current_user.avatar }}'); background-size: cover; background-position: center;{% else %}background: var(--color-accent); color: var(--color-text-inverse);{% endif %}">
                             {% if not current_user.avatar %}{{ current_user.username[:1]|upper }}{% endif %}
                         </div>
                         <span class="text-sm font-medium max-w-[100px] truncate">{{ current_user.username }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4" style="opacity: 0.7;"></i>
                     </button>
-                    <div id="user-menu" class="user-dropdown absolute right-0 top-full pt-2" style="display: none;">
+                    <div id="user-menu" class="user-dropdown absolute right-0 top-full pt-2" role="menu">
                         <div class="rounded-xl overflow-hidden w-60" style="background: var(--color-surface); border: 1px solid var(--color-border-light); box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
                             <div class="px-4 py-3" style="border-bottom: 1px solid var(--color-border-light); background: var(--color-bg);">
                                 <div class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">{{ current_user.username }}</div>
@@ -360,6 +362,10 @@
                             <a href="/dashboard?tab=settings" class="user-menu-item flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--color-text-secondary); text-decoration: none;">
                                 <i data-lucide="settings" class="w-4 h-4"></i>
                                 <span data-i18n="nav.preferences">个人设置</span>
+                            </a>
+                            <a href="/dashboard#quota-center" class="user-menu-item flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--color-text-secondary); text-decoration: none;">
+                                <i data-lucide="gauge" class="w-4 h-4"></i>
+                                <span data-i18n="nav.quota">额度与用量</span>
                             </a>
                             <div style="border-top: 1px solid var(--color-border-light);"></div>
                             <a href="/dashboard?tab=notifications" class="user-menu-item flex items-center gap-3 px-4 py-2.5 text-sm" style="color: var(--color-text-secondary); text-decoration: none;">
@@ -473,12 +479,12 @@
             <!-- Login Form -->
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.username">用户名</label>
-                    <input type="text" name="username" required placeholder="输入用户名" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.username_placeholder">
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.login_account">用户名或邮箱</label>
+                    <input type="text" name="username" required autocomplete="username" placeholder="输入用户名或邮箱" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.account_placeholder">
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.password">密码</label>
-                    <input type="password" name="password" required placeholder="输入密码" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.password_placeholder">
+                    <div class="relative"><input id="modal-login-password" type="password" name="password" required autocomplete="current-password" placeholder="输入密码" class="w-full px-4 py-3 pr-12 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.password_placeholder"><button type="button" class="password-toggle" onclick="toggleModalPassword('modal-login-password', this)" aria-label="显示密码"><i data-lucide="eye" class="w-4 h-4"></i></button></div>
                 </div>
                 <div id="login-error" class="text-sm hidden" style="color: var(--state-error);"></div>
                 <button type="submit" id="login-submit" class="w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;" data-i18n="auth.login_btn">登录</button>
@@ -492,15 +498,16 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.email">邮箱</label>
-                    <input type="email" name="email" required placeholder="your@email.com" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.email_placeholder">
+                    <input type="email" name="email" required autocomplete="email" placeholder="your@email.com" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.email_placeholder">
+                    <p class="mt-1.5 text-xs" style="color: var(--color-text-tertiary);" data-i18n="auth.email_login_hint">注册邮箱可直接用于登录</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.password">密码</label>
-                    <input type="password" name="password" required placeholder="至少6个字符" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.password_hint">
+                    <div class="relative"><input id="modal-register-password" type="password" name="password" required autocomplete="new-password" placeholder="至少6个字符" class="w-full px-4 py-3 pr-12 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.password_hint"><button type="button" class="password-toggle" onclick="toggleModalPassword('modal-register-password', this)" aria-label="显示密码"><i data-lucide="eye" class="w-4 h-4"></i></button></div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);" data-i18n="auth.confirm_password">确认密码</label>
-                    <input type="password" name="confirm_password" required placeholder="再次输入密码" class="w-full px-4 py-3 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.confirm_placeholder">
+                    <div class="relative"><input id="modal-confirm-password" type="password" name="confirm_password" required autocomplete="new-password" placeholder="再次输入密码" class="w-full px-4 py-3 pr-12 rounded-lg text-sm outline-none" style="background: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: border-color 150ms;" onfocus="this.style.borderColor='var(--color-accent)'" onblur="this.style.borderColor='var(--color-border)'" data-i18n-placeholder="auth.confirm_placeholder"><button type="button" class="password-toggle" onclick="toggleModalPassword('modal-confirm-password', this)" aria-label="显示密码"><i data-lucide="eye" class="w-4 h-4"></i></button></div>
                 </div>
                 <div id="register-error" class="text-sm hidden" style="color: var(--state-error);"></div>
                 <button type="submit" id="register-submit" class="w-full py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); border: none; cursor: pointer;" data-i18n="auth.register_btn">注册</button>
@@ -620,6 +627,14 @@
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+
+        function toggleModalPassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const shown = input.type === 'text';
+            input.type = shown ? 'password' : 'text';
+            button.innerHTML = '<i data-lucide="' + (shown ? 'eye' : 'eye-off') + '" class="w-4 h-4"></i>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function copyText(text) {
@@ -775,21 +790,36 @@
             document.getElementById('mobile-menu').classList.toggle('open');
         }
 
-        function toggleUserMenu() {
+        function toggleUserMenu(event) {
+            if (event) event.stopPropagation();
             var menu = document.getElementById('user-menu');
+            var trigger = document.getElementById('user-menu-trigger');
             if (!menu) return;
-            menu.classList.toggle('open');
+            var isOpen = menu.classList.toggle('open');
+            if (trigger) trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         }
 
-        // User menu: keep open while hovering the menu itself
+        // User menu: click to open, click outside or Escape to close.
         (function() {
             document.addEventListener('DOMContentLoaded', function() {
                 var menu = document.getElementById('user-menu');
-                if (!menu) return;
-                menu.addEventListener('mouseenter', function() { menu.classList.add('open'); });
-                menu.addEventListener('mouseleave', function() { menu.classList.remove('open'); });
+                var wrap = document.getElementById('nav-user-wrap');
+                if (!menu || !wrap) return;
+                document.addEventListener('click', function(event) {
+                    if (!wrap.contains(event.target)) closeUserMenu();
+                });
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape') closeUserMenu();
+                });
             });
         })();
+
+        function closeUserMenu() {
+            var menu = document.getElementById('user-menu');
+            var trigger = document.getElementById('user-menu-trigger');
+            if (menu) menu.classList.remove('open');
+            if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        }
 
         function toggleLang() {
             var newLang = (window.I18N && window.I18N.currentLang === 'zh') ? 'en' : 'zh';

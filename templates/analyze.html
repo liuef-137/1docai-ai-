@@ -890,7 +890,7 @@
     function renderResults(analysis, elapsed) {
         lastRenderedAnalysis = analysis;
         lastRenderedElapsed = elapsed;
-        const result = analysis.result ? JSON.parse(analysis.result) : null;
+        const result = safeParseJson(analysis.result, null);
 
         // One-line summary
         if (analysis.one_line_summary) {
@@ -940,7 +940,7 @@
             }
 
             // Risk distribution bar
-            const riskItems = analysis.risk_items ? JSON.parse(analysis.risk_items) : (result && result.risk_items ? result.risk_items : []);
+            const riskItems = safeParseJson(analysis.risk_items, result && result.risk_items ? result.risk_items : []);
             const riskDist = { high: 0, medium: 0, low: 0 };
             riskItems.forEach(item => {
                 if (riskDist[item.risk_level] !== undefined) riskDist[item.risk_level]++;
@@ -1007,7 +1007,7 @@
             });
 
             // Suggestions with numbered styling
-            const suggestions = analysis.suggestions ? JSON.parse(analysis.suggestions) : (result && result.suggestions ? result.suggestions : []);
+            const suggestions = safeParseJson(analysis.suggestions, result && result.suggestions ? result.suggestions : []);
             if (suggestions.length > 0) {
                 const list = document.getElementById('suggestions-list');
                 list.innerHTML = '';
@@ -1111,6 +1111,11 @@
         } catch (err) {
             return { error: text.slice(0, 300) };
         }
+    }
+
+    function safeParseJson(value, fallback) {
+        if (!value) return fallback;
+        try { return JSON.parse(value); } catch (err) { return fallback; }
     }
 
     // Animate counter from start to end

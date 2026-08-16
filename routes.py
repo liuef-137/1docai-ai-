@@ -217,7 +217,7 @@ Rules:
 # ---------------------------------------------------------------------------
 
 CONTRACT_TYPE_PROMPT_ZH = """请识别以下合同文本的类型。只返回一个 JSON，不要有其他文字：
-{"type": "<contract_type>", "confidence": <0.0-1.0>}
+{{"type": "<contract_type>", "confidence": <0.0-1.0>}}
 
 合同类型可选值：
 - labor: 劳动合同
@@ -238,7 +238,7 @@ CONTRACT_TYPE_PROMPT_ZH = """请识别以下合同文本的类型。只返回一
 """
 
 CONTRACT_TYPE_PROMPT_EN = """Identify the type of the following contract. Return only JSON, no other text:
-{"type": "<contract_type>", "confidence": <0.0-1.0>}
+{{"type": "<contract_type>", "confidence": <0.0-1.0>}}
 
 Allowed contract types:
 - labor: employment agreement / labor contract
@@ -549,15 +549,15 @@ def register():
 @api_bp.route('/api/auth/login', methods=['POST'])
 def login():
     data = request.get_json(silent=True) or {}
-    username = (data.get('username') or '').strip()
+    account = (data.get('username') or '').strip()
     password = data.get('password') or ''
 
-    if not username or not password:
-        return jsonify({'error': '用户名和密码不能为空'}), 400
+    if not account or not password:
+        return jsonify({'error': '用户名或邮箱和密码不能为空'}), 400
 
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter(or_(User.username == account, User.email == account)).first()
     if not user or not user.check_password(password):
-        return jsonify({'error': '用户名或密码错误'}), 401
+        return jsonify({'error': '用户名、邮箱或密码错误'}), 401
 
     token = create_token(user.id)
     login_bonus = current_app.config.get('LOGIN_BONUS_CREDITS', 0)
@@ -671,10 +671,6 @@ def create_analysis(current_user):
     if review_stance and review_stance not in ('party_a', 'party_b'):
         review_stance = ''
 
-    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'analysis')
-    if not allowed:
-        return jsonify({'error': f'今日分析次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
-
     max_len = current_app.config.get('MAX_TEXT_LENGTH', 10000)
     if len(text) > max_len:
         return jsonify({
@@ -697,6 +693,10 @@ def create_analysis(current_user):
             'analysis': cached.to_dict(),
             'cached': True,
         }), 200
+
+    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'analysis')
+    if not allowed:
+        return jsonify({'error': f'今日分析次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
 
     # Detect contract language
     language = detect_language(text)
@@ -738,6 +738,7 @@ def create_analysis(current_user):
     try:
         ai_response = call_deepseek(messages)
     except RuntimeError as e:
+        UserQuota.refund(current_user.id, 'analysis')
         return jsonify({'error': str(e)}), 502
 
     # Parse the AI response
@@ -815,6 +816,7 @@ def create_analysis(current_user):
         db.session.commit()
     except Exception as e:
         db.session.rollback()
+        UserQuota.refund(current_user.id, 'analysis')
         return jsonify({'error': f'保存分析结果失败: {str(e)}'}), 500
 
     return jsonify({
@@ -969,15 +971,15 @@ def create_compare(current_user):
     if not original_text or not modified_text:
         return jsonify({'error': '原始合同和修改后合同文本都不能为空'}), 400
 
-    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'compare')
-    if not allowed:
-        return jsonify({'error': f'今日对比次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
-
     max_len = current_app.config.get('MAX_TEXT_LENGTH', 10000)
     if len(original_text) > max_len or len(modified_text) > max_len:
         return jsonify({
             'error': f'合同文本过长，请控制在 {max_len} 字以内',
         }), 400
+
+    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'compare')
+    if not allowed:
+        return jsonify({'error': f'今日对比次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
 
     # Call DeepSeek for comparison analysis
     prompt_template = COMPARE_PROMPT_EN if language == 'en' else COMPARE_PROMPT
@@ -990,6 +992,7 @@ def create_compare(current_user):
     try:
         ai_response = call_deepseek(messages)
     except RuntimeError as e:
+        UserQuota.refund(current_user.id, 'compare')
         return jsonify({'error': str(e)}), 502
 
     parsed = _safe_parse_json(ai_response)
@@ -1018,6 +1021,7 @@ def create_compare(current_user):
         db.session.commit()
     except Exception as e:
         db.session.rollback()
+        UserQuota.refund(current_user.id, 'compare')
         return jsonify({'error': f'保存对比结果失败: {str(e)}'}), 500
 
     return jsonify({
@@ -1101,10 +1105,6 @@ def stream_analysis(current_user):
     if not text:
         return jsonify({'error': '合同文本不能为空'}), 400
 
-    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'analysis')
-    if not allowed:
-        return jsonify({'error': f'今日分析次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
-
     max_len = current_app.config.get('MAX_TEXT_LENGTH', 10000)
     if len(text) > max_len:
         return jsonify({
@@ -1127,6 +1127,10 @@ def stream_analysis(current_user):
             'analysis': cached.to_dict(),
             'cached': True,
         }), 200
+
+    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'analysis')
+    if not allowed:
+        return jsonify({'error': f'今日分析次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
 
     # Detect contract language
     language = detect_language(text)
@@ -1234,7 +1238,9 @@ def stream_analysis(current_user):
             # Send final event with analysis id
             yield f'data: {json.dumps({"done": True, "analysis_id": analysis.id}, ensure_ascii=False)}\n\n'
             yield 'data: [DONE]\n\n'
-        except RuntimeError as e:
+        except Exception as e:
+            db.session.rollback()
+            UserQuota.refund(current_user.id, 'analysis')
             yield f'data: {json.dumps({"error": str(e)}, ensure_ascii=False)}\n\n'
 
     return current_app.response_class(

@@ -105,6 +105,10 @@
 {% block extra_scripts %}
 <script>
 (function() {
+    function safeParseJson(value, fallback) {
+        if (!value) return fallback;
+        try { return JSON.parse(value); } catch (err) { return fallback; }
+    }
     // Extract analysis ID from URL path /detail/<id>
     const pathParts = window.location.pathname.split('/');
     const analysisId = pathParts[pathParts.length - 1];
@@ -133,7 +137,7 @@
     });
 
     function renderDetail(a) {
-        const result = a.result ? JSON.parse(a.result) : null;
+        const result = safeParseJson(a.result, null);
         const modeLabels = { risk: I18N.t('js.mode_risk'), summary: I18N.t('js.mode_summary'), plain: I18N.t('js.mode_plain') };
         const locale = I18N.currentLang === 'en' ? 'en-US' : 'zh-CN';
 
@@ -164,7 +168,7 @@
 
             const container = document.getElementById('d-risk-items');
             container.innerHTML = '';
-            const riskItems = a.risk_items ? JSON.parse(a.risk_items) : [];
+            const riskItems = safeParseJson(a.risk_items, []);
             if (riskItems.length === 0 && a.score != null) {
                 const rl = a.risk_level || 'low';
                 container.innerHTML += buildRiskCard(I18N.t('js.detail.overall_assessment'), rl === 'high' ? I18N.t('js.toast_overall_risk_high') : rl === 'medium' ? I18N.t('js.toast_overall_risk_medium') : I18N.t('js.toast_overall_risk_low'), rl);
@@ -175,7 +179,7 @@
             document.getElementById('d-risk-section').classList.remove('hidden');
 
             // Suggestions
-            const sugs = a.suggestions ? JSON.parse(a.suggestions) : [];
+            const sugs = safeParseJson(a.suggestions, []);
             if (sugs.length > 0) {
                 const list = document.getElementById('d-suggestions-list');
                 list.innerHTML = '';

@@ -101,6 +101,10 @@
 {% block extra_scripts %}
 <script>
 (function() {
+    function safeParseJson(value, fallback) {
+        if (!value) return fallback;
+        try { return JSON.parse(value); } catch (err) { return fallback; }
+    }
     var lastCompareResult = null;
     var compareSampleLoaded = false;
 
@@ -244,7 +248,7 @@
 
     function renderCompareResults(compare) {
         lastCompareResult = compare;
-        var result = compare.diff_result ? JSON.parse(compare.diff_result) : null;
+        var result = safeParseJson(compare.diff_result, null);
         var changes = result ? result.changes : [];
 
         document.getElementById('compare-results').classList.remove('hidden');

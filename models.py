@@ -199,6 +199,20 @@ class UserQuota(db.Model):
         return True, remaining, daily_limit
 
     @classmethod
+    def refund(cls, user_id, action='analysis'):
+        """Return one quota unit after a failed operation."""
+        quota = cls.get_today_quota(user_id)
+        field = {'analysis': 'analysis_count', 'compare': 'compare_count', 'followup': 'followup_count'}.get(action)
+        if not field:
+            return False
+        current = getattr(quota, field) or 0
+        if current <= 0:
+            return False
+        setattr(quota, field, current - 1)
+        db.session.commit()
+        return True
+
+    @classmethod
     def grant_login_bonus(cls, user_id, bonus_credits=5):
         """Grant a one-time daily login bonus quota."""
         if bonus_credits <= 0:
