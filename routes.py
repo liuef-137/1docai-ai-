@@ -12,8 +12,8 @@ from flask import (
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_, func
 
-from models import db, User, Analysis, RiskPreference, ContractCompare, Feedback, Conversation, UserQuota, Notification, UserNotification
-from auth import create_token, get_current_user, admin_required
+from models import db, User, Analysis, RiskPreference, ContractCompare, Feedback, Conversation, UserQuota, GuestQuota, Notification, UserNotification
+from auth import create_token, decode_token, get_current_user, admin_required
 from multilingual import (
     detect_language,
     build_analysis_prompt,
@@ -23,6 +23,26 @@ from multilingual import (
 )
 
 api_bp = Blueprint('api', __name__)
+
+
+def _optional_user():
+    token = request.cookies.get('token')
+    if not token:
+        auth_header = request.headers.get('Authorization', '')
+        token = auth_header[7:] if auth_header.startswith('Bearer ') else None
+    return decode_token(token) if token else None
+
+
+def _guest_id():
+    guest_id = request.cookies.get('docai_guest_id')
+    return guest_id or uuid.uuid4().hex
+
+
+def _refund_analysis_quota(current_user, guest_id):
+    if current_user:
+        UserQuota.refund(current_user.id, 'analysis')
+    else:
+        GuestQuota.refund(guest_id)
 
 # ---------------------------------------------------------------------------
 # DeepSeek API helper
@@ -530,7 +550,7 @@ def register():
                 user.referred_by_user_id = referrer.id
                 db.session.add(user)
                 db.session.commit()
-                referral_bonus = current_app.config.get('REFERRAL_BONUS_CREDITS', 3)
+                referral_bonus = current_app.config.get('REFERRAL_BONUS_CREDITS', 2)
                 UserQuota.add_bonus_credits(referrer.id, referral_bonus)
             except Exception:
                 db.session.rollback()
@@ -657,8 +677,9 @@ def delete_avatar(current_user):
 # ---------------------------------------------------------------------------
 
 @api_bp.route('/api/analysis', methods=['POST'])
-@get_current_user()
-def create_analysis(current_user):
+def create_analysis():
+    current_user = _optional_user()
+    guest_id = None if current_user else _guest_id()
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
     mode = (data.get('mode') or 'risk').strip()
@@ -686,7 +707,7 @@ def create_analysis(current_user):
     text_hash = _compute_text_hash(text)
 
     # Check cache — if found, return cached result immediately
-    cached = _find_cached_analysis(current_user.id, text_hash, mode)
+    cached = _find_cached_analysis(current_user.id, text_hash, mode) if current_user else None
     if cached:
         return jsonify({
             'message': '分析完成（缓存）',
@@ -694,10 +715,14 @@ def create_analysis(current_user):
             'cached': True,
         }), 200
 
-    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'analysis')
+    if current_user:
+        allowed, _, _ = UserQuota.check_and_increment(current_user.id, 'analysis')
+    else:
+        allowed = GuestQuota.check_and_increment(guest_id)
     if not allowed:
-        return jsonify({'error': f'今日分析次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
-
+        response = jsonify({'error': '今日免费分析次数已用完，请登录后继续使用', 'require_login': True})
+        if not current_user: response.set_cookie('docai_guest_id', guest_id, max_age=60 * 60 * 24 * 365, samesite='Lax')
+        return response, 429
     # Detect contract language
     language = detect_language(text)
 
@@ -709,7 +734,7 @@ def create_analysis(current_user):
 
     # Load user risk preferences for risk analysis mode
     user_prefs = []
-    if mode == 'risk':
+    if mode == 'risk' and current_user:
         pref_obj = RiskPreference.query.filter_by(user_id=current_user.id).first()
         if pref_obj:
             user_prefs = pref_obj.get_preferences_list()
@@ -738,7 +763,7 @@ def create_analysis(current_user):
     try:
         ai_response = call_deepseek(messages)
     except RuntimeError as e:
-        UserQuota.refund(current_user.id, 'analysis')
+        _refund_analysis_quota(current_user, guest_id)
         return jsonify({'error': str(e)}), 502
 
     # Parse the AI response
@@ -796,7 +821,7 @@ def create_analysis(current_user):
 
     # Create analysis record
     analysis = Analysis(
-        user_id=current_user.id,
+        user_id=current_user.id if current_user else None,
         filename=filename,
         contract_text=masked_text,
         text_hash=text_hash,
@@ -812,17 +837,20 @@ def create_analysis(current_user):
     )
 
     try:
-        db.session.add(analysis)
-        db.session.commit()
+        if current_user:
+            db.session.add(analysis)
+            db.session.commit()
     except Exception as e:
         db.session.rollback()
-        UserQuota.refund(current_user.id, 'analysis')
+        _refund_analysis_quota(current_user, guest_id)
         return jsonify({'error': f'保存分析结果失败: {str(e)}'}), 500
 
-    return jsonify({
+    response = jsonify({
         'message': '分析完成',
         'analysis': analysis.to_dict(),
     }), 201
+    if not current_user: response[0].set_cookie('docai_guest_id', guest_id, max_age=60 * 60 * 24 * 365, samesite='Lax')
+    return response
 
 
 @api_bp.route('/api/analysis/history', methods=['GET'])
@@ -2112,7 +2140,7 @@ def user_dashboard(current_user):
             'invite_code': invite_code,
             'invite_url': referral_url,
             'referral_count': referral_count,
-            'referral_bonus': current_app.config.get('REFERRAL_BONUS_CREDITS', 3),
+            'referral_bonus': current_app.config.get('REFERRAL_BONUS_CREDITS', 2),
         },
         'stats': {
             'total_analyses': total_analyses,

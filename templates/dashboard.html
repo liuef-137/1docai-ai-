@@ -884,7 +884,7 @@
                             <p class="text-sm" style="color: var(--color-text-secondary);" data-i18n="dash.referral_desc">分享你的专属邀请链接，新用户注册后你和对方都会获得额度奖励。</p>
                         </div>
                         <div class="text-sm" style="color: var(--color-text-secondary);">
-                            <span data-i18n="dash.referral_reward">邀请奖励</span>：<span id="referral-reward">3</span>
+                            <span data-i18n="dash.referral_reward">邀请奖励</span>：<span id="referral-reward">2</span>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-5">
@@ -911,6 +911,10 @@
                     <div class="mt-3 text-sm" style="color: var(--color-text-secondary);">
                         <span data-i18n="dash.referral_count">成功邀请</span>：<span id="referral-count">0</span>
                     </div>
+                    <button type="button" onclick="openInviteGuide()" class="quick-btn quick-btn-primary mt-4">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span data-i18n="dash.referral_cta">邀请好友，双方各得 2 次额度</span>
+                    </button>
                 </div>
 
                 <!-- 快捷操作 -->
@@ -2174,7 +2178,7 @@
                 var referralLinkEl = document.getElementById('referral-link');
                 if (referralLinkEl) referralLinkEl.value = referral.invite_url || '--';
                 setText('referral-count', referral.referral_count || 0);
-                setText('referral-reward', referral.referral_bonus || 3);
+                setText('referral-reward', referral.referral_bonus || 2);
 
                 var totalCountEl = document.getElementById('kpi-total-count');
                 if (totalCountEl) totalCountEl.textContent = totalAnalyses;
@@ -2272,6 +2276,26 @@
         // 重新初始化图标
         if (typeof lucide !== 'undefined') lucide.createIcons();
     });
+
+    window.openInviteGuide = function() {
+        var link = document.getElementById('referral-link');
+        var inviteUrl = link ? link.value : '';
+        var title = I18N.currentLang === 'en' ? 'Invite friends and earn credits' : '邀请好友，双方都得额度';
+        var body = I18N.currentLang === 'en'
+            ? 'Share your invite link. After a new user signs up through it, both accounts receive 2 analysis credits. Each account can be linked to one inviter only.'
+            : '把专属邀请链接发给好友。好友通过链接注册后，你和好友各获得 2 次分析额度。每个账号只能绑定一位邀请人。';
+        var modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-5';
+        modal.style.background = 'rgba(15,36,64,0.45)';
+        modal.innerHTML = '<div class="w-full max-w-md rounded-xl p-6" style="background:var(--color-surface);box-shadow:0 16px 48px rgba(15,36,64,0.2)">' +
+            '<div class="flex items-start justify-between gap-4"><div><h3 class="text-lg font-semibold" style="color:var(--color-text-primary)">' + escapeHtml(title) + '</h3><p class="mt-2 text-sm leading-relaxed" style="color:var(--color-text-secondary)">' + escapeHtml(body) + '</p></div><button type="button" class="text-xl" style="background:none;border:0;color:var(--color-text-tertiary);cursor:pointer" aria-label="Close">&times;</button></div>' +
+            '<div class="mt-5 flex items-center gap-2"><input readonly value="' + escapeHtml(inviteUrl) + '" class="flex-1 px-3 py-2 rounded-lg text-sm" style="background:var(--color-bg-secondary);border:1px solid var(--color-border);color:var(--color-text-primary)"><button type="button" class="quick-btn quick-btn-primary">' + (I18N.currentLang === 'en' ? 'Copy link' : '复制链接') + '</button></div></div>';
+        document.body.appendChild(modal);
+        var close = function() { modal.remove(); };
+        modal.querySelector('button[aria-label="Close"]').onclick = close;
+        modal.addEventListener('click', function(e) { if (e.target === modal) close(); });
+        modal.querySelector('.quick-btn-primary').onclick = function() { copyText(inviteUrl); close(); };
+    };
 
     window.addEventListener('docai:languageChanged', function() {
         initSidebarUser();

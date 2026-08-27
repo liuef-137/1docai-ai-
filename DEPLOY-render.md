@@ -121,6 +121,8 @@ git push -u origin main
 
 ### 数据持久化（可选升级）
 
+Zeabur/Render 等容器平台的本地 SQLite 文件不应作为生产数据源。请在平台绑定持久化 Volume，或配置外部 PostgreSQL，并将连接串设置为环境变量 `DATABASE`。不要在部署脚本中删除 `docai.db`，应用启动迁移只会添加缺失字段，不会清空已有用户、分析和反馈记录。
+
 如果需要数据不丢失，添加免费 PostgreSQL：
 
 1. Render Dashboard → **New** → **PostgreSQL**

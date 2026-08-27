@@ -574,21 +574,17 @@
 
     // Upload button click
     window.handleUploadClick = function() {
-        requireAuth(() => {
-            fileInput.click();
-        });
+        fileInput.click();
     };
 
     window.openCameraScan = function() {
-        requireAuth(() => {
-            scanModal.classList.add('active');
-            scanResult.value = '';
-            scanUseBtn.disabled = true;
-            scanCaptureBtn.disabled = true;
-            scanRetakeBtn.disabled = true;
-            scanStatus.textContent = I18N.t('analyze.scan_permission_hint');
-            window.startCameraScan();
-        });
+        scanModal.classList.add('active');
+        scanResult.value = '';
+        scanUseBtn.disabled = true;
+        scanCaptureBtn.disabled = true;
+        scanRetakeBtn.disabled = true;
+        scanStatus.textContent = I18N.t('analyze.scan_permission_hint');
+        window.startCameraScan();
     };
 
     window.closeCameraScan = function() {
@@ -843,6 +839,9 @@
                 const data = await readApiResponse(resp);
                 if (!resp.ok) {
                     clearInterval(progressTimer);
+                    if (data.require_login && typeof openAuthModal === 'function') {
+                        openAuthModal('login');
+                    }
                     showToast(data.error || I18N.t('js.toast_analysis_failed'), 'error');
                     progressArea.classList.add('hidden');
                     resultsSection.classList.add('hidden');

@@ -141,6 +141,9 @@ class UserQuota(db.Model):
             return 100
         if action == 'compare':
             return 2
+        # Logged-in users receive their daily analysis credits through login/registration bonus.
+        if action == 'analysis':
+            return 0
         return 3
 
     @classmethod
@@ -248,6 +251,39 @@ class UserQuota(db.Model):
             'bonus_credits': self.bonus_credits,
             'bonus_granted_date': self.bonus_granted_date.isoformat() if self.bonus_granted_date else None,
         }
+
+
+class GuestQuota(db.Model):
+    """One anonymous analysis per browser and day."""
+    __tablename__ = 'guest_quota'
+
+    id = db.Column(db.Integer, primary_key=True)
+    guest_id = db.Column(db.String(64), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=date.today)
+    analysis_count = db.Column(db.Integer, default=0)
+    __table_args__ = (db.UniqueConstraint('guest_id', 'date', name='uq_guest_date'),)
+
+    @classmethod
+    def check_and_increment(cls, guest_id):
+        quota = cls.query.filter_by(guest_id=guest_id, date=date.today()).first()
+        if not quota:
+            quota = cls(guest_id=guest_id, date=date.today(), analysis_count=0)
+            db.session.add(quota)
+        if quota.analysis_count >= 1:
+            db.session.rollback()
+            return False
+        quota.analysis_count += 1
+        db.session.commit()
+        return True
+
+    @classmethod
+    def refund(cls, guest_id):
+        quota = cls.query.filter_by(guest_id=guest_id, date=date.today()).first()
+        if quota and quota.analysis_count > 0:
+            quota.analysis_count -= 1
+            db.session.commit()
+            return True
+        return False
 
 
 class ContractCompare(db.Model):

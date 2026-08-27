@@ -8,7 +8,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'docai-secret-key-change-in-production-2024')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE', f'sqlite:///{os.path.join(basedir, "docai.db")}')
+    # Prefer an externally managed database in deployment; local SQLite remains the development fallback.
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE') or os.environ.get('DATABASE_URL') or f'sqlite:///{os.path.join(basedir, "docai.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
@@ -22,13 +23,13 @@ class Config:
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-    APP_VERSION = os.environ.get('APP_VERSION', '0.4.1')
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.4')
     APP_RELEASE_SUMMARY = os.environ.get(
         'APP_RELEASE_SUMMARY',
-        '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',
+        '本次更新加入游客每日 1 次分析、登录 2 次额度、邀请奖励和数据持久化保护。',
     )
     REGISTRATION_BONUS_CREDITS = int(os.environ.get('REGISTRATION_BONUS_CREDITS', 2))
-    LOGIN_BONUS_CREDITS = int(os.environ.get('LOGIN_BONUS_CREDITS', 0))
-    REFERRAL_BONUS_CREDITS = int(os.environ.get('REFERRAL_BONUS_CREDITS', 3))
+    LOGIN_BONUS_CREDITS = int(os.environ.get('LOGIN_BONUS_CREDITS', 2))
+    REFERRAL_BONUS_CREDITS = int(os.environ.get('REFERRAL_BONUS_CREDITS', 2))
     REFERRAL_CODE_PREFIX = os.environ.get('REFERRAL_CODE_PREFIX', 'DCAI')
     ADMIN_CONTACT_EMAIL = os.environ.get('ADMIN_CONTACT_EMAIL', 'admin@docai.com')

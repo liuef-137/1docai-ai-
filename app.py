@@ -76,6 +76,13 @@ def _auto_migrate(db):
     except Exception:
         pass
 
+    quota_existing = set()
+    try:
+        cursor.execute("PRAGMA table_info(user_quota)")
+        quota_existing = {row[1] for row in cursor.fetchall()}
+    except Exception:
+        pass
+
     # Add missing columns
     migrations = [
         ("analysis", "text_hash", "VARCHAR(16)"),
@@ -88,7 +95,7 @@ def _auto_migrate(db):
         ("user_quota", "bonus_granted_date", "DATE"),
     ]
     for table, col, col_type in migrations:
-        cols = existing if table == 'analysis' else user_existing
+        cols = existing if table == 'analysis' else quota_existing if table == 'user_quota' else user_existing
         if col not in cols:
             try:
                 cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}")
@@ -261,7 +268,7 @@ def _create_app():
             release_version = app.config.get('APP_VERSION', '0.4.1')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
-                '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',
+                '本次更新加入游客每日 1 次分析、登录 2 次额度、邀请奖励和数据持久化保护。',
             )
             default_notifs = [
                 Notification(title=f'版本更新：{release_version}', summary=release_summary, notif_type='release', icon='rocket'),
