@@ -2014,7 +2014,8 @@
                 '<span class="badge badge-mode">' + escapeHtml(modeDisplay) + '</span>' +
                 '<span class="badge ' + badgeClass + '">' + scoreText + '</span>' +
                 '<span class="text-xs" style="color: var(--color-text-tertiary); white-space: nowrap;">' + formatDate(item.created_at || item.timestamp || '') + '</span>' +
-                '<a href="/api/analysis/' + item.id + '/export" target="_blank" class="export-link" data-i18n="dash.export_report">' + I18N.t('dash.export_report') + '</a>' +
+                '<a href="/api/analysis/' + item.id + '/export" target="_blank" class="export-link">' + I18N.t('dash.export_pdf') + '</a>' +
+                '<a href="/api/analysis/' + item.id + '/export?format=docx" class="export-link">' + I18N.t('dash.export_word') + '</a>' +
                 '</div>';
         }
         el.innerHTML = html;

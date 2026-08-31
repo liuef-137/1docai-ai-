@@ -3,11 +3,12 @@ import re
 import hashlib
 import os
 import uuid
+from io import BytesIO
 import requests as http_requests
 from datetime import datetime, date, timedelta
 from flask import (
     Blueprint, request, jsonify, current_app, make_response, render_template,
-    send_from_directory
+    send_from_directory, send_file
 )
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_, func
@@ -720,8 +721,18 @@ def create_analysis():
     else:
         allowed = GuestQuota.check_and_increment(guest_id)
     if not allowed:
-        response = jsonify({'error': '今日免费分析次数已用完，请登录后继续使用', 'require_login': True})
-        if not current_user: response.set_cookie('docai_guest_id', guest_id, max_age=60 * 60 * 24 * 365, samesite='Lax')
+        if current_user:
+            return jsonify({
+                'error': '今日分析额度已用完，可邀请好友获得额外额度，或明天再来使用。',
+                'quota_exhausted': True,
+                'require_login': False,
+            }), 429
+
+        response = jsonify({
+            'error': '今日免费分析次数已用完，请登录后继续使用',
+            'require_login': True,
+        })
+        response.set_cookie('docai_guest_id', guest_id, max_age=60 * 60 * 24 * 365, samesite='Lax')
         return response, 429
     # Detect contract language
     language = detect_language(text)
@@ -2198,13 +2209,13 @@ def user_activity(current_user):
 
 
 # ---------------------------------------------------------------------------
-# PDF Export API
+# Report Export API
 # ---------------------------------------------------------------------------
 
 @api_bp.route('/api/analysis/<int:analysis_id>/export', methods=['GET'])
 @get_current_user()
 def export_analysis_pdf(current_user, analysis_id):
-    """Export analysis result as a styled HTML page (printable as PDF)."""
+    """Export an analysis as a printable HTML page or downloadable DOCX file."""
     analysis = Analysis.query.filter_by(id=analysis_id, user_id=current_user.id).first()
     if not analysis:
         return jsonify({'error': '分析记录不存在'}), 404
@@ -2241,6 +2252,15 @@ def export_analysis_pdf(current_user, analysis_id):
 
     risk_colors = {'high': '#D45050', 'medium': '#E8A33D', 'low': '#2D9D78'}
     risk_labels = {'high': '高风险', 'medium': '中风险', 'low': '低风险'}
+    mode_labels = {'risk': '风险分析', 'summary': '合同摘要', 'plain': '通俗解读'}
+
+    if request.args.get('format', '').lower() == 'docx':
+        return _export_analysis_docx(
+            analysis, contract_type_label, risk_labels, mode_labels,
+            risk_items, suggestions,
+        )
+
+    mode_label = mode_labels.get(analysis.analysis_mode, '合同分析')
 
     # Build printable HTML
     html = f'''<!DOCTYPE html>
@@ -2281,7 +2301,7 @@ def export_analysis_pdf(current_user, analysis_id):
 </div>
 <div class="meta">
   <div class="meta-item"><strong>文件名:</strong> {escape_html(analysis.filename or "粘贴文本")}</div>
-  <div class="meta-item"><strong>分析模式:</strong> {{"风险分析" if analysis.analysis_mode == "risk" else "合同摘要" if analysis.analysis_mode == "summary" else "通俗解读"}}</div>
+  <div class="meta-item"><strong>分析模式:</strong> {mode_label}</div>
   <div class="meta-item"><strong>合同类型:</strong> {contract_type_label}</div>
   <div class="meta-item"><strong>分析时间:</strong> {analysis.created_at.strftime("%Y-%m-%d %H:%M") if analysis.created_at else "-"}</div>
 </div>'''
@@ -2349,6 +2369,92 @@ def export_analysis_pdf(current_user, analysis_id):
 </body></html>'''
 
     return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+
+def _export_analysis_docx(analysis, contract_type_label, risk_labels, mode_labels, risk_items, suggestions):
+    """Create a Word report using the same data shown in the printable report."""
+    try:
+        from docx import Document
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Cm, Pt
+    except ImportError:
+        current_app.logger.error('python-docx is not installed; DOCX export is unavailable.')
+        return jsonify({'error': 'Word 导出组件暂不可用，请稍后重试'}), 503
+
+    document = Document()
+    section = document.sections[0]
+    section.top_margin = Cm(2)
+    section.bottom_margin = Cm(2)
+    section.left_margin = Cm(2)
+    section.right_margin = Cm(2)
+    normal_style = document.styles['Normal']
+    normal_style.font.name = 'Microsoft YaHei'
+    normal_style.font.size = Pt(10.5)
+
+    title = document.add_heading('DocAI 合同分析报告', 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    subtitle = document.add_paragraph(
+        f'AI 智能合同分析平台 | 生成时间：{datetime.utcnow().strftime("%Y-%m-%d %H:%M")} UTC'
+    )
+    subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    document.add_heading('报告概览', level=1)
+    metadata = document.add_table(rows=0, cols=2)
+    metadata.style = 'Table Grid'
+    metadata_rows = (
+        ('文件名', analysis.filename or '粘贴文本'),
+        ('分析模式', mode_labels.get(analysis.analysis_mode, '合同分析')),
+        ('合同类型', contract_type_label),
+        ('分析时间', analysis.created_at.strftime('%Y-%m-%d %H:%M') if analysis.created_at else '-'),
+        ('综合评分', str(analysis.score) if analysis.score is not None else '--'),
+        ('风险等级', risk_labels.get(analysis.risk_level, '未知')),
+    )
+    for label, value in metadata_rows:
+        cells = metadata.add_row().cells
+        cells[0].text = label
+        cells[1].text = str(value)
+
+    if analysis.one_line_summary:
+        document.add_heading('核心摘要', level=1)
+        document.add_paragraph(analysis.one_line_summary)
+
+    if risk_items:
+        document.add_heading('风险条款详情', level=1)
+        for idx, item in enumerate(risk_items, 1):
+            if not isinstance(item, dict):
+                continue
+            risk_level = item.get('risk_level', 'medium')
+            name = item.get('clause_name') or f'风险条款 {idx}'
+            document.add_heading(f'{idx}. {name}（{risk_labels.get(risk_level, "未知")}）', level=2)
+            _add_docx_report_field(document, '条款位置', item.get('clause_location'))
+            _add_docx_report_field(document, '风险说明', item.get('description'))
+            _add_docx_report_field(document, '通俗解读', item.get('plain_explanation'))
+            _add_docx_report_field(document, '修改建议', item.get('suggestion'))
+            _add_docx_report_field(document, '法律依据', item.get('legal_basis'))
+
+    if suggestions:
+        document.add_heading('总体改进建议', level=1)
+        for suggestion in suggestions:
+            document.add_paragraph(str(suggestion), style='List Bullet')
+
+    document.add_paragraph('本报告由 DocAI AI 智能合同分析平台自动生成，仅供参考，不构成法律意见。')
+
+    output = BytesIO()
+    document.save(output)
+    output.seek(0)
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=f'DocAI-Contract-Analysis-{analysis.id}.docx',
+        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    )
+
+
+def _add_docx_report_field(document, label, value):
+    if value:
+        paragraph = document.add_paragraph()
+        paragraph.add_run(f'{label}：').bold = True
+        paragraph.add_run(str(value))
 
 
 def escape_html(text):

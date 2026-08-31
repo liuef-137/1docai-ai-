@@ -306,10 +306,16 @@
             <!-- Results Header with Export -->
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-lg font-semibold tracking-tight" data-i18n="analyze.results_title" style="color: var(--color-text-primary); text-wrap: balance; word-break: keep-all;">分析结果</h2>
-                <a id="export-btn" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium hidden" style="background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); text-decoration: none; cursor: pointer; transition: all 150ms;" onmouseenter="this.style.borderColor='var(--color-accent)'; this.style.color='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'; this.style.color='var(--color-text-secondary)'">
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                    <span data-i18n="analyze.export_report">导出报告</span>
-                </a>
+                <div id="export-actions" class="hidden flex items-center gap-2">
+                    <a id="export-pdf-btn" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style="background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); text-decoration: none; cursor: pointer; transition: all 150ms;" onmouseenter="this.style.borderColor='var(--color-accent)'; this.style.color='var(--color-accent)'" onmouseleave="this.style.borderColor='var(--color-border)'; this.style.color='var(--color-text-secondary)'" title="打印或保存为 PDF">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        <span data-i18n="analyze.export_pdf">打印 / PDF</span>
+                    </a>
+                    <a id="export-word-btn" href="#" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style="background: var(--color-accent); color: var(--color-text-inverse); border: 1px solid var(--color-accent); text-decoration: none; cursor: pointer;" title="下载 Word 文档">
+                        <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
+                        <span data-i18n="analyze.export_word">下载 Word</span>
+                    </a>
+                </div>
             </div>
 
             <!-- Score Dashboard: Top Row -->
@@ -839,10 +845,12 @@
                 const data = await readApiResponse(resp);
                 if (!resp.ok) {
                     clearInterval(progressTimer);
-                    if (data.require_login && typeof openAuthModal === 'function') {
+                    const hasLocalSession = Boolean((window.appState && window.appState.user) || (typeof getToken === 'function' && getToken()));
+                    if (data.require_login && !hasLocalSession && typeof openAuthModal === 'function') {
                         openAuthModal('login');
                     }
-                    showToast(data.error || I18N.t('js.toast_analysis_failed'), 'error');
+                    const quotaMessage = data.quota_exhausted ? I18N.t('js.toast_quota_exhausted') : '';
+                    showToast(quotaMessage || data.error || I18N.t('js.toast_analysis_failed'), 'error');
                     progressArea.classList.add('hidden');
                     resultsSection.classList.add('hidden');
                     btnAnalyze.disabled = false;
@@ -867,9 +875,10 @@
 
                 // Show export button and set link
                 if (lastAnalysisId) {
-                    const exportBtn = document.getElementById('export-btn');
-                    exportBtn.href = '/api/analysis/' + lastAnalysisId + '/export';
-                    exportBtn.classList.remove('hidden');
+                    document.getElementById('export-pdf-btn').href = '/api/analysis/' + lastAnalysisId + '/export';
+                    document.getElementById('export-word-btn').href = '/api/analysis/' + lastAnalysisId + '/export?format=docx';
+                    document.getElementById('export-actions').classList.remove('hidden');
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
                 }
 
             } catch (err) {
