@@ -92,6 +92,8 @@ def _auto_migrate(db):
         ("user", "invite_code", "VARCHAR(32)"),
         ("user", "referred_by_user_id", "INTEGER"),
         ("user_quota", "bonus_credits", "INTEGER"),
+        ("user_quota", "compare_bonus_credits", "INTEGER"),
+        ("user_quota", "followup_bonus_credits", "INTEGER"),
         ("user_quota", "bonus_granted_date", "DATE"),
     ]
     for table, col, col_type in migrations:

@@ -23,10 +23,10 @@ class Config:
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-    APP_VERSION = os.environ.get('APP_VERSION', '0.4.5')
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.6')
     APP_RELEASE_SUMMARY = os.environ.get(
         'APP_RELEASE_SUMMARY',
-        '本次更新优化额度用尽提示，新增 Word 格式合同分析报告下载。',
+        '本次更新修复每日额度自动重置，并为邀请奖励增加对比和追问额度。',
     )
     REGISTRATION_BONUS_CREDITS = int(os.environ.get('REGISTRATION_BONUS_CREDITS', 2))
     LOGIN_BONUS_CREDITS = int(os.environ.get('LOGIN_BONUS_CREDITS', 2))

@@ -1,5 +1,6 @@
 import json
 
+from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date
@@ -129,6 +130,8 @@ class UserQuota(db.Model):
     compare_count = db.Column(db.Integer, default=0)
     followup_count = db.Column(db.Integer, default=0)
     bonus_credits = db.Column(db.Integer, default=0)  # extra quota granted today
+    compare_bonus_credits = db.Column(db.Integer, default=0)
+    followup_bonus_credits = db.Column(db.Integer, default=0)
     bonus_granted_date = db.Column(db.Date)
 
     __table_args__ = (db.UniqueConstraint('user_id', 'date', name='uq_user_date'),)
@@ -155,8 +158,16 @@ class UserQuota(db.Model):
         if not user:
             return cls.get_base_limit(None, action)
         base_limit = cls.get_base_limit(user, action)
+        cls.ensure_daily_login_bonus(user.id)
         quota = cls.get_today_quota(user.id)
-        bonus = (quota.bonus_credits or 0) if action in ('analysis', 'compare') else 0
+        if action == 'analysis':
+            bonus = quota.bonus_credits or 0
+        elif action == 'compare':
+            bonus = quota.compare_bonus_credits or 0
+        elif action == 'followup':
+            bonus = quota.followup_bonus_credits or 0
+        else:
+            bonus = 0
         return base_limit + bonus
 
     @classmethod
@@ -174,6 +185,7 @@ class UserQuota(db.Model):
     def check_and_increment(cls, user_id, action='analysis'):
         """Check quota limit and increment if allowed. Returns (allowed, remaining, daily_limit)."""
         user = db.session.get(User, user_id)
+        cls.ensure_daily_login_bonus(user_id)
         quota = cls.get_today_quota(user_id)
         daily_limit = cls.get_effective_limit(user, action)
 
@@ -232,12 +244,28 @@ class UserQuota(db.Model):
         return quota
 
     @classmethod
+    def ensure_daily_login_bonus(cls, user_id):
+        """Ensure a logged-in user has today's login credits without requiring re-login."""
+        today = date.today()
+        quota = cls.get_today_quota(user_id)
+        if quota.bonus_granted_date == today:
+            return quota
+
+        bonus_credits = int(current_app.config.get('LOGIN_BONUS_CREDITS', 2) or 0)
+        quota.bonus_credits = max(quota.bonus_credits or 0, bonus_credits)
+        quota.bonus_granted_date = today
+        db.session.commit()
+        return quota
+
+    @classmethod
     def add_bonus_credits(cls, user_id, bonus_credits=0):
-        """Add extra quota credits to today's record."""
+        """Add referral credits to analysis, comparison, and follow-up quotas."""
         if bonus_credits <= 0:
             return cls.get_today_quota(user_id)
-        quota = cls.get_today_quota(user_id)
+        quota = cls.ensure_daily_login_bonus(user_id)
         quota.bonus_credits = (quota.bonus_credits or 0) + bonus_credits
+        quota.compare_bonus_credits = (quota.compare_bonus_credits or 0) + bonus_credits
+        quota.followup_bonus_credits = (quota.followup_bonus_credits or 0) + bonus_credits
         quota.bonus_granted_date = date.today()
         db.session.commit()
         return quota
@@ -249,6 +277,8 @@ class UserQuota(db.Model):
             'compare_count': self.compare_count,
             'followup_count': self.followup_count,
             'bonus_credits': self.bonus_credits,
+            'compare_bonus_credits': self.compare_bonus_credits,
+            'followup_bonus_credits': self.followup_bonus_credits,
             'bonus_granted_date': self.bonus_granted_date.isoformat() if self.bonus_granted_date else None,
         }
 

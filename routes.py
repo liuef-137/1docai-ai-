@@ -1799,6 +1799,8 @@ def get_user_quota(current_user):
         'followup_remaining': followup_remaining,
         'followup_limit': followup_limit,
         'bonus_credits': quota.bonus_credits or 0,
+        'compare_bonus_credits': quota.compare_bonus_credits or 0,
+        'followup_bonus_credits': quota.followup_bonus_credits or 0,
         'bonus_granted_date': quota.bonus_granted_date.isoformat() if quota.bonus_granted_date else None,
     })
 
@@ -2142,6 +2144,9 @@ def user_dashboard(current_user):
             'followup_remaining': followup_remaining,
             'followup_limit': followup_limit,
             'bonus_credits': quota.bonus_credits or 0,
+            'analysis_bonus_credits': quota.bonus_credits or 0,
+            'compare_bonus_credits': quota.compare_bonus_credits or 0,
+            'followup_bonus_credits': quota.followup_bonus_credits or 0,
         },
         'quota_used': quota.analysis_count,
         'quota_remaining': analysis_remaining,

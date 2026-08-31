@@ -859,17 +859,17 @@
                         <div class="rounded-lg p-4" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light);">
                             <div class="text-xs font-medium" style="color: var(--color-text-tertiary);" data-i18n="dash.quota_analysis">合同分析</div>
                             <div class="mt-2 text-xl font-bold" style="color: var(--color-primary);"><span id="quota-analysis-remaining">0</span> / <span id="quota-analysis-limit">0</span></div>
-                            <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);"><span data-i18n="dash.quota_used">已用</span> <span id="quota-analysis-used">0</span></div>
+                            <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);"><span data-i18n="dash.quota_used">已用</span> <span id="quota-analysis-used">0</span> · <span data-i18n="dash.quota_bonus_label">奖励</span> <span id="quota-analysis-bonus">0</span></div>
                         </div>
                         <div class="rounded-lg p-4" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light);">
                             <div class="text-xs font-medium" style="color: var(--color-text-tertiary);" data-i18n="dash.quota_compare">合同对比</div>
                             <div class="mt-2 text-xl font-bold" style="color: var(--color-accent);"><span id="quota-compare-remaining">0</span> / <span id="quota-compare-limit">0</span></div>
-                            <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);"><span data-i18n="dash.quota_used">已用</span> <span id="quota-compare-used">0</span></div>
+                            <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);"><span data-i18n="dash.quota_used">已用</span> <span id="quota-compare-used">0</span> · <span data-i18n="dash.quota_bonus_label">奖励</span> <span id="quota-compare-bonus">0</span></div>
                         </div>
                         <div class="rounded-lg p-4" style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-light);">
                             <div class="text-xs font-medium" style="color: var(--color-text-tertiary);" data-i18n="dash.quota_followup">继续追问</div>
                             <div class="mt-2 text-xl font-bold" style="color: var(--state-info);"><span id="quota-followup-remaining">0</span> / <span id="quota-followup-limit">0</span></div>
-                            <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);"><span data-i18n="dash.quota_register_bonus">注册赠送</span> <span id="quota-bonus">0</span></div>
+                            <div class="mt-1 text-xs" style="color: var(--color-text-tertiary);"><span data-i18n="dash.quota_used">已用</span> <span id="quota-followup-used">0</span> · <span data-i18n="dash.quota_bonus_label">奖励</span> <span id="quota-followup-bonus">0</span></div>
                         </div>
                     </div>
                 </div>
@@ -2167,12 +2167,15 @@
                 setText('quota-analysis-used', quota.analysis_used || 0);
                 setText('quota-analysis-remaining', quota.analysis_remaining || 0);
                 setText('quota-analysis-limit', quota.analysis_limit || quotaLimit);
+                setText('quota-analysis-bonus', quota.analysis_bonus_credits || quota.bonus_credits || 0);
                 setText('quota-compare-used', quota.compare_used || 0);
                 setText('quota-compare-remaining', quota.compare_remaining || 0);
                 setText('quota-compare-limit', quota.compare_limit || 0);
+                setText('quota-compare-bonus', quota.compare_bonus_credits || 0);
+                setText('quota-followup-used', quota.followup_used || 0);
                 setText('quota-followup-remaining', quota.followup_remaining || 0);
                 setText('quota-followup-limit', quota.followup_limit || 0);
-                setText('quota-bonus', quota.bonus_credits || 0);
+                setText('quota-followup-bonus', quota.followup_bonus_credits || 0);
 
                 var referral = data.referral || {};
                 setText('referral-code', referral.invite_code || '--');
