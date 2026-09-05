@@ -15,6 +15,7 @@ class Config:
     DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
     DEEPSEEK_BASE_URL = os.environ.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
     DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-v4-flash')
+    DEEPSEEK_TIMEOUT_SECONDS = int(os.environ.get('DEEPSEEK_TIMEOUT_SECONDS', 60))
     RELAY_API_BASE_URL = os.environ.get('RELAY_API_BASE_URL', '').rstrip('/')
     RELAY_API_KEY = os.environ.get('RELAY_API_KEY', '')
     RELAY_MODEL = os.environ.get('RELAY_MODEL', 'deepseek-v4-flash')
@@ -33,7 +34,7 @@ class Config:
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-    APP_VERSION = os.environ.get('APP_VERSION', '0.4.9')
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.10')
     APP_RELEASE_SUMMARY = os.environ.get(
         'APP_RELEASE_SUMMARY',
         '本次更新优化拖拽识别，并调整免费额度与付费套餐限制。',

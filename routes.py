@@ -176,7 +176,8 @@ def call_deepseek(messages, stream=False):
     if deepseek_key:
         providers.append((
             'DeepSeek', config.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com').rstrip('/'),
-            deepseek_key, config.get('DEEPSEEK_MODEL', 'deepseek-chat'), 120,
+            deepseek_key, config.get('DEEPSEEK_MODEL', 'deepseek-chat'),
+            config.get('DEEPSEEK_TIMEOUT_SECONDS', 60),
         ))
     if not providers:
         raise RuntimeError('AI API 未配置，请设置中转站或 DeepSeek API')

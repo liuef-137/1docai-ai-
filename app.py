@@ -6,6 +6,7 @@ from auth import decode_token
 from i18n_translations import I18N_DATA
 import os, json, shutil
 from datetime import datetime
+from werkzeug.exceptions import HTTPException
 
 
 def create_app():
@@ -254,6 +255,10 @@ def _create_app():
 
     @app.errorhandler(Exception)
     def handle_unexpected_error(error):
+        # Let normal HTTP errors keep their original status instead of turning
+        # a missing static asset such as favicon.ico into a misleading 500.
+        if isinstance(error, HTTPException):
+            return error
         app.logger.exception('Unhandled error: %s', error)
         if request.path.startswith('/api/'):
             return jsonify({'error': f'服务器内部错误: {str(error)}'}), 500
@@ -263,6 +268,10 @@ def _create_app():
     @app.route('/i18n.js')
     def serve_i18n_js():
         return render_template('i18n.js', i18n_data=json.dumps(I18N_DATA))
+
+    @app.route('/favicon.ico')
+    def favicon():
+        return '', 204
 
     # Serve static files from project root (for CSS, images, etc.)
     @app.route('/assets/<path:filename>')
@@ -344,7 +353,7 @@ def _create_app():
         # Seed default notifications if table is empty, plus the current release note.
         from models import Notification
         if Notification.query.count() == 0:
-            release_version = app.config.get('APP_VERSION', '0.4.9')
+            release_version = app.config.get('APP_VERSION', '0.4.10')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新加入游客每日 1 次分析、登录 2 次额度、邀请奖励和数据持久化保护。',
@@ -359,7 +368,7 @@ def _create_app():
             db.session.commit()
             print('[DocAI] Default notifications seeded')
         else:
-            release_version = app.config.get('APP_VERSION', '0.4.9')
+            release_version = app.config.get('APP_VERSION', '0.4.10')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',
