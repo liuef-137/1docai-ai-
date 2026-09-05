@@ -413,6 +413,13 @@
         </div>
     </header>
 
+    {% if current_user and current_user.email_verified is false %}
+    <div class="fixed top-16 lg:top-[72px] left-0 right-0 z-40 px-6 py-2 text-center text-xs" style="background: #FFF4D6; color: #7A5B00; border-bottom: 1px solid #E8D28A;">
+        <span data-i18n="auth.verify_banner">请先验证邮箱后使用完整功能。</span>
+        <button type="button" onclick="resendVerificationEmail()" class="ml-2 font-semibold" style="color: inherit; background: none; border: none; text-decoration: underline; cursor: pointer;" data-i18n="auth.verify_resend">重新发送验证邮件</button>
+    </div>
+    {% endif %}
+
     <!-- ===== Main Content ===== -->
     <main class="pt-16 lg:pt-[72px]">
         {% block content %}{% endblock %}
@@ -760,7 +767,7 @@
                 window.appState = { user: result.user };
                 closeAuthModal();
                 updateNavAuth();
-                showToast(I18N.t('js.toast_register_success'), 'success');
+                showToast(result.email_verification_required ? I18N.t('login.verify_after_register') : I18N.t('js.toast_register_success'), 'success');
                 if (typeof onAuthSuccess === 'function') onAuthSuccess();
             } catch (err) {
                 errorEl.textContent = I18N.t('js.toast_network_error');
@@ -779,6 +786,16 @@
             window.appState = { user: null };
             updateNavAuth();
             showToast(I18N.t('js.toast_logout'), 'success');
+        }
+
+        async function resendVerificationEmail() {
+            try {
+                const resp = await apiFetch('/api/auth/resend-verification', { method: 'POST' });
+                const data = await resp.json();
+                showToast(data.message || data.error || I18N.t('js.toast_network_error'), resp.ok ? 'success' : 'error');
+            } catch (e) {
+                showToast(I18N.t('js.toast_network_error'), 'error');
+            }
         }
 
         function updateNavAuth() {

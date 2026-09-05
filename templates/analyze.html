@@ -4,6 +4,8 @@
 
 {% block extra_head %}
 <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
 <style>
     .upload-zone.drag-over {
         border-color: var(--color-accent) !important;
@@ -102,7 +104,7 @@
 
         <!-- Upload Zone -->
         <div id="upload-zone" class="border-2 border-dashed rounded-lg p-8 sm:p-12 flex flex-col items-center text-center cursor-pointer" style="border-color: var(--color-border); transition: border-color 150ms, background 150ms;" onclick="document.getElementById('file-input').click()" role="button" tabindex="0" aria-label="上传合同文件" data-i18n-aria-label="analyze.upload_title">
-            <input type="file" id="file-input" accept=".pdf,.docx,.txt,.csv" class="hidden">
+            <input type="file" id="file-input" accept=".pdf,.docx,.txt,.csv,.md,.rtf,image/*" class="hidden">
             <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-5" style="background: var(--color-accent-tint-50);">
                 <i data-lucide="upload-cloud" class="w-6 h-6" style="color: var(--color-accent);"></i>
             </div>
@@ -497,8 +499,9 @@
     let loadedSampleId = '';
     let scanStream = null;
     let scanActive = false;
-    const MAX_LEN = 10000;
-    const WARN_THRESHOLD = 8000;
+    const currentUser = window.appState && window.appState.user;
+    const MAX_LEN = currentUser ? (currentUser.role === 'admin' ? 50000 : 5000) : 2000;
+    const WARN_THRESHOLD = Math.floor(MAX_LEN * 0.8);
     const GAUGE_CIRCUMFERENCE = 2 * Math.PI * 52; // ~326.73
 
     const textarea = document.getElementById('contract-text');
@@ -559,23 +562,50 @@
     uploadZone.addEventListener('drop', e => { handleFile(e.dataTransfer.files[0]); });
     fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
-    function handleFile(file) {
+    async function handleFile(file) {
         if (!file) return;
-        currentFilename = file.name;
-        const ext = file.name.split('.').pop().toLowerCase();
-        if (ext === 'pdf' || ext === 'docx') {
-            showToast(I18N.t('js.toast_file_parse_pending'), 'warning');
+        if (file.size > 10 * 1024 * 1024) {
+            showToast(I18N.t('js.toast_file_too_large'), 'error');
             return;
         }
-        if (ext === 'txt' || ext === 'csv') {
-            const reader = new FileReader();
-            reader.onload = e => {
-                textarea.value = e.target.result;
-                textarea.dispatchEvent(new Event('input'));
-                showToast(I18N.t('js.toast_file_read'), 'success');
-            };
-            reader.readAsText(file);
+        currentFilename = file.name;
+        const ext = file.name.split('.').pop().toLowerCase();
+        try {
+            let text = '';
+            if (ext === 'pdf') {
+                if (!window.pdfjsLib) throw new Error('PDF parser unavailable');
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+                const pages = [];
+                for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
+                    const page = await pdf.getPage(pageNo);
+                    const content = await page.getTextContent();
+                    pages.push(content.items.map(item => item.str).join(' '));
+                }
+                text = pages.join('\n\n');
+            } else if (ext === 'docx') {
+                if (!window.mammoth) throw new Error('DOCX parser unavailable');
+                const result = await window.mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+                text = result.value || '';
+            } else if (['txt', 'csv', 'md', 'rtf'].includes(ext)) {
+                text = await file.text();
+            } else if (file.type.startsWith('image/')) {
+                if (!window.Tesseract) throw new Error('OCR unavailable');
+                const result = await window.Tesseract.recognize(file, 'eng+chi_sim');
+                text = result.data.text || '';
+            } else {
+                showToast(I18N.t('js.toast_file_type_unsupported'), 'error');
+                return;
+            }
+            if (!text.trim()) throw new Error('empty document');
+            textarea.value = text;
+            textarea.dispatchEvent(new Event('input'));
+            showToast(I18N.t('js.toast_file_read'), 'success');
+        } catch (error) {
+            console.error(error);
+            showToast(I18N.t('js.toast_file_parse_failed'), 'error');
         }
+        // Parsing stays in the browser so source files are not temporarily stored server-side.
     }
 
     // Upload button click

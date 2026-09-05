@@ -16,9 +16,12 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default='user')  # 'admin' or 'user'
+    plan = db.Column(db.String(20), default='free', nullable=False)
     avatar = db.Column(db.String(256), default=None)  # 头像图片 URL，无则用首字母占位
     invite_code = db.Column(db.String(32), unique=True, index=True)
     referred_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    email_verified = db.Column(db.Boolean, default=True, nullable=False)
+    referral_reward_granted = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     analyses = db.relationship('Analysis', backref='user', lazy=True)
@@ -39,9 +42,11 @@ class User(db.Model):
             'username': self.username,
             'email': self.email,
             'role': self.role,
+            'plan': self.plan or 'free',
             'avatar': self.avatar,
             'invite_code': self.invite_code,
             'referred_by_user_id': self.referred_by_user_id,
+            'email_verified': self.email_verified is not False,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -64,6 +69,12 @@ class Analysis(db.Model):
     suggestions = db.Column(db.Text)  # JSON list
     risk_items = db.Column(db.Text)  # JSON list
     is_favorited = db.Column(db.Boolean, default=False)
+    is_anonymous = db.Column(db.Boolean, default=False, nullable=False)
+    source_ip_hash = db.Column(db.String(64))
+    ai_provider = db.Column(db.String(40))
+    prompt_tokens = db.Column(db.Integer)
+    completion_tokens = db.Column(db.Integer)
+    total_tokens = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -83,7 +94,12 @@ class Analysis(db.Model):
             'suggestions': self.suggestions,
             'risk_items': self.risk_items,
             'is_favorited': self.is_favorited,
+            'is_anonymous': bool(self.is_anonymous),
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'ai_provider': self.ai_provider,
+            'prompt_tokens': self.prompt_tokens,
+            'completion_tokens': self.completion_tokens,
+            'total_tokens': self.total_tokens,
         }
 
 
@@ -153,6 +169,8 @@ class UserQuota(db.Model):
     def get_effective_limit(cls, user, action='analysis'):
         if not user:
             return cls.get_base_limit(None, action)
+        if user.role != 'admin' and user.email_verified is False:
+            return 0
         if not hasattr(user, 'id'):
             user = db.session.get(User, user)
         if not user:
@@ -248,6 +266,9 @@ class UserQuota(db.Model):
         """Ensure a logged-in user has today's login credits without requiring re-login."""
         today = date.today()
         quota = cls.get_today_quota(user_id)
+        user = db.session.get(User, user_id)
+        if user and user.role != 'admin' and user.email_verified is False:
+            return quota
         if quota.bonus_granted_date == today:
             return quota
 
@@ -291,18 +312,49 @@ class GuestQuota(db.Model):
     guest_id = db.Column(db.String(64), nullable=False)
     date = db.Column(db.Date, nullable=False, default=date.today)
     analysis_count = db.Column(db.Integer, default=0)
+    ip_hash = db.Column(db.String(64), index=True)
+    rate_window_start = db.Column(db.DateTime)
+    rate_count = db.Column(db.Integer, default=0)
     __table_args__ = (db.UniqueConstraint('guest_id', 'date', name='uq_guest_date'),)
 
     @classmethod
-    def check_and_increment(cls, guest_id):
-        quota = cls.query.filter_by(guest_id=guest_id, date=date.today()).first()
+    def check_and_increment(cls, guest_id, ip_hash=None):
+        today = date.today()
+        if ip_hash:
+            existing_ip_quota = cls.query.filter_by(ip_hash=ip_hash, date=today).filter(
+                ~cls.guest_id.like('rate:%')
+            ).first()
+            if existing_ip_quota and existing_ip_quota.guest_id != guest_id:
+                db.session.rollback()
+                return False
+        quota = cls.query.filter_by(guest_id=guest_id, date=today).first()
         if not quota:
-            quota = cls(guest_id=guest_id, date=date.today(), analysis_count=0)
+            quota = cls(guest_id=guest_id, date=today, analysis_count=0, ip_hash=ip_hash)
             db.session.add(quota)
         if quota.analysis_count >= 1:
             db.session.rollback()
             return False
         quota.analysis_count += 1
+        db.session.commit()
+        return True
+
+    @classmethod
+    def check_rate_limit(cls, ip_hash, limit=5, window_seconds=60):
+        """Database-backed guest request limiter for multi-worker deployments."""
+        now = datetime.utcnow()
+        quota = cls.query.filter_by(
+            guest_id=f'rate:{ip_hash}', ip_hash=ip_hash, date=date.today()
+        ).first()
+        if not quota:
+            quota = cls(guest_id=f'rate:{ip_hash}', date=date.today(), ip_hash=ip_hash, rate_window_start=now, rate_count=0)
+            db.session.add(quota)
+        if not quota.rate_window_start or (now - quota.rate_window_start).total_seconds() >= window_seconds:
+            quota.rate_window_start = now
+            quota.rate_count = 0
+        if (quota.rate_count or 0) >= limit:
+            db.session.rollback()
+            return False
+        quota.rate_count = (quota.rate_count or 0) + 1
         db.session.commit()
         return True
 

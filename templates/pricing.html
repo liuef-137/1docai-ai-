@@ -21,7 +21,7 @@
 <section class="py-20 lg:py-24 text-center" style="background: var(--color-bg);">
     <div class="mx-auto max-w-2xl px-6">
         <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight" data-i18n="pricing.title" style="font-family: var(--font-display); color: var(--color-primary); text-wrap: balance; word-break: keep-all;">简单透明的定价</h1>
-        <p class="mt-4 text-lg" data-i18n="pricing.subtitle" style="color: var(--color-text-secondary);">公测期间完全免费</p>
+        <p class="mt-4 text-lg" data-i18n="pricing.subtitle" style="color: var(--color-text-secondary);">按使用规模选择适合你的合同分析方案</p>
     </div>
 </section>
 
@@ -30,52 +30,51 @@
     <div class="mx-auto max-w-5xl px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
 
-            <!-- Free -->
+            <!-- Starter -->
             <div class="pricing-card rounded-2xl p-8 relative" style="background: var(--color-surface); border: 2px solid var(--color-accent); box-shadow: var(--shadow-sm);">
                 <span class="badge-recommend absolute -top-3 left-1/2 -translate-x-1/2" data-i18n="pricing.free_badge">推荐</span>
-                <h3 class="text-center text-xl font-semibold" data-i18n="pricing.free_title" style="font-family: var(--font-display); color: var(--color-text-primary);">免费版</h3>
-                <p class="text-center text-sm mt-1" data-i18n="pricing.free_period" style="color: var(--color-text-tertiary);">公测期间</p>
-                <div class="text-center my-8"><span class="text-4xl font-bold" style="color: var(--color-text-primary);">&#165;0</span></div>
+                <h3 class="text-center text-xl font-semibold" data-i18n="pricing.starter_title" style="font-family: var(--font-display); color: var(--color-text-primary);">入门版</h3>
+                <p class="text-center text-sm mt-1" data-i18n="pricing.starter_period" style="color: var(--color-text-tertiary);">适合个人用户</p>
+                <div class="text-center my-8"><span class="text-4xl font-bold" style="color: var(--color-text-primary);">$9.99</span><span class="text-base ml-1" data-i18n="pricing.pro_per_month" style="color: var(--color-text-tertiary);">/月</span></div>
                 <div class="space-y-3.5 mb-8">
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.feature_unlimited">无限次分析</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.feature_3modes">三种分析模式</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.feature_basic_report">基础风险报告</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.feature_bilingual">中英文支持</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.feature_local_storage">本地档案存储</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.feature_copy">一键复制话术</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.starter_feature_credits">每月 30 次分析额度</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.starter_feature_length">单份合同最多 10,000 字</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.starter_feature_formats">PDF、Word、TXT、CSV 识别</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.starter_feature_report">PDF / Word 报告下载</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.starter_feature_compare">每月 5 次合同对比</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.starter_feature_support">标准队列与邮件支持</span></div>
                 </div>
-                <a href="/analyze" class="block text-center py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none;"><span data-i18n="pricing.btn_start">立即开始</span></a>
+                <a href="/login?plan=starter&tab=register" class="block text-center py-3 rounded-lg text-sm font-semibold" style="background: var(--color-accent); color: var(--color-text-inverse); text-decoration: none;"><span data-i18n="pricing.btn_start">开始使用</span></a>
             </div>
 
             <!-- Pro -->
             <div class="pricing-card rounded-2xl p-8" style="background: var(--color-surface); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
                 <h3 class="text-center text-xl font-semibold" data-i18n="pricing.pro_title" style="font-family: var(--font-display); color: var(--color-text-primary);">专业版</h3>
-                <p class="text-center text-sm mt-1" data-i18n="pricing.pro_coming" style="color: var(--color-text-tertiary);">即将推出</p>
-                <div class="text-center my-8"><span class="text-4xl font-bold" style="color: var(--color-text-primary);">&#165;99</span><span class="text-base ml-1" data-i18n="pricing.pro_per_month" style="color: var(--color-text-tertiary);">/月</span></div>
+                <p class="text-center text-sm mt-1" data-i18n="pricing.pro_coming" style="color: var(--color-text-tertiary);">适合高频个人与小团队</p>
+                <div class="text-center my-8"><span class="text-4xl font-bold" style="color: var(--color-text-primary);">$19.99</span><span class="text-base ml-1" data-i18n="pricing.pro_per_month" style="color: var(--color-text-tertiary);">/月</span></div>
                 <div class="space-y-3.5 mb-8">
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.pro_feature_all_free">免费版全部功能</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.pro_feature_pdf_report">PDF/Word 报告下载</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.pro_feature_compare">合同对比分析</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.pro_feature_risk_pref">企业风控偏好</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.pro_feature_share_card">摘要卡片生成</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.pro_feature_priority">优先 AI 分析</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.pro_feature_email">邮件支持</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.pro_feature_credits">每月 120 次分析额度</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.pro_feature_length">单份合同最多 20,000 字</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.pro_feature_formats">PDF、Word、图片 OCR 识别</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.pro_feature_tools">合同对比、追问助手与风险偏好</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.pro_feature_priority">中转站优先与失败自动切换</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.pro_feature_support">优先队列与邮件支持</span></div>
                 </div>
-                <a href="#" class="block text-center py-3 rounded-lg text-sm font-semibold" style="background: transparent; color: var(--color-primary); text-decoration: none; border: 1px solid var(--color-border);"><span data-i18n="pricing.btn_coming">敬请期待</span></a>
+                <a href="/about" class="block text-center py-3 rounded-lg text-sm font-semibold" style="background: transparent; color: var(--color-primary); text-decoration: none; border: 1px solid var(--color-border);"><span data-i18n="pricing.btn_coming">加入候补名单</span></a>
             </div>
 
-            <!-- Enterprise -->
+            <!-- Business -->
             <div class="pricing-card rounded-2xl p-8" style="background: var(--color-surface); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
-                <h3 class="text-center text-xl font-semibold" data-i18n="pricing.enterprise_title" style="font-family: var(--font-display); color: var(--color-text-primary);">企业版</h3>
-                <p class="text-center text-sm mt-1" data-i18n="pricing.enterprise_contact" style="color: var(--color-text-tertiary);">联系我们</p>
-                <div class="text-center my-8"><span class="text-4xl font-bold" data-i18n="pricing.enterprise_price" style="color: var(--color-text-primary);">定制</span></div>
+                <h3 class="text-center text-xl font-semibold" data-i18n="pricing.business_title" style="font-family: var(--font-display); color: var(--color-text-primary);">商务版</h3>
+                <p class="text-center text-sm mt-1" data-i18n="pricing.business_period" style="color: var(--color-text-tertiary);">适合团队与专业机构</p>
+                <div class="text-center my-8"><span class="text-4xl font-bold" style="color: var(--color-text-primary);">$59.99</span><span class="text-base ml-1" data-i18n="pricing.pro_per_month" style="color: var(--color-text-tertiary);">/月</span></div>
                 <div class="space-y-3.5 mb-8">
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.enterprise_feature_all_pro">专业版全部功能</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.enterprise_feature_api">API 接入</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.enterprise_feature_team">团队协作</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.enterprise_feature_support">专属客服</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.enterprise_feature_custom">定制分析规则</span></div>
-                    <div class="feature-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="pricing.enterprise_feature_deploy">私有化部署</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.business_feature_credits">每月 500 次分析额度</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.business_feature_length">单份合同最多 50,000 字</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.business_feature_team">团队协作、共享档案与权限管理</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.business_feature_api">API 接入与批量分析</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.business_feature_rules">定制风控规则与品牌报告</span></div>
+                    <div class="feature-check"><span>✓</span><span data-i18n="pricing.business_feature_support">专属支持与数据保留策略</span></div>
                 </div>
                 <a href="/about" class="block text-center py-3 rounded-lg text-sm font-semibold" style="background: transparent; color: var(--color-primary); text-decoration: none; border: 1px solid var(--color-border);"><span data-i18n="pricing.btn_contact">联系我们</span></a>
             </div>

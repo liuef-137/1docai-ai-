@@ -235,7 +235,7 @@
                 });
                 const result = await resp.json();
                 if (!resp.ok) { errEl.textContent = result.error || I18N.t('login.error_register_fail'); errEl.classList.remove('hidden'); return; }
-                showToast(I18N.t('login.success_register'), 'success');
+                showToast(result.email_verification_required ? I18N.t('login.verify_after_register') : I18N.t('login.success_register'), 'success');
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
                 const params = new URLSearchParams(window.location.search);

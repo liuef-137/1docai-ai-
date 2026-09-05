@@ -787,7 +787,7 @@
                     plain: tr('admin.mode_plain', 'Plain')
                 };
                 row.innerHTML =
-                    '<td class="px-5 py-4" style="color:var(--color-text-primary);">' + (a.user_id || '-') + '</td>' +
+                    '<td class="px-5 py-4" style="color:var(--color-text-primary);">' + escapeHtml(String(a.display_user || a.user_id || '-')) + '</td>' +
                     '<td class="px-5 py-4" style="color:var(--color-text-primary);">' + escapeHtml(a.filename || 'Pasted') + '</td>' +
                     '<td class="px-5 py-4 text-center text-xs" style="color:var(--color-text-secondary);">' + (modeLabels[a.analysis_mode] || a.analysis_mode) + '</td>' +
                     '<td class="px-5 py-4 text-center" style="color:' + scoreColor + ';font-variant-numeric:tabular-nums;font-weight:600;">' + (a.score != null ? a.score : '--') + '</td>' +
@@ -849,12 +849,13 @@
         openAdminDetail(tr('admin.analysis_detail_title', '分析详情'),
             '<div class="space-y-4">' +
                 detailRow('ID', a.id) +
-                detailRow(tr('admin.col_user', '用户'), a.user_id) +
+                detailRow(tr('admin.col_user', '用户'), a.display_user || a.user_id) +
                 detailRow(tr('admin.col_filename', '文件名'), a.filename || 'Pasted') +
                 detailRow(tr('admin.col_mode', '模式'), a.analysis_mode) +
                 detailRow(tr('admin.col_score', '评分'), a.score) +
                 detailRow(tr('admin.col_risk', '风险'), a.risk_level) +
                 detailRow(tr('admin.col_time', '时间'), a.created_at ? new Date(a.created_at).toLocaleString() : '-') +
+                detailRow('Token', a.total_tokens != null ? (a.total_tokens + ' (' + (a.ai_provider || '-') + ')') : '-') +
                 detailRow(tr('admin.analysis_summary', '摘要'), a.one_line_summary || '-') +
             '</div>'
         );

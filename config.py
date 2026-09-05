@@ -15,15 +15,25 @@ class Config:
     DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
     DEEPSEEK_BASE_URL = os.environ.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
     DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
+    RELAY_API_BASE_URL = os.environ.get('RELAY_API_BASE_URL', '').rstrip('/')
+    RELAY_API_KEY = os.environ.get('RELAY_API_KEY', '')
+    RELAY_MODEL = os.environ.get('RELAY_MODEL', 'deepseek-chat')
+    RELAY_TIMEOUT_SECONDS = int(os.environ.get('RELAY_TIMEOUT_SECONDS', 20))
+    RELAY_MAX_RETRIES = int(os.environ.get('RELAY_MAX_RETRIES', 2))
 
-    MAX_TEXT_LENGTH = 10000
+    MAX_TEXT_LENGTH = 50000
+    FREE_MAX_TEXT_LENGTH = int(os.environ.get('FREE_MAX_TEXT_LENGTH', 5000))
+    STANDARD_MAX_TEXT_LENGTH = int(os.environ.get('STANDARD_MAX_TEXT_LENGTH', 20000))
+    GUEST_MAX_TEXT_LENGTH = int(os.environ.get('GUEST_MAX_TEXT_LENGTH', 2000))
+    GUEST_RATE_LIMIT_PER_MINUTE = int(os.environ.get('GUEST_RATE_LIMIT_PER_MINUTE', 5))
+    TRUSTED_PROXY_HOPS = int(os.environ.get('TRUSTED_PROXY_HOPS', 0))
     UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10MB
 
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-    APP_VERSION = os.environ.get('APP_VERSION', '0.4.6')
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.7')
     APP_RELEASE_SUMMARY = os.environ.get(
         'APP_RELEASE_SUMMARY',
         '本次更新修复每日额度自动重置，并为邀请奖励增加对比和追问额度。',
@@ -33,3 +43,9 @@ class Config:
     REFERRAL_BONUS_CREDITS = int(os.environ.get('REFERRAL_BONUS_CREDITS', 2))
     REFERRAL_CODE_PREFIX = os.environ.get('REFERRAL_CODE_PREFIX', 'DCAI')
     ADMIN_CONTACT_EMAIL = os.environ.get('ADMIN_CONTACT_EMAIL', 'admin@docai.com')
+    PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '')
+    SMTP_HOST = os.environ.get('SMTP_HOST', '')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
+    SMTP_USERNAME = os.environ.get('SMTP_USERNAME', '')
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+    SMTP_FROM = os.environ.get('SMTP_FROM', '')

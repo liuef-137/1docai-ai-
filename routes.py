@@ -3,6 +3,8 @@ import re
 import hashlib
 import os
 import uuid
+import smtplib
+from email.message import EmailMessage
 from io import BytesIO
 import requests as http_requests
 from datetime import datetime, date, timedelta
@@ -12,6 +14,7 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_, func
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from models import db, User, Analysis, RiskPreference, ContractCompare, Feedback, Conversation, UserQuota, GuestQuota, Notification, UserNotification
 from auth import create_token, decode_token, get_current_user, admin_required
@@ -39,11 +42,106 @@ def _guest_id():
     return guest_id or uuid.uuid4().hex
 
 
+def _client_ip_hash():
+    """Hash the client IP; only use forwarded addresses from configured proxies."""
+    proxy_hops = max(0, int(current_app.config.get('TRUSTED_PROXY_HOPS', 0) or 0))
+    if proxy_hops and len(request.access_route) > proxy_hops:
+        ip = request.access_route[-(proxy_hops + 1)]
+    else:
+        ip = request.remote_addr or 'unknown'
+    secret = current_app.config.get('SECRET_KEY', '')
+    return hashlib.sha256(f'{secret}:{ip}'.encode('utf-8')).hexdigest()
+
+
+def _email_verified(user):
+    return user is not None and user.email_verified is not False
+
+
+def _email_token_serializer():
+    return URLSafeTimedSerializer(current_app.config['SECRET_KEY'], salt='docai-email-verification')
+
+
+def _verification_url(user_id):
+    token = _email_token_serializer().dumps(str(user_id))
+    base_url = current_app.config.get('PUBLIC_BASE_URL') or request.url_root.rstrip('/')
+    return f'{base_url}/api/auth/verify-email?token={token}'
+
+
+def _send_verification_email(user):
+    url = _verification_url(user.id)
+    host = current_app.config.get('SMTP_HOST')
+    if not host:
+        current_app.logger.warning('Email verification URL for %s: %s', user.email, url)
+        return url
+
+    message = EmailMessage()
+    message['Subject'] = 'Verify your DocAI email'
+    message['From'] = current_app.config.get('SMTP_FROM') or current_app.config.get('SMTP_USERNAME')
+    message['To'] = user.email
+    message.set_content(f'Please verify your DocAI email by opening this link:\n\n{url}\n\nThe link expires in 24 hours.')
+    with smtplib.SMTP(host, current_app.config.get('SMTP_PORT', 587), timeout=15) as server:
+        server.starttls()
+        server.login(current_app.config.get('SMTP_USERNAME'), current_app.config.get('SMTP_PASSWORD'))
+        server.send_message(message)
+    return url
+
+
+def _get_anonymous_user():
+    user = User.query.filter_by(role='anonymous').first()
+    if user:
+        return user
+    user = User(
+        username='anonymous',
+        email='anonymous@system.docai.local',
+        role='anonymous',
+        email_verified=True,
+    )
+    user.set_password(uuid.uuid4().hex)
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+def _text_limit_for_user(current_user):
+    if not current_user:
+        return current_app.config.get('GUEST_MAX_TEXT_LENGTH', 2000)
+    if current_user.role == 'admin':
+        return current_app.config.get('MAX_TEXT_LENGTH', 50000)
+    plan_limits = {
+        'starter': 10000,
+        'pro': current_app.config.get('STANDARD_MAX_TEXT_LENGTH', 20000),
+        'business': current_app.config.get('MAX_TEXT_LENGTH', 50000),
+    }
+    return plan_limits.get(current_user.plan or 'free', current_app.config.get('FREE_MAX_TEXT_LENGTH', 5000))
+
+
+def _maybe_grant_referral_reward(user):
+    if not user or not _email_verified(user) or not user.referred_by_user_id or user.referral_reward_granted:
+        return
+    referrer = db.session.get(User, user.referred_by_user_id)
+    if not referrer or referrer.id == user.id:
+        return
+    bonus = current_app.config.get('REFERRAL_BONUS_CREDITS', 2)
+    UserQuota.add_bonus_credits(referrer.id, bonus)
+    user.referral_reward_granted = True
+    db.session.commit()
+
+
 def _refund_analysis_quota(current_user, guest_id):
     if current_user:
         UserQuota.refund(current_user.id, 'analysis')
     else:
         GuestQuota.refund(guest_id)
+
+
+def _usage_fields(response):
+    usage = getattr(response, 'usage', None) or {}
+    return {
+        'ai_provider': getattr(response, 'provider', None),
+        'prompt_tokens': usage.get('prompt_tokens'),
+        'completion_tokens': usage.get('completion_tokens'),
+        'total_tokens': usage.get('total_tokens'),
+    }
 
 # ---------------------------------------------------------------------------
 # DeepSeek API helper
@@ -64,63 +162,132 @@ def call_deepseek(messages, stream=False):
         RuntimeError on API errors
     """
     config = current_app.config
-    api_key = config.get('DEEPSEEK_API_KEY', '')
-    base_url = config.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com').rstrip('/')
-    model = config.get('DEEPSEEK_MODEL', 'deepseek-chat')
+    providers = []
+    relay_key = config.get('RELAY_API_KEY', '')
+    relay_base = config.get('RELAY_API_BASE_URL', '')
+    if relay_key and relay_base:
+        retries = max(1, config.get('RELAY_MAX_RETRIES', 2))
+        providers.extend([(
+            '中转站', relay_base, relay_key, config.get('RELAY_MODEL', 'deepseek-chat'),
+            config.get('RELAY_TIMEOUT_SECONDS', 20),
+        )] * retries)
 
-    if not api_key:
-        raise RuntimeError('DEEPSEEK_API_KEY 未配置，请在 .env 文件中设置')
+    deepseek_key = config.get('DEEPSEEK_API_KEY', '')
+    if deepseek_key:
+        providers.append((
+            'DeepSeek', config.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com').rstrip('/'),
+            deepseek_key, config.get('DEEPSEEK_MODEL', 'deepseek-chat'), 120,
+        ))
+    if not providers:
+        raise RuntimeError('AI API 未配置，请设置中转站或 DeepSeek API')
 
-    url = f'{base_url}/chat/completions'
-    headers = {
-        'Authorization': f'Bearer {api_key}',
-        'Content-Type': 'application/json',
-    }
+    errors = []
     payload = {
-        'model': model,
+        'model': None,
         'messages': messages,
         'temperature': 0.3,
         'max_tokens': 4096,
         'stream': stream,
     }
-
-    try:
-        resp = http_requests.post(url, headers=headers, json=payload, timeout=120, stream=stream)
-    except http_requests.RequestException as e:
-        raise RuntimeError(f'请求 DeepSeek API 失败: {str(e)}')
-
-    if resp.status_code != 200:
-        try:
-            err_body = resp.json()
-            err_msg = err_body.get('error', {}).get('message', resp.text)
-        except Exception:
-            err_msg = resp.text
-        raise RuntimeError(f'DeepSeek API 错误 ({resp.status_code}): {err_msg}')
+    if stream:
+        payload['stream_options'] = {'include_usage': True}
 
     if stream:
+        class AIStream:
+            def __init__(self, factory):
+                self._factory = factory
+                self._iterator = None
+                self.provider = None
+                self.usage = {}
+
+            def __iter__(self):
+                if self._iterator is None:
+                    self._iterator = self._factory()
+                return self
+
+            def __next__(self):
+                if self._iterator is None:
+                    self._iterator = self._factory()
+                return next(self._iterator)
+
         def _stream():
-            for line in resp.iter_lines(decode_unicode=True):
-                if not line:
-                    continue
-                if line.startswith('data: '):
-                    data_str = line[6:]
-                    if data_str.strip() == '[DONE]':
-                        break
-                    try:
-                        data = json.loads(data_str)
-                        delta = data.get('choices', [{}])[0].get('delta', {})
-                        content = delta.get('content', '')
-                        if content:
-                            yield content
-                    except (json.JSONDecodeError, IndexError, KeyError):
+            # A relay can accept the connection and then return no usable SSE data.
+            # Keep fallback inside the generator so failures during iteration can
+            # still move to the next provider before anything reaches the client.
+            stream_errors = []
+            for provider_name, base_url, api_key, model, timeout in providers:
+                resp = None
+                emitted = False
+                try:
+                    url = f'{base_url.rstrip("/")}/chat/completions'
+                    headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
+                    request_payload = dict(payload, model=model)
+                    resp = http_requests.post(
+                        url, headers=headers, json=request_payload,
+                        timeout=timeout, stream=True,
+                    )
+                    if resp.status_code != 200:
+                        stream_errors.append(f'{provider_name} HTTP {resp.status_code}')
                         continue
-        return _stream()
-    else:
+                    for line in resp.iter_lines(decode_unicode=True):
+                        if not line:
+                            continue
+                        if not line.startswith('data: '):
+                            continue
+                        data_str = line[6:]
+                        if data_str.strip() == '[DONE]':
+                            break
+                        try:
+                            data = json.loads(data_str)
+                            if data.get('usage'):
+                                stream_result.usage = data['usage']
+                            delta = data.get('choices', [{}])[0].get('delta', {})
+                            content = delta.get('content', '')
+                            if content:
+                                emitted = True
+                                yield content
+                        except (json.JSONDecodeError, IndexError, KeyError, TypeError):
+                            continue
+                    if emitted:
+                        stream_result.provider = provider_name
+                        return
+                    stream_errors.append(f'{provider_name}: empty stream')
+                except http_requests.RequestException as exc:
+                    if emitted:
+                        raise RuntimeError(f'{provider_name} 流式响应中断: {exc}') from exc
+                    stream_errors.append(f'{provider_name}: {exc}')
+                finally:
+                    if resp is not None:
+                        resp.close()
+            raise RuntimeError('AI 服务暂不可用：' + '; '.join(stream_errors[-3:]))
+        stream_result = AIStream(_stream)
+        return stream_result
+
+    for provider_name, base_url, api_key, model, timeout in providers:
+        url = f'{base_url.rstrip("/")}/chat/completions'
+        headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
         try:
-            body = resp.json()
-            return body['choices'][0]['message']['content']
-        except (KeyError, IndexError) as e:
-            raise RuntimeError(f'解析 DeepSeek 响应失败: {str(e)}')
+            candidate = http_requests.post(
+                url, headers=headers, json=dict(payload, model=model), timeout=timeout,
+            )
+            if candidate.status_code != 200:
+                errors.append(f'{provider_name} HTTP {candidate.status_code}')
+                continue
+            try:
+                body = candidate.json()
+                content = body['choices'][0]['message']['content']
+                class AIResponse(str):
+                    def __new__(cls, value, provider, usage):
+                        result = str.__new__(cls, value)
+                        result.provider = provider
+                        result.usage = usage or {}
+                        return result
+                return AIResponse(content, provider_name, body.get('usage'))
+            except (KeyError, IndexError, TypeError) as exc:
+                errors.append(f'{provider_name} invalid response: {exc}')
+        except http_requests.RequestException as exc:
+            errors.append(f'{provider_name}: {exc}')
+    raise RuntimeError('AI 服务暂不可用：' + '; '.join(errors[-3:]))
 
 
 def _safe_parse_json(text):
@@ -504,6 +671,8 @@ def _inject_preferences(system_prompt, preferences):
 
 @api_bp.route('/api/auth/register', methods=['POST'])
 def register():
+    if not GuestQuota.check_rate_limit(_client_ip_hash(), current_app.config.get('GUEST_RATE_LIMIT_PER_MINUTE', 5)):
+        return jsonify({'error': '请求过于频繁，请稍后再试', 'rate_limited': True}), 429
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
     email = (data.get('email') or '').strip()
@@ -512,6 +681,9 @@ def register():
 
     if not username or not email or not password:
         return jsonify({'error': '用户名、邮箱和密码不能为空'}), 400
+
+    if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+        return jsonify({'error': '请输入有效的邮箱地址'}), 400
 
     if len(username) < 2 or len(username) > 80:
         return jsonify({'error': '用户名长度需在 2-80 个字符之间'}), 400
@@ -525,7 +697,7 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({'error': '邮箱已被注册'}), 409
 
-    user = User(username=username, email=email)
+    user = User(username=username, email=email, email_verified=False)
     user.set_password(password)
 
     try:
@@ -538,12 +710,6 @@ def register():
         db.session.rollback()
         return jsonify({'error': f'注册失败: {str(e)}'}), 500
 
-    register_bonus = current_app.config.get('REGISTRATION_BONUS_CREDITS', 2)
-    try:
-        UserQuota.grant_login_bonus(user.id, register_bonus)
-    except Exception:
-        current_app.logger.exception('Failed to grant registration bonus for user %s', user.id)
-
     if referral_code:
         referrer = User.query.filter(func.upper(User.invite_code) == referral_code).first()
         if referrer and referrer.id != user.id:
@@ -551,17 +717,21 @@ def register():
                 user.referred_by_user_id = referrer.id
                 db.session.add(user)
                 db.session.commit()
-                referral_bonus = current_app.config.get('REFERRAL_BONUS_CREDITS', 2)
-                UserQuota.add_bonus_credits(referrer.id, referral_bonus)
             except Exception:
                 db.session.rollback()
                 current_app.logger.exception('Failed to apply referral bonus for user %s', user.id)
+
+    try:
+        _send_verification_email(user)
+    except Exception:
+        current_app.logger.exception('Failed to send verification email for user %s', user.id)
 
     token = create_token(user.id)
     resp = make_response(jsonify({
         'message': '注册成功',
         'token': token,
         'user': user.to_dict(),
+        'email_verification_required': True,
     }))
     resp.set_cookie('token', token, httponly=True, max_age=60 * 60 * 24 * 7, samesite='Lax')
     return resp, 201
@@ -581,18 +751,49 @@ def login():
         return jsonify({'error': '用户名、邮箱或密码错误'}), 401
 
     token = create_token(user.id)
-    login_bonus = current_app.config.get('LOGIN_BONUS_CREDITS', 0)
-    try:
-        UserQuota.grant_login_bonus(user.id, login_bonus)
-    except Exception:
-        current_app.logger.exception('Failed to grant login bonus for user %s', user.id)
+    if _email_verified(user):
+        try:
+            UserQuota.ensure_daily_login_bonus(user.id)
+        except Exception:
+            current_app.logger.exception('Failed to grant login bonus for user %s', user.id)
     resp = make_response(jsonify({
         'message': '登录成功',
         'token': token,
         'user': user.to_dict(),
+        'email_verification_required': not _email_verified(user),
     }))
     resp.set_cookie('token', token, httponly=True, max_age=60 * 60 * 24 * 7, samesite='Lax')
     return resp
+
+
+@api_bp.route('/api/auth/verify-email', methods=['GET'])
+def verify_email():
+    token = request.args.get('token', '')
+    try:
+        user_id = int(_email_token_serializer().loads(token, max_age=60 * 60 * 24))
+    except (BadSignature, SignatureExpired, ValueError, TypeError):
+        return jsonify({'error': '邮箱验证链接无效或已过期'}), 400
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+    user.email_verified = True
+    db.session.commit()
+    UserQuota.ensure_daily_login_bonus(user.id)
+    return jsonify({'message': '邮箱验证成功，现在可以使用完整功能。'})
+
+
+@api_bp.route('/api/auth/resend-verification', methods=['POST'])
+@get_current_user()
+def resend_verification(current_user):
+    if _email_verified(current_user):
+        return jsonify({'message': '邮箱已经验证'}), 200
+    try:
+        _send_verification_email(current_user)
+    except Exception:
+        current_app.logger.exception('Failed to resend verification email for user %s', current_user.id)
+        return jsonify({'error': '验证邮件发送失败，请稍后重试'}), 502
+    return jsonify({'message': '验证邮件已发送'})
 
 
 @api_bp.route('/api/auth/me', methods=['GET'])
@@ -681,6 +882,7 @@ def delete_avatar(current_user):
 def create_analysis():
     current_user = _optional_user()
     guest_id = None if current_user else _guest_id()
+    ip_hash = _client_ip_hash()
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
     mode = (data.get('mode') or 'risk').strip()
@@ -693,7 +895,13 @@ def create_analysis():
     if review_stance and review_stance not in ('party_a', 'party_b'):
         review_stance = ''
 
-    max_len = current_app.config.get('MAX_TEXT_LENGTH', 10000)
+    if current_user and current_user.role != 'admin' and not _email_verified(current_user):
+        return jsonify({
+            'error': '请先验证邮箱后再开始分析',
+            'email_verification_required': True,
+        }), 403
+
+    max_len = _text_limit_for_user(current_user)
     if len(text) > max_len:
         return jsonify({
             'error': f'合同文本过长，请控制在 {max_len} 字以内',
@@ -719,7 +927,12 @@ def create_analysis():
     if current_user:
         allowed, _, _ = UserQuota.check_and_increment(current_user.id, 'analysis')
     else:
-        allowed = GuestQuota.check_and_increment(guest_id)
+        if not GuestQuota.check_rate_limit(
+            ip_hash,
+            current_app.config.get('GUEST_RATE_LIMIT_PER_MINUTE', 5),
+        ):
+            return jsonify({'error': '请求过于频繁，请稍后再试', 'rate_limited': True}), 429
+        allowed = GuestQuota.check_and_increment(guest_id, ip_hash)
     if not allowed:
         if current_user:
             return jsonify({
@@ -832,7 +1045,7 @@ def create_analysis():
 
     # Create analysis record
     analysis = Analysis(
-        user_id=current_user.id if current_user else None,
+        user_id=current_user.id if current_user else _get_anonymous_user().id,
         filename=filename,
         contract_text=masked_text,
         text_hash=text_hash,
@@ -845,10 +1058,17 @@ def create_analysis():
         one_line_summary=one_line_summary,
         suggestions=suggestions_json,
         risk_items=risk_items_json,
+        is_anonymous=current_user is None,
+        source_ip_hash=ip_hash if current_user is None else None,
+        **_usage_fields(ai_response),
     )
 
     try:
         if current_user:
+            db.session.add(analysis)
+            db.session.commit()
+            _maybe_grant_referral_reward(current_user)
+        else:
             db.session.add(analysis)
             db.session.commit()
     except Exception as e:
@@ -894,6 +1114,8 @@ def analysis_history(current_user):
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
     items = [a.to_dict() for a in pagination.items]
+    for item in items:
+        item['display_user'] = '匿名' if item.get('is_anonymous') else item.get('user_id')
 
     return jsonify({
         'items': items,
@@ -1144,7 +1366,10 @@ def stream_analysis(current_user):
     if not text:
         return jsonify({'error': '合同文本不能为空'}), 400
 
-    max_len = current_app.config.get('MAX_TEXT_LENGTH', 10000)
+    if current_user.role != 'admin' and not _email_verified(current_user):
+        return jsonify({'error': '请先验证邮箱后再开始分析', 'email_verification_required': True}), 403
+
+    max_len = _text_limit_for_user(current_user)
     if len(text) > max_len:
         return jsonify({
             'error': f'合同文本过长，请控制在 {max_len} 字以内',
@@ -1259,7 +1484,7 @@ def stream_analysis(current_user):
             analysis = Analysis(
                 user_id=current_user.id,
                 filename=filename,
-                contract_text=text,
+                contract_text=_desensitize_text(text)[0],
                 text_hash=text_hash,
                 contract_type=contract_type,
                 language=language,
@@ -1270,9 +1495,11 @@ def stream_analysis(current_user):
                 one_line_summary=one_line_summary,
                 suggestions=suggestions_json,
                 risk_items=risk_items_json,
+                **_usage_fields(stream),
             )
             db.session.add(analysis)
             db.session.commit()
+            _maybe_grant_referral_reward(current_user)
 
             # Send final event with analysis id
             yield f'data: {json.dumps({"done": True, "analysis_id": analysis.id}, ensure_ascii=False)}\n\n'
@@ -1420,9 +1647,17 @@ def analysis_followup(current_user, analysis_id):
 @get_current_user()
 @admin_required
 def admin_stats(current_user):
-    total_users = User.query.count()
+    total_users = User.query.filter(User.role != 'anonymous').count()
     total_analyses = Analysis.query.count()
     total_notifications = Notification.query.count()
+    token_totals = db.session.query(
+        func.coalesce(func.sum(Analysis.prompt_tokens), 0),
+        func.coalesce(func.sum(Analysis.completion_tokens), 0),
+        func.coalesce(func.sum(Analysis.total_tokens), 0),
+    ).one()
+    anonymous_token_total = db.session.query(
+        func.coalesce(func.sum(Analysis.total_tokens), 0)
+    ).filter(Analysis.is_anonymous.is_(True)).scalar()
 
     today_start = datetime.combine(date.today(), datetime.min.time())
     today_analyses = Analysis.query.filter(Analysis.created_at >= today_start).count()
@@ -1504,7 +1739,8 @@ def admin_stats(current_user):
     for i in range(6, -1, -1):
         d = date.today() - timedelta(days=i)
         count = User.query.filter(
-            func.date(User.created_at) == d
+            func.date(User.created_at) == d,
+            User.role != 'anonymous',
         ).count()
         daily_registrations.append({'date': d.isoformat(), 'count': count})
 
@@ -1516,8 +1752,11 @@ def admin_stats(current_user):
 
     # Active users (users who analyzed in last 7 days)
     week_ago = date.today() - timedelta(days=7)
-    active_users = db.session.query(func.count(func.distinct(Analysis.user_id))).filter(
-        func.date(Analysis.created_at) >= week_ago
+    active_users = db.session.query(func.count(func.distinct(Analysis.user_id))).join(
+        User, User.id == Analysis.user_id
+    ).filter(
+        func.date(Analysis.created_at) >= week_ago,
+        User.role != 'anonymous',
     ).scalar()
 
     # Mode distribution
@@ -1529,9 +1768,9 @@ def admin_stats(current_user):
     # User structure
     role_dist = db.session.query(
         User.role, func.count(User.id)
-    ).group_by(User.role).all()
+    ).filter(User.role != 'anonymous').group_by(User.role).all()
     user_role_dist = {role: count for role, count in role_dist}
-    avatar_set_count = User.query.filter(User.avatar.isnot(None)).count()
+    avatar_set_count = User.query.filter(User.role != 'anonymous', User.avatar.isnot(None)).count()
     avatar_set_rate = round((avatar_set_count / total_users * 100), 1) if total_users else 0
     new_users_7d = sum(item['count'] for item in daily_registrations)
 
@@ -1564,6 +1803,12 @@ def admin_stats(current_user):
         'avatar_set_rate': avatar_set_rate,
         'total_notifications': total_notifications,
         'release_notifications': Notification.query.filter_by(notif_type='release').count(),
+        'token_usage': {
+            'prompt_tokens': int(token_totals[0] or 0),
+            'completion_tokens': int(token_totals[1] or 0),
+            'total_tokens': int(token_totals[2] or 0),
+            'anonymous_total_tokens': int(anonymous_token_total or 0),
+        },
     })
 
 
@@ -1577,7 +1822,9 @@ def admin_users(current_user):
 
     query = db.session.query(
         User, func.count(Analysis.id).label('analysis_count')
-    ).outerjoin(Analysis, User.id == Analysis.user_id).group_by(User.id).order_by(User.created_at.desc())
+    ).outerjoin(Analysis, User.id == Analysis.user_id).filter(
+        User.role != 'anonymous'
+    ).group_by(User.id).order_by(User.created_at.desc())
 
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
@@ -1609,6 +1856,8 @@ def admin_analyses(current_user):
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
     items = [a.to_dict() for a in pagination.items]
+    for item in items:
+        item['display_user'] = '匿名' if item.get('is_anonymous') else item.get('user_id')
 
     return jsonify({
         'items': items,
