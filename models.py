@@ -22,6 +22,10 @@ class User(db.Model):
     referred_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     email_verified = db.Column(db.Boolean, default=True, nullable=False)
     referral_reward_granted = db.Column(db.Boolean, default=False, nullable=False)
+    # Referral credits are account-level balances and must survive date changes.
+    reward_analysis_credits = db.Column(db.Integer, default=0, nullable=False)
+    reward_compare_credits = db.Column(db.Integer, default=0, nullable=False)
+    reward_followup_credits = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     analyses = db.relationship('Analysis', backref='user', lazy=True)
@@ -149,6 +153,9 @@ class UserQuota(db.Model):
     compare_bonus_credits = db.Column(db.Integer, default=0)
     followup_bonus_credits = db.Column(db.Integer, default=0)
     bonus_granted_date = db.Column(db.Date)
+    reward_analysis_used = db.Column(db.Integer, default=0, nullable=False)
+    reward_compare_used = db.Column(db.Integer, default=0, nullable=False)
+    reward_followup_used = db.Column(db.Integer, default=0, nullable=False)
 
     __table_args__ = (db.UniqueConstraint('user_id', 'date', name='uq_user_date'),)
 
@@ -156,6 +163,16 @@ class UserQuota(db.Model):
         'starter': {'analysis': 20, 'compare': 5, 'followup': 5},
         'pro': {'analysis': 60, 'compare': 15, 'followup': 15},
         'business': {'analysis': 180, 'compare': 40, 'followup': 40},
+    }
+    REWARD_FIELDS = {
+        'analysis': 'reward_analysis_credits',
+        'compare': 'reward_compare_credits',
+        'followup': 'reward_followup_credits',
+    }
+    REWARD_USED_FIELDS = {
+        'analysis': 'reward_analysis_used',
+        'compare': 'reward_compare_used',
+        'followup': 'reward_followup_used',
     }
 
     @classmethod
@@ -188,10 +205,10 @@ class UserQuota(db.Model):
 
     @classmethod
     def _bonus_total(cls, user, action):
-        field = {'analysis': 'bonus_credits', 'compare': 'compare_bonus_credits', 'followup': 'followup_bonus_credits'}.get(action)
+        field = cls.REWARD_FIELDS.get(action)
         if not field:
             return 0
-        return sum((getattr(row, field) or 0) for row in cls.query.filter_by(user_id=user.id).all())
+        return max(0, getattr(user, field, 0) or 0)
 
     @classmethod
     def get_base_limit(cls, user, action='analysis'):
@@ -219,10 +236,10 @@ class UserQuota(db.Model):
             quota = cls.get_today_quota(user.id)
             bonus = quota.bonus_credits or 0
         elif not cls._is_paid_plan(user):
-            bonus = cls._bonus_total(user, action)
+            bonus = 0
         else:
             bonus = 0
-        return base_limit + bonus
+        return base_limit + bonus + cls._bonus_total(user, action)
 
     @classmethod
     def get_today_quota(cls, user_id):
@@ -239,15 +256,21 @@ class UserQuota(db.Model):
     def check_and_increment(cls, user_id, action='analysis'):
         """Check quota limit and increment if allowed. Returns (allowed, remaining, daily_limit)."""
         user = db.session.get(User, user_id)
+        if action not in cls.REWARD_FIELDS or not user:
+            return False, 0, 0
         cls.ensure_daily_login_bonus(user_id)
         quota = cls.get_today_quota(user_id)
-        daily_limit = cls.get_effective_limit(user, action)
+        base_limit = cls.get_base_limit(user, action)
+        if user.role != 'admin' and action == 'analysis' and not cls._is_paid_plan(user):
+            base_limit += quota.bonus_credits or 0
+        reward_balance = max(0, getattr(user, cls.REWARD_FIELDS[action], 0) or 0)
+        daily_limit = base_limit + reward_balance
         current = cls.get_usage(user, action)
-        if not current and action not in ('analysis', 'compare', 'followup'):
-            return False, 0, 0
 
         if current >= daily_limit:
             return False, 0, daily_limit
+
+        uses_reward = current >= base_limit
 
         # Increment
         if action == 'analysis':
@@ -257,9 +280,15 @@ class UserQuota(db.Model):
         elif action == 'followup':
             quota.followup_count += 1
 
+        if uses_reward:
+            setattr(user, cls.REWARD_FIELDS[action], reward_balance - 1)
+            used_field = cls.REWARD_USED_FIELDS[action]
+            setattr(quota, used_field, (getattr(quota, used_field) or 0) + 1)
+
         db.session.commit()
-        remaining = daily_limit - current - 1
-        return True, remaining, daily_limit
+        remaining_limit = base_limit + reward_balance - (1 if uses_reward else 0)
+        remaining = max(0, remaining_limit - current - 1)
+        return True, remaining, remaining_limit
 
     @classmethod
     def refund(cls, user_id, action='analysis'):
@@ -272,6 +301,13 @@ class UserQuota(db.Model):
         if current <= 0:
             return False
         setattr(quota, field, current - 1)
+        used_field = cls.REWARD_USED_FIELDS.get(action)
+        if used_field and (getattr(quota, used_field) or 0) > 0:
+            user = db.session.get(User, user_id)
+            if user:
+                reward_field = cls.REWARD_FIELDS[action]
+                setattr(user, reward_field, (getattr(user, reward_field) or 0) + 1)
+                setattr(quota, used_field, (getattr(quota, used_field) or 0) - 1)
         db.session.commit()
         return True
 
@@ -309,17 +345,19 @@ class UserQuota(db.Model):
         return quota
 
     @classmethod
-    def add_bonus_credits(cls, user_id, bonus_credits=0):
-        """Add referral credits to analysis, comparison, and follow-up quotas."""
+    def add_bonus_credits(cls, user_id, bonus_credits=0, commit=True):
+        """Add persistent referral credits to all three feature balances."""
         if bonus_credits <= 0:
             return cls.get_today_quota(user_id)
-        quota = cls.ensure_daily_login_bonus(user_id)
-        quota.bonus_credits = (quota.bonus_credits or 0) + bonus_credits
-        quota.compare_bonus_credits = (quota.compare_bonus_credits or 0) + bonus_credits
-        quota.followup_bonus_credits = (quota.followup_bonus_credits or 0) + bonus_credits
-        quota.bonus_granted_date = date.today()
-        db.session.commit()
-        return quota
+        user = db.session.get(User, user_id)
+        if not user:
+            return None
+        for field in cls.REWARD_FIELDS.values():
+            setattr(user, field, (getattr(user, field) or 0) + bonus_credits)
+        if commit:
+            db.session.commit()
+            return cls.get_today_quota(user.id)
+        return user
 
     def to_dict(self):
         return {
@@ -331,6 +369,9 @@ class UserQuota(db.Model):
             'compare_bonus_credits': self.compare_bonus_credits,
             'followup_bonus_credits': self.followup_bonus_credits,
             'bonus_granted_date': self.bonus_granted_date.isoformat() if self.bonus_granted_date else None,
+            'reward_analysis_used': self.reward_analysis_used,
+            'reward_compare_used': self.reward_compare_used,
+            'reward_followup_used': self.reward_followup_used,
         }
 
 

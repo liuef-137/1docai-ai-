@@ -33,7 +33,7 @@ class Config:
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-    APP_VERSION = os.environ.get('APP_VERSION', '0.4.8')
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.9')
     APP_RELEASE_SUMMARY = os.environ.get(
         'APP_RELEASE_SUMMARY',
         '本次更新优化拖拽识别，并调整免费额度与付费套餐限制。',

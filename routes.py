@@ -122,7 +122,7 @@ def _maybe_grant_referral_reward(user):
     if not referrer or referrer.id == user.id:
         return
     bonus = current_app.config.get('REFERRAL_BONUS_CREDITS', 2)
-    UserQuota.add_bonus_credits(referrer.id, bonus)
+    UserQuota.add_bonus_credits(referrer.id, bonus, commit=False)
     user.referral_reward_granted = True
     db.session.commit()
 
@@ -283,7 +283,7 @@ def call_deepseek(messages, stream=False):
                         result.usage = usage or {}
                         return result
                 return AIResponse(content, provider_name, body.get('usage'))
-            except (KeyError, IndexError, TypeError) as exc:
+            except (KeyError, IndexError, TypeError, ValueError) as exc:
                 errors.append(f'{provider_name} invalid response: {exc}')
         except http_requests.RequestException as exc:
             errors.append(f'{provider_name}: {exc}')
@@ -986,7 +986,10 @@ def create_analysis():
 
     try:
         ai_response = call_deepseek(messages)
-    except RuntimeError as e:
+        if not str(ai_response or '').strip():
+            raise RuntimeError('AI 返回了空结果，请稍后重试')
+    except Exception as e:
+        db.session.rollback()
         _refund_analysis_quota(current_user, guest_id)
         return jsonify({'error': str(e)}), 502
 
@@ -1067,7 +1070,6 @@ def create_analysis():
         if current_user:
             db.session.add(analysis)
             db.session.commit()
-            _maybe_grant_referral_reward(current_user)
         else:
             db.session.add(analysis)
             db.session.commit()
@@ -1075,6 +1077,15 @@ def create_analysis():
         db.session.rollback()
         _refund_analysis_quota(current_user, guest_id)
         return jsonify({'error': f'保存分析结果失败: {str(e)}'}), 500
+
+    if current_user:
+        try:
+            _maybe_grant_referral_reward(current_user)
+        except Exception:
+            # Referral accounting must not turn a successful analysis into a
+            # failed request or refund an already persisted analysis.
+            db.session.rollback()
+            current_app.logger.exception('Failed to grant referral reward for user %s', current_user.id)
 
     response = jsonify({
         'message': '分析完成',
@@ -1253,7 +1264,10 @@ def create_compare(current_user):
 
     try:
         ai_response = call_deepseek(messages)
-    except RuntimeError as e:
+        if not str(ai_response or '').strip():
+            raise RuntimeError('AI 返回了空结果，请稍后重试')
+    except Exception as e:
+        db.session.rollback()
         UserQuota.refund(current_user.id, 'compare')
         return jsonify({'error': str(e)}), 502
 
@@ -1500,7 +1514,11 @@ def stream_analysis(current_user):
             )
             db.session.add(analysis)
             db.session.commit()
-            _maybe_grant_referral_reward(current_user)
+            try:
+                _maybe_grant_referral_reward(current_user)
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception('Failed to grant referral reward for user %s', current_user.id)
 
             # Send final event with analysis id
             yield f'data: {json.dumps({"done": True, "analysis_id": analysis.id}, ensure_ascii=False)}\n\n'
@@ -1565,11 +1583,9 @@ def analysis_followup(current_user, analysis_id):
     if not conv:
         conv = Conversation(user_id=current_user.id, analysis_id=analysis_id)
         db.session.add(conv)
-        db.session.commit()
 
     # Save the user's question to conversation
     conv.add_message('user', question)
-    db.session.commit()
 
     # Build context from previous analysis
     if language == 'en':
@@ -1629,7 +1645,9 @@ def analysis_followup(current_user, analysis_id):
             conv.add_message('assistant', ''.join(full_response))
             db.session.commit()
             yield 'data: [DONE]\n\n'
-        except RuntimeError as e:
+        except Exception as e:
+            db.session.rollback()
+            UserQuota.refund(current_user.id, 'followup')
             yield f'data: {json.dumps({"error": str(e)}, ensure_ascii=False)}\n\n'
 
     return current_app.response_class(
@@ -2053,8 +2071,12 @@ def get_user_quota(current_user):
         'followup_remaining': followup_remaining,
         'followup_limit': followup_limit,
         'bonus_credits': quota.bonus_credits or 0,
-        'compare_bonus_credits': quota.compare_bonus_credits or 0,
-        'followup_bonus_credits': quota.followup_bonus_credits or 0,
+        'analysis_bonus_credits': user.reward_analysis_credits or 0,
+        'compare_bonus_credits': user.reward_compare_credits or 0,
+        'followup_bonus_credits': user.reward_followup_credits or 0,
+        'reward_analysis_credits': user.reward_analysis_credits or 0,
+        'reward_compare_credits': user.reward_compare_credits or 0,
+        'reward_followup_credits': user.reward_followup_credits or 0,
         'bonus_granted_date': quota.bonus_granted_date.isoformat() if quota.bonus_granted_date else None,
     })
 
@@ -2401,9 +2423,12 @@ def user_dashboard(current_user):
             'followup_remaining': followup_remaining,
             'followup_limit': followup_limit,
             'bonus_credits': quota.bonus_credits or 0,
-            'analysis_bonus_credits': quota.bonus_credits or 0,
-            'compare_bonus_credits': quota.compare_bonus_credits or 0,
-            'followup_bonus_credits': quota.followup_bonus_credits or 0,
+            'analysis_bonus_credits': current_user.reward_analysis_credits or 0,
+            'compare_bonus_credits': current_user.reward_compare_credits or 0,
+            'followup_bonus_credits': current_user.reward_followup_credits or 0,
+            'reward_analysis_credits': current_user.reward_analysis_credits or 0,
+            'reward_compare_credits': current_user.reward_compare_credits or 0,
+            'reward_followup_credits': current_user.reward_followup_credits or 0,
         },
         'quota_used': analysis_used,
         'quota_remaining': analysis_remaining,

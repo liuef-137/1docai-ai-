@@ -84,6 +84,7 @@ def _auto_migrate(db):
         pass
 
     # Add missing columns
+    reward_columns_added = False
     migrations = [
         ("analysis", "text_hash", "VARCHAR(16)"),
         ("analysis", "contract_type", "VARCHAR(20)"),
@@ -94,6 +95,9 @@ def _auto_migrate(db):
         ("user", "referred_by_user_id", "INTEGER"),
         ("user", "email_verified", "BOOLEAN NOT NULL DEFAULT 1"),
         ("user", "referral_reward_granted", "BOOLEAN NOT NULL DEFAULT 0"),
+        ("user", "reward_analysis_credits", "INTEGER NOT NULL DEFAULT 0"),
+        ("user", "reward_compare_credits", "INTEGER NOT NULL DEFAULT 0"),
+        ("user", "reward_followup_credits", "INTEGER NOT NULL DEFAULT 0"),
         ("analysis", "is_anonymous", "BOOLEAN NOT NULL DEFAULT 0"),
         ("analysis", "source_ip_hash", "VARCHAR(64)"),
         ("analysis", "ai_provider", "VARCHAR(40)"),
@@ -104,15 +108,77 @@ def _auto_migrate(db):
         ("user_quota", "compare_bonus_credits", "INTEGER"),
         ("user_quota", "followup_bonus_credits", "INTEGER"),
         ("user_quota", "bonus_granted_date", "DATE"),
+        ("user_quota", "reward_analysis_used", "INTEGER NOT NULL DEFAULT 0"),
+        ("user_quota", "reward_compare_used", "INTEGER NOT NULL DEFAULT 0"),
+        ("user_quota", "reward_followup_used", "INTEGER NOT NULL DEFAULT 0"),
     ]
     for table, col, col_type in migrations:
         cols = existing if table == 'analysis' else quota_existing if table == 'user_quota' else user_existing
         if col not in cols:
             try:
                 cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}")
+                if table == 'user' and col in {
+                    'reward_analysis_credits',
+                    'reward_compare_credits',
+                    'reward_followup_credits',
+                }:
+                    reward_columns_added = True
                 print(f'[DocAI Migration] Added {table}.{col}')
             except Exception as e:
                 print(f'[DocAI Migration] Error adding {table}.{col}: {e}')
+
+    # Older versions stored referral credits on dated quota rows. Move those
+    # balances once, while retaining the separate daily login analysis credit.
+    legacy_referral_rows = False
+    try:
+        cursor.execute(
+            """
+            SELECT 1 FROM user_quota
+            WHERE COALESCE(compare_bonus_credits, 0) > 0
+               OR COALESCE(followup_bonus_credits, 0) > 0
+            LIMIT 1
+            """
+        )
+        legacy_referral_rows = cursor.fetchone() is not None
+    except Exception:
+        pass
+
+    if reward_columns_added or legacy_referral_rows:
+        try:
+            cursor.execute(
+                """
+                UPDATE user
+                SET reward_analysis_credits = COALESCE(reward_analysis_credits, 0) + COALESCE((
+                    SELECT SUM(COALESCE(compare_bonus_credits, 0))
+                    FROM user_quota
+                    WHERE user_quota.user_id = user.id
+                ), 0),
+                    reward_compare_credits = COALESCE(reward_compare_credits, 0) + COALESCE((
+                    SELECT SUM(COALESCE(compare_bonus_credits, 0))
+                    FROM user_quota
+                    WHERE user_quota.user_id = user.id
+                ), 0),
+                    reward_followup_credits = COALESCE(reward_followup_credits, 0) + COALESCE((
+                    SELECT SUM(COALESCE(followup_bonus_credits, 0))
+                    FROM user_quota
+                    WHERE user_quota.user_id = user.id
+                ), 0)
+                """
+            )
+            cursor.execute(
+                """
+                UPDATE user_quota
+                SET bonus_credits = MAX(
+                        COALESCE(bonus_credits, 0) - COALESCE(compare_bonus_credits, 0),
+                        0
+                    ),
+                    compare_bonus_credits = 0,
+                    followup_bonus_credits = 0
+                """
+            )
+            print('[DocAI Migration] Moved legacy referral credits to user balances')
+        except Exception as e:
+            print(f'[DocAI Migration] Error moving legacy referral credits: {e}')
     
     conn.commit()
     conn.close()
@@ -278,7 +344,7 @@ def _create_app():
         # Seed default notifications if table is empty, plus the current release note.
         from models import Notification
         if Notification.query.count() == 0:
-            release_version = app.config.get('APP_VERSION', '0.4.8')
+            release_version = app.config.get('APP_VERSION', '0.4.9')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新加入游客每日 1 次分析、登录 2 次额度、邀请奖励和数据持久化保护。',
@@ -293,7 +359,7 @@ def _create_app():
             db.session.commit()
             print('[DocAI] Default notifications seeded')
         else:
-            release_version = app.config.get('APP_VERSION', '0.4.8')
+            release_version = app.config.get('APP_VERSION', '0.4.9')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',
