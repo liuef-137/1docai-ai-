@@ -14,17 +14,17 @@ class Config:
 
     DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
     DEEPSEEK_BASE_URL = os.environ.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
-    DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
+    DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-v4-flash')
     RELAY_API_BASE_URL = os.environ.get('RELAY_API_BASE_URL', '').rstrip('/')
     RELAY_API_KEY = os.environ.get('RELAY_API_KEY', '')
-    RELAY_MODEL = os.environ.get('RELAY_MODEL', 'deepseek-chat')
+    RELAY_MODEL = os.environ.get('RELAY_MODEL', 'deepseek-v4-flash')
     RELAY_TIMEOUT_SECONDS = int(os.environ.get('RELAY_TIMEOUT_SECONDS', 20))
     RELAY_MAX_RETRIES = int(os.environ.get('RELAY_MAX_RETRIES', 2))
 
-    MAX_TEXT_LENGTH = 50000
-    FREE_MAX_TEXT_LENGTH = int(os.environ.get('FREE_MAX_TEXT_LENGTH', 5000))
-    STANDARD_MAX_TEXT_LENGTH = int(os.environ.get('STANDARD_MAX_TEXT_LENGTH', 20000))
-    GUEST_MAX_TEXT_LENGTH = int(os.environ.get('GUEST_MAX_TEXT_LENGTH', 2000))
+    MAX_TEXT_LENGTH = 20000
+    FREE_MAX_TEXT_LENGTH = int(os.environ.get('FREE_MAX_TEXT_LENGTH', 1000))
+    STANDARD_MAX_TEXT_LENGTH = int(os.environ.get('STANDARD_MAX_TEXT_LENGTH', 5000))
+    GUEST_MAX_TEXT_LENGTH = int(os.environ.get('GUEST_MAX_TEXT_LENGTH', 1000))
     GUEST_RATE_LIMIT_PER_MINUTE = int(os.environ.get('GUEST_RATE_LIMIT_PER_MINUTE', 5))
     TRUSTED_PROXY_HOPS = int(os.environ.get('TRUSTED_PROXY_HOPS', 0))
     UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
@@ -33,10 +33,10 @@ class Config:
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-    APP_VERSION = os.environ.get('APP_VERSION', '0.4.7')
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.8')
     APP_RELEASE_SUMMARY = os.environ.get(
         'APP_RELEASE_SUMMARY',
-        '本次更新修复每日额度自动重置，并为邀请奖励增加对比和追问额度。',
+        '本次更新优化拖拽识别，并调整免费额度与付费套餐限制。',
     )
     REGISTRATION_BONUS_CREDITS = int(os.environ.get('REGISTRATION_BONUS_CREDITS', 2))
     LOGIN_BONUS_CREDITS = int(os.environ.get('LOGIN_BONUS_CREDITS', 2))

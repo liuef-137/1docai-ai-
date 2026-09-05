@@ -15,7 +15,7 @@ services:
       - key: DEEPSEEK_BASE_URL
         value: https://api.deepseek.com
       - key: DEEPSEEK_MODEL
-        value: deepseek-chat
+        value: deepseek-v4-flash
       - key: ADMIN_PASSWORD
         sync: false
     healthCheckPath: /

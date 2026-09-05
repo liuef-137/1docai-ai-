@@ -152,38 +152,74 @@ class UserQuota(db.Model):
 
     __table_args__ = (db.UniqueConstraint('user_id', 'date', name='uq_user_date'),)
 
+    PAID_LIMITS = {
+        'starter': {'analysis': 20, 'compare': 5, 'followup': 5},
+        'pro': {'analysis': 60, 'compare': 15, 'followup': 15},
+        'business': {'analysis': 180, 'compare': 40, 'followup': 40},
+    }
+
+    @classmethod
+    def _user(cls, user):
+        return user if hasattr(user, 'id') else db.session.get(User, user)
+
+    @classmethod
+    def _is_paid_plan(cls, user):
+        return bool(user and getattr(user, 'plan', 'free') in cls.PAID_LIMITS)
+
+    @classmethod
+    def _period_start(cls, user):
+        today = date.today()
+        return date(today.year, today.month, 1)
+
+    @classmethod
+    def get_usage(cls, user, action='analysis'):
+        user = cls._user(user)
+        if not user:
+            return 0
+        field = {'analysis': 'analysis_count', 'compare': 'compare_count', 'followup': 'followup_count'}.get(action)
+        if not field:
+            return 0
+        query = cls.query.filter_by(user_id=user.id)
+        if cls._is_paid_plan(user):
+            query = query.filter(cls.date >= cls._period_start(user))
+        elif action == 'analysis' or getattr(user, 'role', None) == 'admin':
+            query = query.filter_by(date=date.today())
+        return sum((getattr(row, field) or 0) for row in query.all())
+
+    @classmethod
+    def _bonus_total(cls, user, action):
+        field = {'analysis': 'bonus_credits', 'compare': 'compare_bonus_credits', 'followup': 'followup_bonus_credits'}.get(action)
+        if not field:
+            return 0
+        return sum((getattr(row, field) or 0) for row in cls.query.filter_by(user_id=user.id).all())
+
     @classmethod
     def get_base_limit(cls, user, action='analysis'):
-        if action == 'followup':
-            return 5
         if user and getattr(user, 'role', None) == 'admin':
             return 100
-        if action == 'compare':
-            return 2
-        # Logged-in users receive their daily analysis credits through login/registration bonus.
+        user = cls._user(user)
+        if user and getattr(user, 'plan', 'free') in cls.PAID_LIMITS:
+            return cls.PAID_LIMITS[user.plan].get(action, 0)
         if action == 'analysis':
             return 0
-        return 3
+        return 1
 
     @classmethod
     def get_effective_limit(cls, user, action='analysis'):
+        user = cls._user(user)
         if not user:
             return cls.get_base_limit(None, action)
         if user.role != 'admin' and user.email_verified is False:
             return 0
-        if not hasattr(user, 'id'):
-            user = db.session.get(User, user)
-        if not user:
-            return cls.get_base_limit(None, action)
         base_limit = cls.get_base_limit(user, action)
-        cls.ensure_daily_login_bonus(user.id)
-        quota = cls.get_today_quota(user.id)
-        if action == 'analysis':
+        if user.role == 'admin':
+            return base_limit
+        if action == 'analysis' and not cls._is_paid_plan(user):
+            cls.ensure_daily_login_bonus(user.id)
+            quota = cls.get_today_quota(user.id)
             bonus = quota.bonus_credits or 0
-        elif action == 'compare':
-            bonus = quota.compare_bonus_credits or 0
-        elif action == 'followup':
-            bonus = quota.followup_bonus_credits or 0
+        elif not cls._is_paid_plan(user):
+            bonus = cls._bonus_total(user, action)
         else:
             bonus = 0
         return base_limit + bonus
@@ -206,14 +242,8 @@ class UserQuota(db.Model):
         cls.ensure_daily_login_bonus(user_id)
         quota = cls.get_today_quota(user_id)
         daily_limit = cls.get_effective_limit(user, action)
-
-        if action == 'analysis':
-            current = quota.analysis_count
-        elif action == 'compare':
-            current = quota.compare_count
-        elif action == 'followup':
-            current = quota.followup_count
-        else:
+        current = cls.get_usage(user, action)
+        if not current and action not in ('analysis', 'compare', 'followup'):
             return False, 0, 0
 
         if current >= daily_limit:

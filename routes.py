@@ -104,15 +104,15 @@ def _get_anonymous_user():
 
 def _text_limit_for_user(current_user):
     if not current_user:
-        return current_app.config.get('GUEST_MAX_TEXT_LENGTH', 2000)
+        return current_app.config.get('GUEST_MAX_TEXT_LENGTH', 1000)
     if current_user.role == 'admin':
-        return current_app.config.get('MAX_TEXT_LENGTH', 50000)
+        return current_app.config.get('MAX_TEXT_LENGTH', 20000)
     plan_limits = {
-        'starter': 10000,
-        'pro': current_app.config.get('STANDARD_MAX_TEXT_LENGTH', 20000),
-        'business': current_app.config.get('MAX_TEXT_LENGTH', 50000),
+        'starter': 2000,
+        'pro': current_app.config.get('STANDARD_MAX_TEXT_LENGTH', 5000),
+        'business': current_app.config.get('MAX_TEXT_LENGTH', 20000),
     }
-    return plan_limits.get(current_user.plan or 'free', current_app.config.get('FREE_MAX_TEXT_LENGTH', 5000))
+    return plan_limits.get(current_user.plan or 'free', current_app.config.get('FREE_MAX_TEXT_LENGTH', 1000))
 
 
 def _maybe_grant_referral_reward(user):
@@ -1232,7 +1232,7 @@ def create_compare(current_user):
     if not original_text or not modified_text:
         return jsonify({'error': '原始合同和修改后合同文本都不能为空'}), 400
 
-    max_len = current_app.config.get('MAX_TEXT_LENGTH', 10000)
+    max_len = _text_limit_for_user(current_user)
     if len(original_text) > max_len or len(modified_text) > max_len:
         return jsonify({
             'error': f'合同文本过长，请控制在 {max_len} 字以内',
@@ -1240,7 +1240,8 @@ def create_compare(current_user):
 
     allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'compare')
     if not allowed:
-        return jsonify({'error': f'今日对比次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
+        period_label = '本月' if current_user.plan in UserQuota.PAID_LIMITS else '可用'
+        return jsonify({'error': f'{period_label}对比次数已达上限（{limit}次），请稍后再试', 'remaining': 0, 'daily_limit': limit}), 429
 
     # Call DeepSeek for comparison analysis
     prompt_template = COMPARE_PROMPT_EN if language == 'en' else COMPARE_PROMPT
@@ -1556,7 +1557,8 @@ def analysis_followup(current_user, analysis_id):
 
     allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'followup')
     if not allowed:
-        return jsonify({'error': f'今日追问次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
+        period_label = '本月' if current_user.plan in UserQuota.PAID_LIMITS else '免费'
+        return jsonify({'error': f'{period_label}追问次数已达上限（{limit}次），请稍后再试', 'remaining': 0, 'daily_limit': limit}), 429
 
     # Get or create conversation for persistence
     conv = Conversation.query.filter_by(analysis_id=analysis_id).first()
@@ -2019,32 +2021,35 @@ def get_user_quota(current_user):
     analysis_limit = UserQuota.get_effective_limit(user, 'analysis')
     compare_limit = UserQuota.get_effective_limit(user, 'compare')
     followup_limit = UserQuota.get_effective_limit(user, 'followup')
-    analysis_remaining = max(0, analysis_limit - quota.analysis_count)
-    compare_remaining = max(0, compare_limit - quota.compare_count)
-    followup_remaining = max(0, followup_limit - quota.followup_count)
+    analysis_used = UserQuota.get_usage(user, 'analysis')
+    compare_used = UserQuota.get_usage(user, 'compare')
+    followup_used = UserQuota.get_usage(user, 'followup')
+    analysis_remaining = max(0, analysis_limit - analysis_used)
+    compare_remaining = max(0, compare_limit - compare_used)
+    followup_remaining = max(0, followup_limit - followup_used)
     return jsonify({
         'analysis': {
-            'used': quota.analysis_count,
+            'used': analysis_used,
             'remaining': analysis_remaining,
             'limit': analysis_limit,
         },
         'compare': {
-            'used': quota.compare_count,
+            'used': compare_used,
             'remaining': compare_remaining,
             'limit': compare_limit,
         },
         'followup': {
-            'used': quota.followup_count,
+            'used': followup_used,
             'remaining': followup_remaining,
             'limit': followup_limit,
         },
-        'analysis_used': quota.analysis_count,
+        'analysis_used': analysis_used,
         'analysis_remaining': analysis_remaining,
         'analysis_limit': analysis_limit,
-        'compare_used': quota.compare_count,
+        'compare_used': compare_used,
         'compare_remaining': compare_remaining,
         'compare_limit': compare_limit,
-        'followup_used': quota.followup_count,
+        'followup_used': followup_used,
         'followup_remaining': followup_remaining,
         'followup_limit': followup_limit,
         'bonus_credits': quota.bonus_credits or 0,
@@ -2320,9 +2325,12 @@ def user_dashboard(current_user):
     analysis_limit = UserQuota.get_effective_limit(current_user, 'analysis')
     compare_limit = UserQuota.get_effective_limit(current_user, 'compare')
     followup_limit = UserQuota.get_effective_limit(current_user, 'followup')
-    analysis_remaining = max(0, analysis_limit - quota.analysis_count)
-    compare_remaining = max(0, compare_limit - quota.compare_count)
-    followup_remaining = max(0, followup_limit - quota.followup_count)
+    analysis_used = UserQuota.get_usage(current_user, 'analysis')
+    compare_used = UserQuota.get_usage(current_user, 'compare')
+    followup_used = UserQuota.get_usage(current_user, 'followup')
+    analysis_remaining = max(0, analysis_limit - analysis_used)
+    compare_remaining = max(0, compare_limit - compare_used)
+    followup_remaining = max(0, followup_limit - followup_used)
 
     # Recent analyses (last 5)
     recent = Analysis.query.filter_by(user_id=current_user.id).order_by(
@@ -2383,13 +2391,13 @@ def user_dashboard(current_user):
 
     return jsonify({
         'quota': {
-            'analysis_used': quota.analysis_count,
+            'analysis_used': analysis_used,
             'analysis_remaining': analysis_remaining,
             'analysis_limit': analysis_limit,
-            'compare_used': quota.compare_count,
+            'compare_used': compare_used,
             'compare_remaining': compare_remaining,
             'compare_limit': compare_limit,
-            'followup_used': quota.followup_count,
+            'followup_used': followup_used,
             'followup_remaining': followup_remaining,
             'followup_limit': followup_limit,
             'bonus_credits': quota.bonus_credits or 0,
@@ -2397,7 +2405,7 @@ def user_dashboard(current_user):
             'compare_bonus_credits': quota.compare_bonus_credits or 0,
             'followup_bonus_credits': quota.followup_bonus_credits or 0,
         },
-        'quota_used': quota.analysis_count,
+        'quota_used': analysis_used,
         'quota_remaining': analysis_remaining,
         'quota_limit': analysis_limit,
         'recent_analyses': recent_items,
