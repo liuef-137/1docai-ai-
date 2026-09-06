@@ -35,7 +35,7 @@ class Config:
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-    APP_VERSION = os.environ.get('APP_VERSION', '0.4.11')
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.12')
     APP_RELEASE_SUMMARY = os.environ.get(
         'APP_RELEASE_SUMMARY',
         '本次更新修复分析失败扣额度，并同步已有用户的邀请奖励额度。',

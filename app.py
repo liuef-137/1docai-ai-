@@ -86,6 +86,7 @@ def _auto_migrate(db):
 
     # Add missing columns
     reward_columns_added = False
+    reward_marker_added = False
     migrations = [
         ("analysis", "text_hash", "VARCHAR(16)"),
         ("analysis", "contract_type", "VARCHAR(20)"),
@@ -125,12 +126,26 @@ def _auto_migrate(db):
                     'reward_followup_credits',
                 }:
                     reward_columns_added = True
+                if table == 'user' and col == 'reward_credits_migrated':
+                    reward_marker_added = True
                 print(f'[DocAI Migration] Added {table}.{col}')
             except Exception as e:
                 print(f'[DocAI Migration] Error adding {table}.{col}: {e}')
 
     # Older versions stored referral credits on dated quota rows. Move those
     # balances once, while retaining the separate daily login analysis credit.
+    # If the reward balances were created by 0.4.10 already, this release only
+    # adds the migration marker. Mark those rows as migrated without copying
+    # legacy dated values a second time.
+    if reward_marker_added and not reward_columns_added:
+        try:
+            cursor.execute(
+                "UPDATE user SET reward_credits_migrated = 1 "
+                "WHERE COALESCE(reward_credits_migrated, 0) = 0"
+            )
+        except Exception as e:
+            print(f'[DocAI Migration] Error marking existing reward balances: {e}')
+
     legacy_referral_rows = False
     try:
         cursor.execute(
@@ -367,7 +382,7 @@ def _create_app():
         # Seed default notifications if table is empty, plus the current release note.
         from models import Notification
         if Notification.query.count() == 0:
-            release_version = app.config.get('APP_VERSION', '0.4.11')
+            release_version = app.config.get('APP_VERSION', '0.4.12')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新加入游客每日 1 次分析、登录 2 次额度、邀请奖励和数据持久化保护。',
@@ -382,7 +397,7 @@ def _create_app():
             db.session.commit()
             print('[DocAI] Default notifications seeded')
         else:
-            release_version = app.config.get('APP_VERSION', '0.4.11')
+            release_version = app.config.get('APP_VERSION', '0.4.12')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',
