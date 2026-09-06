@@ -278,9 +278,10 @@ def call_deepseek(messages, stream=False):
         url = f'{base_url.rstrip("/")}/chat/completions'
         headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
         try:
+            request_timeout = min(float(timeout), remaining)
             candidate = http_requests.post(
                 url, headers=headers, json=dict(payload, model=model),
-                timeout=min(float(timeout), remaining),
+                timeout=(min(5.0, request_timeout), request_timeout),
             )
             if candidate.status_code != 200:
                 errors.append(f'{provider_name} HTTP {candidate.status_code}')
@@ -566,26 +567,29 @@ def _robust_json_parse(text):
 
 
 def _detect_contract_type(contract_text, api_key, language='zh'):
-    """Detect contract type using a lightweight AI call."""
-    truncated = contract_text[:3000] if len(contract_text) > 3000 else contract_text
-    prompt_template = CONTRACT_TYPE_PROMPT_ZH if language == 'zh' else CONTRACT_TYPE_PROMPT_EN
-    system_msg = (
-        '你是一个合同类型分类器。只返回 JSON。'
-        if language == 'zh' else
-        'You are a contract type classifier. Return JSON only.'
-    )
-    messages = [
-        {'role': 'system', 'content': system_msg},
-        {'role': 'user', 'content': prompt_template.format(contract_text=truncated)},
-    ]
-    try:
-        result = call_deepseek(messages, stream=False)
-        parsed = _robust_json_parse(result)
-        if parsed and 'type' in parsed:
-            return parsed.get('type', 'other'), parsed.get('confidence', 0.5)
-    except Exception:
-        pass
-    return 'other', 0.0
+    """Classify common contract types locally before the single AI request.
+
+    This deliberately avoids a second provider call. A slow relay must not
+    consume the request budget before the actual analysis starts.
+    """
+    text = (contract_text or '').lower()
+    keyword_groups = {
+        'labor': ('劳动合同', '雇佣合同', 'employment agreement', 'employee', 'probation'),
+        'rental': ('房屋租赁', '租赁合同', 'lease agreement', 'rental agreement', 'landlord'),
+        'purchase': ('买卖合同', '购销合同', '采购合同', 'purchase agreement', 'sale contract'),
+        'service': ('服务合同', '技术服务', 'service agreement', 'statement of work'),
+        'nda': ('保密协议', '保密合同', 'non-disclosure', 'confidentiality agreement'),
+        'loan': ('借款合同', '借贷合同', 'loan agreement', 'lending agreement'),
+        'partnership': ('合伙协议', '合作协议', 'partnership agreement', 'cooperation agreement'),
+        'franchise': ('加盟合同', '特许经营', 'franchise agreement'),
+        'agency': ('委托合同', '代理合同', 'agency agreement', 'representation agreement'),
+        'construction': ('建设工程', '施工合同', 'construction contract'),
+        'insurance': ('保险合同', 'insurance agreement', 'insurance policy'),
+    }
+    for contract_type, keywords in keyword_groups.items():
+        if any(keyword in text for keyword in keywords):
+            return contract_type, 0.85
+    return 'other', 0.35
 
 
 def _compute_text_hash(text):

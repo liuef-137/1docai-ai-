@@ -91,3 +91,16 @@ def test_analysis_failure_does_not_consume_quota(quota_app, monkeypatch):
         assert response.status_code == 502
         assert UserQuota.get_usage(user, 'analysis') == 0
         assert user.reward_analysis_credits == 2
+
+
+def test_contract_type_detection_does_not_call_ai(monkeypatch):
+    def fail_ai(*args, **kwargs):
+        raise AssertionError('contract type detection must not call the provider')
+
+    monkeypatch.setattr(api_routes, 'call_deepseek', fail_ai)
+    contract_type, confidence = api_routes._detect_contract_type(
+        '本劳动合同约定试用期、工资和社会保险。', '', language='zh'
+    )
+
+    assert contract_type == 'labor'
+    assert confidence > 0

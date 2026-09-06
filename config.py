@@ -15,13 +15,15 @@ class Config:
     DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
     DEEPSEEK_BASE_URL = os.environ.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
     DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-v4-flash')
-    DEEPSEEK_TIMEOUT_SECONDS = int(os.environ.get('DEEPSEEK_TIMEOUT_SECONDS', 60))
-    AI_TOTAL_TIMEOUT_SECONDS = int(os.environ.get('AI_TOTAL_TIMEOUT_SECONDS', 60))
+    # Keep synchronous requests below common platform worker timeouts. A failed
+    # provider must return a normal 502 instead of being killed by Gunicorn.
+    DEEPSEEK_TIMEOUT_SECONDS = min(int(os.environ.get('DEEPSEEK_TIMEOUT_SECONDS', 18)), 18)
+    AI_TOTAL_TIMEOUT_SECONDS = min(int(os.environ.get('AI_TOTAL_TIMEOUT_SECONDS', 24)), 24)
     RELAY_API_BASE_URL = os.environ.get('RELAY_API_BASE_URL', '').rstrip('/')
     RELAY_API_KEY = os.environ.get('RELAY_API_KEY', '')
     RELAY_MODEL = os.environ.get('RELAY_MODEL', 'deepseek-v4-flash')
-    RELAY_TIMEOUT_SECONDS = int(os.environ.get('RELAY_TIMEOUT_SECONDS', 20))
-    RELAY_MAX_RETRIES = int(os.environ.get('RELAY_MAX_RETRIES', 2))
+    RELAY_TIMEOUT_SECONDS = min(int(os.environ.get('RELAY_TIMEOUT_SECONDS', 8)), 8)
+    RELAY_MAX_RETRIES = min(max(1, int(os.environ.get('RELAY_MAX_RETRIES', 2))), 2)
 
     MAX_TEXT_LENGTH = 20000
     FREE_MAX_TEXT_LENGTH = int(os.environ.get('FREE_MAX_TEXT_LENGTH', 1000))
@@ -35,10 +37,10 @@ class Config:
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-    APP_VERSION = os.environ.get('APP_VERSION', '0.4.12')
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.13')
     APP_RELEASE_SUMMARY = os.environ.get(
         'APP_RELEASE_SUMMARY',
-        '本次更新修复分析失败扣额度，并同步已有用户的邀请奖励额度。',
+        '本次更新修复 AI 请求超时，分析失败不扣额度，并保留已有用户数据。',
     )
     REGISTRATION_BONUS_CREDITS = int(os.environ.get('REGISTRATION_BONUS_CREDITS', 2))
     LOGIN_BONUS_CREDITS = int(os.environ.get('LOGIN_BONUS_CREDITS', 2))
