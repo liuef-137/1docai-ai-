@@ -104,3 +104,14 @@ def test_contract_type_detection_does_not_call_ai(monkeypatch):
 
     assert contract_type == 'labor'
     assert confidence > 0
+
+
+def test_free_text_limit_is_1500(quota_app):
+    with quota_app.app_context():
+        quota_app.config['FREE_MAX_TEXT_LENGTH'] = 1500
+        quota_app.config['GUEST_MAX_TEXT_LENGTH'] = 1500
+        assert api_routes._text_limit_for_user(None) == 1500
+
+        user = make_user()
+        user.plan = 'free'
+        assert api_routes._text_limit_for_user(user) == 1500

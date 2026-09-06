@@ -26,9 +26,9 @@ class Config:
     RELAY_MAX_RETRIES = min(max(1, int(os.environ.get('RELAY_MAX_RETRIES', 2))), 2)
 
     MAX_TEXT_LENGTH = 20000
-    FREE_MAX_TEXT_LENGTH = int(os.environ.get('FREE_MAX_TEXT_LENGTH', 1000))
+    FREE_MAX_TEXT_LENGTH = max(1500, int(os.environ.get('FREE_MAX_TEXT_LENGTH', 1500)))
     STANDARD_MAX_TEXT_LENGTH = int(os.environ.get('STANDARD_MAX_TEXT_LENGTH', 5000))
-    GUEST_MAX_TEXT_LENGTH = int(os.environ.get('GUEST_MAX_TEXT_LENGTH', 1000))
+    GUEST_MAX_TEXT_LENGTH = max(1500, int(os.environ.get('GUEST_MAX_TEXT_LENGTH', 1500)))
     GUEST_RATE_LIMIT_PER_MINUTE = int(os.environ.get('GUEST_RATE_LIMIT_PER_MINUTE', 5))
     TRUSTED_PROXY_HOPS = int(os.environ.get('TRUSTED_PROXY_HOPS', 0))
     UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
@@ -37,7 +37,7 @@ class Config:
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-    APP_VERSION = os.environ.get('APP_VERSION', '0.4.13')
+    APP_VERSION = os.environ.get('APP_VERSION', '0.4.14')
     APP_RELEASE_SUMMARY = os.environ.get(
         'APP_RELEASE_SUMMARY',
         '本次更新修复 AI 请求超时，分析失败不扣额度，并保留已有用户数据。',

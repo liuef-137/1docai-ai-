@@ -516,8 +516,8 @@
     let scanStream = null;
     let scanActive = false;
     const currentUser = window.appState && window.appState.user;
-    const planLimits = { free: 1000, starter: 2000, pro: 5000, business: 20000 };
-    const MAX_LEN = currentUser ? (currentUser.role === 'admin' ? 20000 : (planLimits[currentUser.plan || 'free'] || 1000)) : 1000;
+    const planLimits = { free: 1500, starter: 2000, pro: 5000, business: 20000 };
+    const MAX_LEN = currentUser ? (currentUser.role === 'admin' ? 20000 : (planLimits[currentUser.plan || 'free'] || 1500)) : 1500;
     const WARN_THRESHOLD = Math.floor(MAX_LEN * 0.8);
     const GAUGE_CIRCUMFERENCE = 2 * Math.PI * 52; // ~326.73
 

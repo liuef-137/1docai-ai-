@@ -105,7 +105,7 @@ def _get_anonymous_user():
 
 def _text_limit_for_user(current_user):
     if not current_user:
-        return current_app.config.get('GUEST_MAX_TEXT_LENGTH', 1000)
+        return current_app.config.get('GUEST_MAX_TEXT_LENGTH', 1500)
     if current_user.role == 'admin':
         return current_app.config.get('MAX_TEXT_LENGTH', 20000)
     plan_limits = {
@@ -113,7 +113,7 @@ def _text_limit_for_user(current_user):
         'pro': current_app.config.get('STANDARD_MAX_TEXT_LENGTH', 5000),
         'business': current_app.config.get('MAX_TEXT_LENGTH', 20000),
     }
-    return plan_limits.get(current_user.plan or 'free', current_app.config.get('FREE_MAX_TEXT_LENGTH', 1000))
+    return plan_limits.get(current_user.plan or 'free', current_app.config.get('FREE_MAX_TEXT_LENGTH', 1500))
 
 
 def _maybe_grant_referral_reward(user):

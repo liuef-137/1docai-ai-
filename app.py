@@ -382,7 +382,7 @@ def _create_app():
         # Seed default notifications if table is empty, plus the current release note.
         from models import Notification
         if Notification.query.count() == 0:
-            release_version = app.config.get('APP_VERSION', '0.4.12')
+            release_version = app.config.get('APP_VERSION', '0.4.14')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新加入游客每日 1 次分析、登录 2 次额度、邀请奖励和数据持久化保护。',
@@ -397,7 +397,7 @@ def _create_app():
             db.session.commit()
             print('[DocAI] Default notifications seeded')
         else:
-            release_version = app.config.get('APP_VERSION', '0.4.12')
+            release_version = app.config.get('APP_VERSION', '0.4.14')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',
