@@ -6,6 +6,8 @@ from flask import Flask
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+import routes as api_routes
+from auth import create_token
 from models import db, User, UserQuota
 
 
@@ -13,11 +15,13 @@ from models import db, User, UserQuota
 def quota_app():
     app = Flask(__name__)
     app.config.update(
+        SECRET_KEY='quota-test-secret',
         SQLALCHEMY_DATABASE_URI='sqlite:///:memory:',
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         LOGIN_BONUS_CREDITS=2,
     )
     db.init_app(app)
+    app.register_blueprint(api_routes.api_bp)
     with app.app_context():
         db.create_all()
         yield app
@@ -38,6 +42,11 @@ def make_user():
 def test_referral_credits_persist_and_refund(quota_app):
     with quota_app.app_context():
         user = make_user()
+
+        available, remaining, limit = UserQuota.check_available(user.id, 'analysis')
+        assert available
+        assert remaining == limit == 4
+        assert UserQuota.get_usage(user, 'analysis') == 0
 
         UserQuota.check_and_increment(user.id, 'analysis')
         UserQuota.check_and_increment(user.id, 'analysis')
@@ -62,3 +71,23 @@ def test_feature_reward_refunds(quota_app, action, reward_field):
         assert getattr(user, reward_field) == 1
         assert UserQuota.refund(user.id, action)
         assert getattr(user, reward_field) == 2
+
+
+def test_analysis_failure_does_not_consume_quota(quota_app, monkeypatch):
+    with quota_app.app_context():
+        user = make_user()
+        token = create_token(user.id)
+
+        def fail_ai(*args, **kwargs):
+            raise RuntimeError('provider unavailable')
+
+        monkeypatch.setattr(api_routes, 'call_deepseek', fail_ai)
+        response = quota_app.test_client().post(
+            '/api/analysis',
+            json={'text': '这是一份合同', 'mode': 'summary'},
+            headers={'Authorization': f'Bearer {token}'},
+        )
+
+        assert response.status_code == 502
+        assert UserQuota.get_usage(user, 'analysis') == 0
+        assert user.reward_analysis_credits == 2

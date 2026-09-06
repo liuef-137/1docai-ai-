@@ -26,6 +26,7 @@ class User(db.Model):
     reward_analysis_credits = db.Column(db.Integer, default=0, nullable=False)
     reward_compare_credits = db.Column(db.Integer, default=0, nullable=False)
     reward_followup_credits = db.Column(db.Integer, default=0, nullable=False)
+    reward_credits_migrated = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     analyses = db.relationship('Analysis', backref='user', lazy=True)
@@ -253,19 +254,53 @@ class UserQuota(db.Model):
         return quota
 
     @classmethod
-    def check_and_increment(cls, user_id, action='analysis'):
-        """Check quota limit and increment if allowed. Returns (allowed, remaining, daily_limit)."""
+    def _quota_state(cls, user_id, action='analysis'):
+        """Return quota state without consuming a unit."""
         user = db.session.get(User, user_id)
-        if action not in cls.REWARD_FIELDS or not user:
-            return False, 0, 0
+        if not user or action not in cls.REWARD_FIELDS:
+            return None
         cls.ensure_daily_login_bonus(user_id)
         quota = cls.get_today_quota(user_id)
+        if user.role != 'admin' and user.email_verified is False:
+            return {
+                'user': user, 'quota': quota, 'base_limit': 0,
+                'reward_balance': 0, 'current': cls.get_usage(user, action),
+                'limit': 0,
+            }
         base_limit = cls.get_base_limit(user, action)
         if user.role != 'admin' and action == 'analysis' and not cls._is_paid_plan(user):
             base_limit += quota.bonus_credits or 0
         reward_balance = max(0, getattr(user, cls.REWARD_FIELDS[action], 0) or 0)
-        daily_limit = base_limit + reward_balance
-        current = cls.get_usage(user, action)
+        return {
+            'user': user,
+            'quota': quota,
+            'base_limit': base_limit,
+            'reward_balance': reward_balance,
+            'current': cls.get_usage(user, action),
+            'limit': base_limit + reward_balance,
+        }
+
+    @classmethod
+    def check_available(cls, user_id, action='analysis'):
+        """Check availability without consuming quota."""
+        state = cls._quota_state(user_id, action)
+        if not state:
+            return False, 0, 0
+        remaining = max(0, state['limit'] - state['current'])
+        return state['current'] < state['limit'], remaining, state['limit']
+
+    @classmethod
+    def check_and_increment(cls, user_id, action='analysis'):
+        """Check quota limit and increment if allowed. Returns (allowed, remaining, daily_limit)."""
+        state = cls._quota_state(user_id, action)
+        if not state:
+            return False, 0, 0
+        user = state['user']
+        quota = state['quota']
+        base_limit = state['base_limit']
+        reward_balance = state['reward_balance']
+        daily_limit = state['limit']
+        current = state['current']
 
         if current >= daily_limit:
             return False, 0, daily_limit
@@ -387,6 +422,12 @@ class GuestQuota(db.Model):
     rate_window_start = db.Column(db.DateTime)
     rate_count = db.Column(db.Integer, default=0)
     __table_args__ = (db.UniqueConstraint('guest_id', 'date', name='uq_guest_date'),)
+
+    @classmethod
+    def check_available(cls, guest_id):
+        """Check today's guest unit without consuming it."""
+        quota = cls.query.filter_by(guest_id=guest_id, date=date.today()).first()
+        return not quota or (quota.analysis_count or 0) < 1
 
     @classmethod
     def check_and_increment(cls, guest_id, ip_hash=None):

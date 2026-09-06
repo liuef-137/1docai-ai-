@@ -1205,6 +1205,9 @@
         try {
             return JSON.parse(text);
         } catch (err) {
+            if ((resp.headers.get('content-type') || '').toLowerCase().includes('text/html')) {
+                return { error: I18N.t('js.toast_network_error') };
+            }
             return { error: text.slice(0, 300) };
         }
     }

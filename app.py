@@ -99,6 +99,7 @@ def _auto_migrate(db):
         ("user", "reward_analysis_credits", "INTEGER NOT NULL DEFAULT 0"),
         ("user", "reward_compare_credits", "INTEGER NOT NULL DEFAULT 0"),
         ("user", "reward_followup_credits", "INTEGER NOT NULL DEFAULT 0"),
+        ("user", "reward_credits_migrated", "BOOLEAN NOT NULL DEFAULT 0"),
         ("analysis", "is_anonymous", "BOOLEAN NOT NULL DEFAULT 0"),
         ("analysis", "source_ip_hash", "VARCHAR(64)"),
         ("analysis", "ai_provider", "VARCHAR(40)"),
@@ -134,9 +135,8 @@ def _auto_migrate(db):
     try:
         cursor.execute(
             """
-            SELECT 1 FROM user_quota
-            WHERE COALESCE(compare_bonus_credits, 0) > 0
-               OR COALESCE(followup_bonus_credits, 0) > 0
+            SELECT 1 FROM user
+            WHERE COALESCE(reward_credits_migrated, 0) = 0
             LIMIT 1
             """
         )
@@ -150,27 +150,41 @@ def _auto_migrate(db):
                 """
                 UPDATE user
                 SET reward_analysis_credits = COALESCE(reward_analysis_credits, 0) + COALESCE((
-                    SELECT SUM(COALESCE(compare_bonus_credits, 0))
-                    FROM user_quota
-                    WHERE user_quota.user_id = user.id
+                    SELECT MAX(
+                        COALESCE((SELECT SUM(COALESCE(compare_bonus_credits, 0))
+                                  FROM user_quota WHERE user_quota.user_id = user.id), 0),
+                        COALESCE((SELECT SUM(COALESCE(followup_bonus_credits, 0))
+                                  FROM user_quota WHERE user_quota.user_id = user.id), 0)
+                    )
                 ), 0),
                     reward_compare_credits = COALESCE(reward_compare_credits, 0) + COALESCE((
-                    SELECT SUM(COALESCE(compare_bonus_credits, 0))
-                    FROM user_quota
-                    WHERE user_quota.user_id = user.id
+                    SELECT MAX(
+                        COALESCE((SELECT SUM(COALESCE(compare_bonus_credits, 0))
+                                  FROM user_quota WHERE user_quota.user_id = user.id), 0),
+                        COALESCE((SELECT SUM(COALESCE(followup_bonus_credits, 0))
+                                  FROM user_quota WHERE user_quota.user_id = user.id), 0)
+                    )
                 ), 0),
                     reward_followup_credits = COALESCE(reward_followup_credits, 0) + COALESCE((
-                    SELECT SUM(COALESCE(followup_bonus_credits, 0))
-                    FROM user_quota
-                    WHERE user_quota.user_id = user.id
-                ), 0)
+                    SELECT MAX(
+                        COALESCE((SELECT SUM(COALESCE(compare_bonus_credits, 0))
+                                  FROM user_quota WHERE user_quota.user_id = user.id), 0),
+                        COALESCE((SELECT SUM(COALESCE(followup_bonus_credits, 0))
+                                  FROM user_quota WHERE user_quota.user_id = user.id), 0)
+                    )
+                ), 0),
+                    reward_credits_migrated = 1
+                WHERE COALESCE(reward_credits_migrated, 0) = 0
                 """
             )
             cursor.execute(
                 """
                 UPDATE user_quota
                 SET bonus_credits = MAX(
-                        COALESCE(bonus_credits, 0) - COALESCE(compare_bonus_credits, 0),
+                        COALESCE(bonus_credits, 0) - MAX(
+                            COALESCE(compare_bonus_credits, 0),
+                            COALESCE(followup_bonus_credits, 0)
+                        ),
                         0
                     ),
                     compare_bonus_credits = 0,
@@ -353,7 +367,7 @@ def _create_app():
         # Seed default notifications if table is empty, plus the current release note.
         from models import Notification
         if Notification.query.count() == 0:
-            release_version = app.config.get('APP_VERSION', '0.4.10')
+            release_version = app.config.get('APP_VERSION', '0.4.11')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新加入游客每日 1 次分析、登录 2 次额度、邀请奖励和数据持久化保护。',
@@ -368,7 +382,7 @@ def _create_app():
             db.session.commit()
             print('[DocAI] Default notifications seeded')
         else:
-            release_version = app.config.get('APP_VERSION', '0.4.10')
+            release_version = app.config.get('APP_VERSION', '0.4.11')
             release_summary = app.config.get(
                 'APP_RELEASE_SUMMARY',
                 '本次更新修复了合同对比页报错，新增版本更新通知，并加入每日额度控制。',

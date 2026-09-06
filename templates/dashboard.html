@@ -2167,15 +2167,21 @@
                 setText('quota-analysis-used', quota.analysis_used || 0);
                 setText('quota-analysis-remaining', quota.analysis_remaining || 0);
                 setText('quota-analysis-limit', quota.analysis_limit || quotaLimit);
-                setText('quota-analysis-bonus', quota.analysis_bonus_credits || quota.bonus_credits || 0);
+                setText('quota-analysis-bonus', quota.reward_analysis_credits != null
+                    ? quota.reward_analysis_credits
+                    : (quota.analysis_bonus_credits != null ? quota.analysis_bonus_credits : 0));
                 setText('quota-compare-used', quota.compare_used || 0);
                 setText('quota-compare-remaining', quota.compare_remaining || 0);
                 setText('quota-compare-limit', quota.compare_limit || 0);
-                setText('quota-compare-bonus', quota.compare_bonus_credits || 0);
+                setText('quota-compare-bonus', quota.reward_compare_credits != null
+                    ? quota.reward_compare_credits
+                    : (quota.compare_bonus_credits != null ? quota.compare_bonus_credits : 0));
                 setText('quota-followup-used', quota.followup_used || 0);
                 setText('quota-followup-remaining', quota.followup_remaining || 0);
                 setText('quota-followup-limit', quota.followup_limit || 0);
-                setText('quota-followup-bonus', quota.followup_bonus_credits || 0);
+                setText('quota-followup-bonus', quota.reward_followup_credits != null
+                    ? quota.reward_followup_credits
+                    : (quota.followup_bonus_credits != null ? quota.followup_bonus_credits : 0));
 
                 var referral = data.referral || {};
                 setText('referral-code', referral.invite_code || '--');

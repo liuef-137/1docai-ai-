@@ -4,6 +4,7 @@ import hashlib
 import os
 import uuid
 import smtplib
+import time
 from email.message import EmailMessage
 from io import BytesIO
 import requests as http_requests
@@ -183,6 +184,7 @@ def call_deepseek(messages, stream=False):
         raise RuntimeError('AI API 未配置，请设置中转站或 DeepSeek API')
 
     errors = []
+    total_deadline = time.monotonic() + max(1, int(config.get('AI_TOTAL_TIMEOUT_SECONDS', 60) or 60))
     payload = {
         'model': None,
         'messages': messages,
@@ -216,16 +218,20 @@ def call_deepseek(messages, stream=False):
             # Keep fallback inside the generator so failures during iteration can
             # still move to the next provider before anything reaches the client.
             stream_errors = []
+            stream_deadline = time.monotonic() + max(1, int(config.get('AI_TOTAL_TIMEOUT_SECONDS', 60) or 60))
             for provider_name, base_url, api_key, model, timeout in providers:
                 resp = None
                 emitted = False
                 try:
+                    remaining = stream_deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
                     url = f'{base_url.rstrip("/")}/chat/completions'
                     headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
                     request_payload = dict(payload, model=model)
                     resp = http_requests.post(
                         url, headers=headers, json=request_payload,
-                        timeout=timeout, stream=True,
+                        timeout=min(float(timeout), remaining), stream=True,
                     )
                     if resp.status_code != 200:
                         stream_errors.append(f'{provider_name} HTTP {resp.status_code}')
@@ -265,11 +271,16 @@ def call_deepseek(messages, stream=False):
         return stream_result
 
     for provider_name, base_url, api_key, model, timeout in providers:
+        remaining = total_deadline - time.monotonic()
+        if remaining <= 0:
+            errors.append('AI 请求总时限已到')
+            break
         url = f'{base_url.rstrip("/")}/chat/completions'
         headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
         try:
             candidate = http_requests.post(
-                url, headers=headers, json=dict(payload, model=model), timeout=timeout,
+                url, headers=headers, json=dict(payload, model=model),
+                timeout=min(float(timeout), remaining),
             )
             if candidate.status_code != 200:
                 errors.append(f'{provider_name} HTTP {candidate.status_code}')
@@ -926,14 +937,14 @@ def create_analysis():
         }), 200
 
     if current_user:
-        allowed, _, _ = UserQuota.check_and_increment(current_user.id, 'analysis')
+        allowed, _, _ = UserQuota.check_available(current_user.id, 'analysis')
     else:
         if not GuestQuota.check_rate_limit(
             ip_hash,
             current_app.config.get('GUEST_RATE_LIMIT_PER_MINUTE', 5),
         ):
             return jsonify({'error': '请求过于频繁，请稍后再试', 'rate_limited': True}), 429
-        allowed = GuestQuota.check_and_increment(guest_id, ip_hash)
+        allowed = GuestQuota.check_available(guest_id)
     if not allowed:
         if current_user:
             return jsonify({
@@ -991,7 +1002,6 @@ def create_analysis():
             raise RuntimeError('AI 返回了空结果，请稍后重试')
     except Exception as e:
         db.session.rollback()
-        _refund_analysis_quota(current_user, guest_id)
         return jsonify({'error': str(e)}), 502
 
     # Parse the AI response
@@ -1066,6 +1076,14 @@ def create_analysis():
         source_ip_hash=ip_hash if current_user is None else None,
         **_usage_fields(ai_response),
     )
+
+    # Charge only after provider response preparation succeeds.
+    if current_user:
+        charged, _, _ = UserQuota.check_and_increment(current_user.id, 'analysis')
+    else:
+        charged = GuestQuota.check_and_increment(guest_id, ip_hash)
+    if not charged:
+        return jsonify({'error': '分析额度刚刚已用完，请稍后再试', 'quota_exhausted': True}), 429
 
     try:
         if current_user:
@@ -1250,7 +1268,7 @@ def create_compare(current_user):
             'error': f'合同文本过长，请控制在 {max_len} 字以内',
         }), 400
 
-    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'compare')
+    allowed, remaining, limit = UserQuota.check_available(current_user.id, 'compare')
     if not allowed:
         period_label = '本月' if current_user.plan in UserQuota.PAID_LIMITS else '可用'
         return jsonify({'error': f'{period_label}对比次数已达上限（{limit}次），请稍后再试', 'remaining': 0, 'daily_limit': limit}), 429
@@ -1269,7 +1287,6 @@ def create_compare(current_user):
             raise RuntimeError('AI 返回了空结果，请稍后重试')
     except Exception as e:
         db.session.rollback()
-        UserQuota.refund(current_user.id, 'compare')
         return jsonify({'error': str(e)}), 502
 
     parsed = _safe_parse_json(ai_response)
@@ -1292,6 +1309,10 @@ def create_compare(current_user):
         diff_result=diff_json,
         ai_interpretation=interpretation,
     )
+
+    charged, _, _ = UserQuota.check_and_increment(current_user.id, 'compare')
+    if not charged:
+        return jsonify({'error': '对比额度刚刚已用完，请稍后再试', 'quota_exhausted': True}), 429
 
     try:
         db.session.add(compare)
@@ -1408,7 +1429,7 @@ def stream_analysis(current_user):
             'cached': True,
         }), 200
 
-    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'analysis')
+    allowed, remaining, limit = UserQuota.check_available(current_user.id, 'analysis')
     if not allowed:
         return jsonify({'error': f'今日分析次数已达上限（{limit}次），请明天再试', 'remaining': 0, 'daily_limit': limit}), 429
 
@@ -1442,12 +1463,15 @@ def stream_analysis(current_user):
 
     def generate():
         full_response = []
+        quota_charged = False
         try:
             stream = call_deepseek(messages, stream=True)
             for chunk in stream:
                 full_response.append(chunk)
                 yield f'data: {json.dumps({"content": chunk}, ensure_ascii=False)}\n\n'
 
+            if not full_response:
+                raise RuntimeError('AI 返回了空结果，请稍后重试')
             # After streaming completes, parse and save the analysis
             raw_text = ''.join(full_response)
             parsed = _robust_json_parse(raw_text)
@@ -1513,6 +1537,11 @@ def stream_analysis(current_user):
                 risk_items=risk_items_json,
                 **_usage_fields(stream),
             )
+            charged, _, _ = UserQuota.check_and_increment(current_user.id, 'analysis')
+            if not charged:
+                yield f'data: {json.dumps({"error": "分析额度刚刚已用完，请稍后再试", "quota_exhausted": True}, ensure_ascii=False)}\n\n'
+                return
+            quota_charged = True
             db.session.add(analysis)
             db.session.commit()
             try:
@@ -1526,7 +1555,8 @@ def stream_analysis(current_user):
             yield 'data: [DONE]\n\n'
         except Exception as e:
             db.session.rollback()
-            UserQuota.refund(current_user.id, 'analysis')
+            if quota_charged:
+                UserQuota.refund(current_user.id, 'analysis')
             yield f'data: {json.dumps({"error": str(e)}, ensure_ascii=False)}\n\n'
 
     return current_app.response_class(
@@ -1574,7 +1604,7 @@ def analysis_followup(current_user, analysis_id):
     if not question:
         return jsonify({'error': '请输入追问内容'}), 400
 
-    allowed, remaining, limit = UserQuota.check_and_increment(current_user.id, 'followup')
+    allowed, remaining, limit = UserQuota.check_available(current_user.id, 'followup')
     if not allowed:
         period_label = '本月' if current_user.plan in UserQuota.PAID_LIMITS else '免费'
         return jsonify({'error': f'{period_label}追问次数已达上限（{limit}次），请稍后再试', 'remaining': 0, 'daily_limit': limit}), 429
@@ -1637,18 +1667,27 @@ def analysis_followup(current_user, analysis_id):
     full_response = []
 
     def generate():
+        quota_charged = False
         try:
             stream = call_deepseek(messages, stream=True)
             for chunk in stream:
                 full_response.append(chunk)
                 yield f'data: {json.dumps({"content": chunk}, ensure_ascii=False)}\n\n'
+            if not full_response:
+                raise RuntimeError('AI 返回了空结果，请稍后重试')
+            charged, _, _ = UserQuota.check_and_increment(current_user.id, 'followup')
+            if not charged:
+                yield f'data: {json.dumps({"error": "追问额度刚刚已用完，请稍后再试", "quota_exhausted": True}, ensure_ascii=False)}\n\n'
+                return
+            quota_charged = True
             # Save full response to conversation after streaming completes
             conv.add_message('assistant', ''.join(full_response))
             db.session.commit()
             yield 'data: [DONE]\n\n'
         except Exception as e:
             db.session.rollback()
-            UserQuota.refund(current_user.id, 'followup')
+            if quota_charged:
+                UserQuota.refund(current_user.id, 'followup')
             yield f'data: {json.dumps({"error": str(e)}, ensure_ascii=False)}\n\n'
 
     return current_app.response_class(
